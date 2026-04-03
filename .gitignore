@@ -1,0 +1,28 @@
+# research-everything state
+.re/
+.worktrees/
+.omc/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Large binary artifacts
+*.pt
+*.ckpt
+*.h5
+*.pkl
+*.npy
+*.npz
+*.safetensors
+
+# Temporary files
+/tmp/
+*.log
+
+# OS
+.DS_Store
+
+# Orbits (adversarial test artifacts)
+orbits/

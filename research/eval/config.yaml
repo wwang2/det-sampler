@@ -1,0 +1,124 @@
+# Evaluation harness configuration for deterministic thermostat samplers
+# Version: eval-v1 (DO NOT MODIFY after freeze without [Eval Change] issue)
+
+defaults:
+  kT: 1.0
+  mass: 1.0
+  n_force_evals: 1_000_000
+  dt: 0.01
+  burnin_frac: 0.1
+  seed: 42
+
+stages:
+  1:
+    description: "Quick iteration — gate further work"
+    potentials:
+      - name: double_well_2d
+        params: {barrier_height: 1.0, y_stiffness: 0.5}
+      - name: harmonic_1d
+        params: {omega: 1.0}
+  2:
+    description: "Moderate difficulty"
+    potentials:
+      - name: gaussian_mixture_2d
+        params: {n_modes: 5, radius: 3.0, sigma: 0.5}
+      - name: rosenbrock_2d
+        params: {a: 0.0, b: 5.0}
+  3:
+    description: "Full validation"
+    potentials:
+      - name: lennard_jones
+        params: {n_atoms: 7, spatial_dim: 2}
+
+metrics:
+  primary:
+    name: kl_divergence
+    direction: minimize
+    threshold: 0.01  # target for "good" sampler
+
+  secondary:
+    - name: ess_per_force_eval
+      direction: maximize
+    - name: autocorrelation_time
+      direction: minimize
+    - name: time_to_threshold
+      direction: minimize
+      threshold: 0.01
+
+  ergodicity:
+    potential: harmonic_1d
+    pass_threshold: 0.85
+    components:
+      - ks_statistic  # 1 - max(ks_q, ks_p)
+      - variance_match  # 1 - max(var_q_err, var_p_err)
+      - phase_space_coverage  # fraction of 20x20 grid visited
+
+  speed:
+    - name: ess_per_wall_second
+      direction: maximize
+    - name: time_to_kl_threshold
+      direction: minimize
+      threshold: 0.01
+      potential: double_well_2d
+
+integration:
+  required_reports:
+    - step_size_dt
+    - forces_per_step
+    - energy_drift  # |H(t) - H(0)| over trajectory (for non-thermostatted comparison)
+    - stability_boundary_dt_max
+
+  preferred_properties:
+    - time_reversible
+    - volume_preserving
+    - large_step_tolerance
+
+sanity_checks:
+  - name: "gradient_finite_diff"
+    description: "Analytical gradients match finite differences"
+    tolerance: 1.0e-4
+
+  - name: "nh_double_well_kl_lt_1"
+    description: "Nose-Hoover on double-well produces KL < 1.0"
+    sampler: nose_hoover
+    potential: double_well_2d
+    n_force_evals: 200_000
+    expected_range: [0.0, 1.0]
+
+  - name: "nhc_harmonic_ergodic"
+    description: "NHC(M=3) passes ergodicity on 1D harmonic oscillator"
+    sampler: nose_hoover_chain
+    potential: harmonic_1d
+    chain_length: 3
+    n_force_evals: 1_000_000
+    expected: ergodic
+
+  - name: "determinism"
+    description: "Same seed produces identical output"
+    sampler: nose_hoover
+    potential: double_well_2d
+    n_force_evals: 10_000
+
+baselines:
+  nose_hoover:
+    double_well_2d:
+      kl: 0.037
+      ess_per_force_eval: 0.00310
+      wall_seconds: 50.3
+    harmonic_1d:
+      kl: 0.077
+      ess_per_force_eval: 0.00492
+      ergodicity_score: 0.54
+      ergodic: false
+
+  nose_hoover_chain_m3:
+    double_well_2d:
+      kl: 0.029
+      ess_per_force_eval: 0.00261
+      wall_seconds: 53.3
+    harmonic_1d:
+      kl: 0.002
+      ess_per_force_eval: 0.00431
+      ergodicity_score: 0.92
+      ergodic: true
+      time_to_kl_001: 250_000

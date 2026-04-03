@@ -1,0 +1,189 @@
+# Research Problem: Novel Deterministic Thermostat Samplers for the Canonical Ensemble
+
+## Research Question
+
+**Design and validate novel deterministic, continuous-time thermostat dynamics that sample the canonical (Boltzmann) distribution, with provable asymptotic correctness, clear thermostat interpretations, and diverse mixing/kinetic characteristics.**
+
+The goal is to expand the family of deterministic thermostats beyond existing methods (Nose-Hoover, Nose-Hoover Chains, ESH dynamics) by discovering new dynamical systems that:
+1. Preserve the canonical measure exp(-beta * H(q,p)) as their invariant distribution
+2. Are deterministic and continuous-time (ODEs, not SDEs)
+3. Have clear physical thermostat interpretations (extended-system or feedback-control)
+4. Exhibit different mixing times, kinetic properties, and ergodicity characteristics
+5. Are verified both analytically (proof of invariant measure, ergodicity arguments) and empirically (numerical simulations on benchmark systems)
+
+## Background and Context
+
+### The Thermostat Sampling Problem
+
+In molecular dynamics and statistical mechanics, we want to sample configurations from the canonical ensemble at temperature T:
+
+    rho(q, p) ~ exp(-H(q, p) / kT)
+
+where H(q, p) = K(p) + U(q) is the Hamiltonian. Microcanonical (NVE) dynamics conserve energy and don't sample this distribution. Thermostats modify the equations of motion to achieve canonical sampling.
+
+### Existing Deterministic Thermostats
+
+**1. Nose-Hoover (1984-1985)**
+Extended system with one auxiliary variable xi:
+
+    dq/dt = p/m
+    dp/dt = -dU/dq - xi * p
+    dxi/dt = (1/Q) * (sum(p_i^2/m_i) - N*kT)
+
+- Invariant measure: canonical in (q, p) marginalized over xi
+- Known issue: non-ergodic for 1D harmonic oscillator (KAM tori)
+- Single thermostat variable insufficient for small/stiff systems
+
+**2. Nose-Hoover Chains (Martyna et al. 1992)**
+Chain of M thermostat variables xi_1, ..., xi_M:
+
+    dq/dt = p/m
+    dp/dt = -dU/dq - xi_1 * p
+    dxi_j/dt = (1/Q_j) * (G_j - kT) - xi_{j+1} * xi_j   (j = 1, ..., M-1)
+    dxi_M/dt = (1/Q_M) * (G_M - kT)
+
+where G_1 = sum(p_i^2/m_i) and G_j = Q_{j-1}*xi_{j-1}^2 for j > 1.
+
+- Improved ergodicity over single NH
+- Still can be non-ergodic in computationally achievable time for certain systems
+- Clear extended-system interpretation
+
+**3. ESH Dynamics (Versteeg 2021, NeurIPS)**
+Energy Sampling Hamiltonian with non-Newtonian momentum:
+
+    dq/dt = v(p)    where v is a non-linear function of p
+    dp/dt = -dE/dq
+
+The key innovation: when |p| is large, position evolves slowly; when |p| is small, it evolves fast. This ensures time spent in each region is proportional to exp(-E(x))/Z.
+
+- Deterministic ODE, no stochastic steps
+- Requires ergodicity assumption (not always satisfied)
+- Solved with standard ODE solvers
+
+**4. Microcanonical Langevin Monte Carlo (Robnik et al. 2023)**
+Continuous-time version of microcanonical HMC with partial momentum refreshment:
+
+    - Energy-conserving dynamics with stochastic direction changes
+    - Ergodic for any nonzero stochasticity
+    - Exponential convergence for smooth convex potentials
+    - Note: technically has a stochastic component (partial direction randomization)
+
+**5. Other Methods**
+- Bulgac-Kusnezov: deterministic thermostat for spins, often non-ergodic alone
+- Hoover-Holian: controls higher moments of kinetic energy for improved ergodicity
+- Patra-Bhattacharya: uses all degrees of freedom (kinetic + configurational) for temperature control
+- Braga-Travis: configurational thermostat using position-dependent temperature
+
+### Key Challenges
+
+1. **Ergodicity**: Many deterministic thermostats fail for small systems (harmonic oscillator test). KAM theory shows invariant tori can prevent ergodicity.
+2. **Mixing time**: Even ergodic thermostats can mix very slowly. Different dynamical structures yield different mixing rates.
+3. **Thermostat interpretation**: The best thermostats have clear physical meaning — they represent coupling to a heat bath with interpretable parameters.
+4. **Generality**: A thermostat should work for arbitrary potentials U(q), not just specific test cases.
+
+## Known Results
+
+| Method | Ergodic (1D HO)? | Deterministic? | Thermostat interp? | Mixing |
+|--------|-------------------|----------------|---------------------|--------|
+| Nose-Hoover | No (KAM) | Yes | Yes (single bath) | Slow |
+| NH Chains (M>=2) | Improved | Yes | Yes (chain of baths) | Better |
+| ESH | Assumed | Yes | Partial | Fast (claimed) |
+| MCLMC | Yes (with noise) | No (SDE) | Microcanonical | Very fast |
+| Hoover-Holian | Improved | Yes | Yes (moment control) | Better |
+| Patra-Bhatt. | Yes (claimed) | Yes | Yes (all DOF) | Good |
+
+## Proposed Success Criteria
+
+### Primary Metric: Convergence to Boltzmann Distribution
+
+For each proposed sampler, measure the **KL divergence** (or total variation distance) between the empirical distribution generated by the sampler and the true Boltzmann distribution, as a function of simulation time, on a suite of benchmark systems.
+
+### Secondary Metrics
+- **Mixing time**: autocorrelation time of energy and other observables
+- **Effective sample size per unit time** (ESS/time)
+- **Ergodicity score**: ability to sample the full phase space (tested on 1D harmonic oscillator, double-well, multi-modal distributions)
+- **Analytical verification**: does the sampler have a formal proof of invariant measure?
+
+### Benchmark Systems (Progressive Difficulty)
+
+**Stage 1 — Quick iteration (run first, gate further work):**
+1. **2D double-well potential** — tests barrier crossing, fast to run, visual diagnostics
+2. **1D Harmonic oscillator** — the classic ergodicity litmus test (NH fails here)
+
+**Stage 2 — Moderate difficulty:**
+3. **Gaussian mixture model (2D, 5-mode)** — multi-modal distribution
+4. **Rosenbrock banana distribution (2D)** — curved correlations
+
+**Stage 3 — Full validation (only after Stage 1-2 pass):**
+5. **Lennard-Jones cluster (N=7, then N=13)** — realistic molecular system, high-D
+
+A sampler must pass Stage 1 benchmarks before advancing to Stage 2/3. This avoids wasting compute on samplers that fail basic tests.
+
+### Numerical Integration Schemes
+
+Each proposed sampler must include a concrete numerical integrator, not just continuous-time equations. The integration scheme is part of the deliverable.
+
+**Requirements:**
+- Specify the discrete-time update equations (splitting, symplectic, or adaptive)
+- Report **energy drift** or **shadow Hamiltonian error** as a function of step size
+- Report **stability boundary**: largest stable step size dt_max
+- Measure **cost per step**: number of force evaluations per integration step
+
+**Preferred properties:**
+- Time-reversibility (enables Metropolis correction if desired)
+- Volume preservation / symplecticity where applicable
+- Ability to use large step sizes without instability
+
+**Speed metric:** Wall-clock time to achieve a target KL divergence threshold (e.g., KL < 0.01 on 2D double-well). This captures both ESS/step AND cost/step.
+
+### Metric Specifications
+
+**KL Divergence Estimation:**
+- For low-D systems (1D HO, 2D double-well): histogram binning with 100 bins per dimension, compute D_KL(empirical || analytical)
+- For Gaussian mixture and Rosenbrock: k-NN KL estimator (k=5) against ground-truth samples
+- For LJ clusters: use **radial distribution function g(r)** and **energy distribution P(E)** instead of full phase-space KL (high-D KL is unreliable). Compare against long MCMC reference run.
+
+**Ergodicity Score (1D Harmonic Oscillator):**
+Concrete protocol: run sampler for 10^6 force evals on 1D HO (omega=1, kT=1). Compute:
+- KS statistic for position marginal vs N(0, kT/omega^2) — lower = better match
+- KS statistic for momentum marginal vs N(0, m*kT)
+- Relative variance error for both marginals
+- Joint (q,p) coverage: divide phase space into 20x20 grid, fraction of cells visited
+- Three components: ks_component = 1 - max(ks_q, ks_p); var_component = 1 - max(var_err_q, var_err_p); coverage
+- Ergodicity score = geometric_mean(ks_component, var_component, coverage). Score > 0.85 = ergodic.
+
+Note: Uses KS statistic (not p-value) because p-values are too sensitive at large sample sizes.
+
+**Computational Budget:**
+- All benchmarks run with a fixed budget of 10^6 force evaluations (gradient computations)
+- ESS/time measured as ESS per force evaluation (hardware-independent)
+- Wall-clock comparisons use a single reference machine configuration
+
+**Speed Metrics:**
+- **ESS/force-eval**: sampling efficiency normalized by gradient cost
+- **ESS/wall-second**: end-to-end speed including integration overhead
+- **Time-to-threshold**: wall-clock time to reach KL < 0.01 on 2D double-well (primary speed metric)
+- **Step size efficiency**: ESS achieved at optimal dt vs dt_max (measures how forgiving the integrator is)
+
+### Analytical Verification (Tiered)
+
+Proving ergodicity for novel ODE systems is research-hard. We adopt a tiered requirement:
+
+**Tier 1 (Required):** Proof that the canonical distribution is an invariant measure of the dynamics.
+- This means: show that the Liouville equation / Fokker-Planck equation with the proposed dynamics has rho ~ exp(-beta*H) as a stationary solution.
+- Verification: symbolic computation check (SymPy) of the divergence condition + human review of derivation.
+
+**Tier 2 (Strongly encouraged):** Ergodicity argument or evidence.
+- Formal proof (ideal but not required for all systems)
+- OR: numerical Lyapunov exponent > 0 on benchmark systems
+- OR: Gelman-Rubin diagnostic R-hat < 1.01 from multiple independent chains
+
+**Tier 3 (Qualitative):** Thermostat interpretation.
+- Describe the physical analogy (heat bath, feedback controller, etc.)
+- This is evaluated by human review, not automated scoring.
+
+### Direction
+- **Minimize** KL divergence at fixed simulation budget (10^6 force evals)
+- **Minimize** autocorrelation time (in units of force evaluations)
+- **Maximize** ESS per force evaluation
+- Each proposed sampler must provide: (a) equations of motion, (b) Tier 1 proof of invariant measure, (c) numerical validation on all 5 benchmark systems, (d) Tier 2 ergodicity evidence, (e) Tier 3 thermostat interpretation
