@@ -353,10 +353,40 @@ Lyapunov exponents (strong chaos). Instead, the mechanism must be subtler:
 bounded friction does not destroy KAM tori but DEFORMS them into shapes that
 allow better phase-space coverage within the quasi-periodic regime. The
 non-monotonic friction g(xi) creates torus geometries that visit a wider range
-of (q,p) values compared to the elliptical tori of standard NH. This is
-visible in the phase portraits: at Q=1.0, NH shows clean elliptical tori
-while log-osc shows deformed, asymmetric tori that cover more of the phase
-space (see `figures/phase_portraits.png`).
+of (q,p) values compared to the elliptical tori of standard NH.
+
+**Numerical confirmation (see `coverage.py` and `figures/ergodicity_vs_Q.png`):**
+
+| Q | NH score | Log-Osc score | NH coverage | Log-Osc coverage |
+|---|---------|--------------|-------------|-----------------|
+| 0.1 | 0.884 | 0.727 | 0.998 | 0.588 |
+| 0.2 | 0.940 | 0.844 | 0.983 | 0.772 |
+| 0.3 | 0.860 | **0.950** | 0.995 | 0.890 |
+| 0.5 | 0.689 | **0.982** | 0.440 | **0.960** |
+| 0.8 | 0.602 | **0.953** | 0.300 | **0.930** |
+| 1.0 | 0.618 | 0.680 | 0.310 | 0.390 |
+| 2.0 | 0.615 | 0.620 | 0.280 | 0.300 |
+
+**Key insight: Two ergodicity regimes.**
+
+(i) Q < 0.3: NH has BETTER coverage (near 1.0) because the strong coupling
+creates rapid thermostat oscillations that explore phase space, even though
+the Lyapunov exponent is small. Log-Osc's bounded friction limits the
+coupling strength, reducing coverage at these small Q values.
+
+(ii) Q in [0.3, 0.8]: Log-Osc DRAMATICALLY outperforms NH. NH coverage
+collapses from 0.995 to 0.300 as KAM tori trap trajectories. Log-Osc
+maintains coverage > 0.88 because the bounded, non-monotonic friction
+deforms the tori into space-filling shapes. This is the regime where
+the log-osc thermostat provides its greatest advantage.
+
+(iii) Q > 1.0: All methods converge to similar poor coverage (~0.28-0.39).
+The thermostat responds too slowly to provide effective mixing regardless
+of the friction function.
+
+The optimal Q for Log-Osc is Q ~ 0.5 (score = 0.982, near-perfect ergodicity).
+This is a NEW finding that refines the Q=0.8 optimum from orbit/log-osc-001,
+which used the evaluator's default parameters.
 
 ### 2.4 Conjecture: Ergodicity of Log-Osc on 1D HO
 

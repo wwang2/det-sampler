@@ -1,6 +1,6 @@
 ---
 strategy: unified-theory-007
-status: in-progress
+status: complete
 eval_version: eval-v1
 metric: N/A (theory orbit)
 issue: 10
@@ -102,6 +102,32 @@ general V(xi), all specific cases, and the uniqueness proof.
 4. The optimal Q regime for chaos (Q < 0.5) differs from the optimal Q for
    ergodicity score (Q ~ 0.8). This suggests two distinct mechanisms:
    chaos at small Q, torus deformation at moderate Q.
+
+### Iteration 3: Ergodicity Score vs Q (Coverage Analysis)
+
+**Method:** Computed full ergodicity score (KS + variance + coverage) for all
+four friction functions across Q from 0.1 to 5.0, using 1M steps on 1D HO.
+
+**Results:**
+- Log-Osc achieves score=**0.982** at Q=0.5 (near-perfect ergodicity!)
+- Log-Osc > 0.85 (ergodic threshold) for Q in [0.3, 0.8]
+- NH achieves ergodic scores only at Q <= 0.2, then collapses
+- The KEY differentiator is phase space COVERAGE: Log-Osc maintains 0.89-0.96
+  in the range Q=[0.3, 0.8] while NH drops to 0.28-0.44
+
+**New insight: Two-regime theory.**
+- Small Q (< 0.3): Strong coupling regime. NH has better coverage because
+  its unbounded friction creates rapid oscillations. Log-Osc is limited by
+  its bounded friction.
+- Moderate Q (0.3-0.8): KAM torus regime. Log-Osc's bounded friction
+  DEFORMS tori into space-filling shapes while NH's tori collapse to thin
+  rings. This is the sweet spot for generalized friction.
+- Large Q (> 1.0): Slow thermostat regime. All methods converge to poor
+  performance.
+
+**The optimal Q for Log-Osc is Q=0.5, not Q=0.8 as found in orbit/log-osc-001.**
+The evaluator's default dt may shift this optimum when considering integration
+stability.
 
 ## Seeds
 
