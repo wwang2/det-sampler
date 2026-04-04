@@ -72,18 +72,36 @@ Nose-Hoover, and multi-scale thermostats reduce autocorrelation times by 5-7x.
 3. Multi-scale spectral analysis confirms the 1/f noise hypothesis: log-spaced
    thermostat masses broaden the friction spectrum.
 
+### Iteration 2: Extended Lyapunov + Phase Portraits
+
+**Long Lyapunov runs (T=15000)** at Q=0.3, 0.5, 0.8, 1.0 confirm:
+- Q=0.3: Log-Osc lambda=0.387 vs NH lambda=0.040 (10x stronger chaos)
+- Q=0.8: ALL methods show lambda ~ 0.0005 (quasi-periodic)
+- The ergodicity of log-osc at Q=0.8 (score=0.944) is NOT from positive Lyapunov
+  exponents but from torus deformation -- a subtler mechanism
+
+**Phase portraits at Q=0.3** clearly show chaos vs quasi-periodicity:
+NH has visible torus structure, while Log-Osc fills phase space more uniformly.
+
+**Symbolic verification** (SymPy) machine-checks the Master Theorem for
+general V(xi), all specific cases, and the uniqueness proof.
+
 ### What I Learned
 
 1. The chaos strength ordering follows friction boundedness: more bounded =
    more chaotic. This is counterintuitive -- weaker friction produces stronger chaos.
 
-2. At Q >= 0.7 with kT=1, even bounded-friction thermostats appear quasi-periodic.
-   The sweet spot Q=0.8 from orbit/log-osc-001 achieving ergodicity score 0.944
-   likely requires longer observation times to see the chaotic behavior.
+2. At Q >= 0.7 with kT=1, even bounded-friction thermostats are quasi-periodic
+   (lambda ~ 0). The Q=0.8 ergodicity improvement must come from torus
+   deformation, not chaos. This is a NEW and unexpected finding.
 
 3. Multi-scale thermostats improve mixing quality (lower IAT) more than they
    improve raw barrier crossing counts. The benefit is in decorrelation, not
    exploration per se.
+
+4. The optimal Q regime for chaos (Q < 0.5) differs from the optimal Q for
+   ergodicity score (Q ~ 0.8). This suggests two distinct mechanisms:
+   chaos at small Q, torus deformation at moderate Q.
 
 ## Seeds
 

@@ -157,6 +157,15 @@ zero, we must have:
 
 This completes the uniqueness proof. QED.
 
+**Machine-checked verification.** The proof above has been verified
+symbolically using SymPy (see `verify_theorem.py`). The symbolic computation
+confirms:
+- div(F) + F . grad(log rho) = 0 for general V(xi)
+- All four specific cases (NH, Log-Osc, Tanh, Arctan) pass
+- The uniqueness constraint (p^2 coefficient = 0 forces g = V'/Q, and the
+  p^0 coefficient then automatically vanishes)
+- The multi-scale extension (Proposition 4.1) also verified
+
 ### 1.4 Corollary: The Family of Admissible Thermostats
 
 **Corollary 1.1.** Every smooth confining potential V(xi) defines a valid
@@ -325,6 +334,29 @@ for the results.
   before collapsing to quasi-periodicity
 - The ordering of chaos strength follows the ordering of friction boundedness:
   Log-Osc (|g|<=1) > Tanh (|g|<1) > Arctan (|g|<pi/2) > NH (unbounded)
+
+**Extended runs (T=15000) at key Q values:**
+
+| Q | NH | Log-Osc | Tanh | Arctan |
+|---|-----|---------|------|--------|
+| 0.3 | 0.040 | **0.387** | 0.207 | 0.127 |
+| 0.5 | 0.043 | **0.181** | 0.101 | 0.113 |
+| 0.8 | 0.0005 | 0.0006 | 0.0006 | 0.0006 |
+| 1.0 | 0.0005 | 0.0005 | 0.0004 | 0.0006 |
+
+**Critical observation:** At Q=0.8 (the optimal Q from orbit/log-osc-001 where
+ergodicity score = 0.944), ALL methods show lambda_max ~ 0. This means the
+ergodicity improvement of log-osc at Q=0.8 is NOT explained by positive
+Lyapunov exponents (strong chaos). Instead, the mechanism must be subtler:
+
+**Hypothesis 2.3 (Weak Ergodicity via Torus Deformation).** At moderate Q,
+bounded friction does not destroy KAM tori but DEFORMS them into shapes that
+allow better phase-space coverage within the quasi-periodic regime. The
+non-monotonic friction g(xi) creates torus geometries that visit a wider range
+of (q,p) values compared to the elliptical tori of standard NH. This is
+visible in the phase portraits: at Q=1.0, NH shows clean elliptical tori
+while log-osc shows deformed, asymmetric tori that cover more of the phase
+space (see `figures/phase_portraits.png`).
 
 ### 2.4 Conjecture: Ergodicity of Log-Osc on 1D HO
 
