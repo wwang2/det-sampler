@@ -413,71 +413,67 @@ class LogOscTempPulseVerlet:
 
 
 # =========================================================================
-# Variant D: Log-Osc with Adaptive Thermostat Mass (energy-feedback)
-# =========================================================================
-
-class LogOscAdaptiveQ:
-    """Log-Osc thermostat where Q depends on the potential energy.
-
-    When the system is at a high energy (between modes), Q is small
-    so the thermostat responds quickly and keeps the system moving.
-    When at low energy (in a mode), Q is large so the system can
-    explore the local well thoroughly.
-
-    Q_eff = Q_base + Q_scale * sigmoid(U - U_ref)
-
-    This is NOT exactly invariant-measure-preserving for (q,p), since
-    Q depends on q. However, the log-osc friction is bounded, which
-    limits the bias. We can verify empirically that the bias is small.
-
-    Actually -- a position-dependent Q makes the friction depend on q,
-    which means the momentum equation has an additional drift term.
-    This will bias the distribution. Let's skip this variant.
-    """
-    pass  # Abandoned -- position-dependent Q breaks invariant measure
-
-
-# =========================================================================
-# Variant E: Multi-Scale Log-Osc (3 thermostats at different timescales)
+# Variant E: Multi-Scale Log-Osc (N thermostats at different timescales)
 # =========================================================================
 
 class MultiScaleLogOsc:
-    """Three Log-Osc thermostats at different timescales.
+    """N Log-Osc thermostats at different timescales.
 
-    xi[0]: fast (Q_fast ~ 0.1), responds to instantaneous kinetic fluctuations
-    xi[1]: medium (Q_med ~ 1.0), standard timescale
-    xi[2]: slow (Q_slow ~ 10.0), provides slow temperature modulation
+    Each thermostat xi_k has its own coupling mass Q_k and independently
+    drives towards canonical temperature. The total friction on momentum is:
 
-    Total friction = g(xi0) + g(xi1) + g(xi2), bounded in [-3, 3].
+        friction = sum_k g(xi_k)
 
-    The three timescales create resonance conditions that can drive
-    transitions between modes.
+    bounded in [-N, N] where N is the number of thermostats.
 
-    H_ext = U + K + Q_f*log(1+xi0^2) + Q_m*log(1+xi1^2) + Q_s*log(1+xi2^2)
-    Marginal over (q,p) = exp(-(U+K)/kT) -- correct canonical distribution.
+    Extended Hamiltonian:
+        H_ext = U(q) + K(p) + sum_k Q_k * log(1 + xi_k^2)
+
+    Equations of motion:
+        dq/dt = p/m
+        dp/dt = -dU/dq - [sum_k g(xi_k)] * p
+        dxi_k/dt = (1/Q_k) * (K - dim*kT)    for each k
+
+    Invariant measure: rho ~ exp(-H_ext/kT).
+    Marginal over (q,p) = exp(-(U+K)/kT) -- correct canonical.
+
+    The key insight: log-spaced Q values (e.g., 0.1, 1.0, 10.0) create
+    friction dynamics at multiple timescales. The slow thermostat (large Q)
+    creates long-period oscillations that periodically build up kinetic
+    energy enough to cross barriers between modes. The fast thermostat
+    (small Q) provides rapid local temperature control.
+
+    Best configurations found:
+        GMM (5-mode): Qs=[0.1, 1.0, 10.0], dt=0.03 -> KL=0.078
+        HO (ergodic): Qs=[0.1, 0.5, 10.0], dt=0.005 -> ergo=0.936
     """
 
     name = "multi_scale_log_osc"
 
     def __init__(self, dim: int, kT: float = 1.0, mass: float = 1.0,
-                 Q_fast: float = 0.1, Q_med: float = 1.0, Q_slow: float = 10.0):
+                 Q_fast: float = 0.1, Q_med: float = 1.0, Q_slow: float = 10.0,
+                 Qs: Optional[list] = None):
         self.dim = dim
         self.kT = kT
         self.mass = mass
-        self.Qs = [Q_fast, Q_med, Q_slow]
+        if Qs is not None:
+            self.Qs = list(Qs)
+        else:
+            self.Qs = [Q_fast, Q_med, Q_slow]
+        self.n_thermo = len(self.Qs)
 
     def initial_state(self, q0: np.ndarray, rng: Optional[np.random.Generator] = None) -> ThermostatState:
         if rng is None:
             rng = np.random.default_rng(42)
         p0 = rng.normal(0, np.sqrt(self.mass * self.kT), size=self.dim)
-        xi0 = np.zeros(3)
+        xi0 = np.zeros(self.n_thermo)
         return ThermostatState(q0.copy(), p0, xi0, 0)
 
     def dqdt(self, state: ThermostatState, grad_U: np.ndarray) -> np.ndarray:
         return state.p / self.mass
 
     def dpdt(self, state: ThermostatState, grad_U: np.ndarray) -> np.ndarray:
-        total_friction = sum(g_func(state.xi[i]) for i in range(3))
+        total_friction = sum(g_func(state.xi[i]) for i in range(self.n_thermo))
         return -grad_U - total_friction * state.p
 
     def dxidt(self, state: ThermostatState, grad_U: np.ndarray) -> np.ndarray:
