@@ -1,32 +1,34 @@
 """Log-Osc Chain with Rotation (LOCR) Thermostat.
 
 Combines three innovations:
-1. Logarithmic thermostat potential: Q_j * log(1 + xi_j^2) for ALL chain variables
+1. Logarithmic thermostat potential for xi_1: Q_1 * log(1 + xi_1^2)
+   Standard quadratic KE for chain variables j>1: Q_j * xi_j^2 / 2
 2. Chain coupling a la NHC for improved ergodicity on harmonic systems
 3. Antisymmetric rotation coupling between adjacent chain variables
 
 Extended Hamiltonian:
-    H_ext = U(q) + p^2/(2m) + sum_{j=1}^{M} Q_j * log(1 + xi_j^2)
+    H_ext = U(q) + p^2/(2m) + Q_1*log(1+xi_1^2) + sum_{j>1} Q_j*xi_j^2/2
 
 Equations of motion:
     dq/dt = p/m
     dp/dt = -dU/dq - g(xi_1) * p
-    dxi_1/dt = (1/Q_1) * (K - dim*kT) - xi_2 * g(xi_1) + alpha * h(xi_2)
-    dxi_j/dt = (1/Q_j) * (F_j - kT) - xi_{j+1}*g(xi_j) + alpha*(h(xi_{j+1}) - h(xi_{j-1}))
-    dxi_M/dt = (1/Q_M) * (F_M - kT) - alpha * h(xi_{M-1})
+    dxi_1/dt = (1/Q_1) * (K - dim*kT) - xi_2 * xi_1 + alpha * xi_2
+    dxi_j/dt = (1/Q_j) * (G_j - kT) - xi_{j+1}*xi_j + alpha*(xi_{j+1} - xi_{j-1})
+    dxi_M/dt = (1/Q_M) * (G_M - kT) - alpha * xi_{M-1}
 
 where:
     g(xi) = 2*xi/(1+xi^2)           -- bounded friction function
-    h(xi) = 2*xi^2/(1+xi^2) - 1     -- antisymmetric rotation driver (zero-mean in equilibrium)
-    F_j = 2*Q_{j-1}*xi_{j-1}^2/(1+xi_{j-1}^2)  -- effective KE of xi_{j-1} in log measure
+    G_1 = 2*Q_1*xi_1^2/(1+xi_1^2)   -- effective KE of xi_1 in log measure
+    G_j = Q_{j-1}*xi_{j-1}^2        -- standard KE for j>1
     K = sum(p_i^2/m)
 
-The rotation terms are chosen to be divergence-free (antisymmetric) so they
-preserve the invariant measure without affecting Liouville's theorem.
+The rotation terms (alpha) are antisymmetric: +alpha*xi_{j+1} to dxi_j and
+-alpha*xi_j to dxi_{j+1}. This preserves phase-space volume (zero divergence)
+and the invariant measure.
 
-The chain coupling term -xi_{j+1}*g(xi_j) is the natural extension of NHC
-chain coupling to log-osc variables: it ensures that xi_j's "kinetic energy"
-F_j = 2*Q_j*xi_j^2/(1+xi_j^2) equilibrates to kT via the next chain variable.
+The chain coupling uses standard NHC-style -xi_{j+1}*xi_j damping, which
+provides proper mixing. The log-osc potential only affects the first thermostat
+variable's coupling to momentum via g(xi_1).
 
 References:
     - Parent orbit: log-osc-001 (Issue #3) -- single log-osc thermostat
@@ -41,7 +43,11 @@ from research.eval.integrators import ThermostatState
 
 def g_func(xi):
     """Bounded friction: g(xi) = 2*xi/(1+xi^2). Range: [-1, 1]."""
-    return 2.0 * xi / (1.0 + xi ** 2)
+    xi2 = xi * xi
+    if xi2 > 1e30:
+        # For very large |xi|, g(xi) ~ 2/xi -> 0
+        return 2.0 / xi if xi != 0 else 0.0
+    return 2.0 * xi / (1.0 + xi2)
 
 
 def h_func(xi):
@@ -67,8 +73,12 @@ def eff_ke(Q_j, xi_j):
     times xi, giving: F_j = 2*Q_j*xi_j^2/(1+xi_j^2)
 
     This quantity equilibrates to kT in the invariant measure.
+    Bounded: 0 <= F_j < 2*Q_j.
     """
-    return 2.0 * Q_j * xi_j ** 2 / (1.0 + xi_j ** 2)
+    xi2 = xi_j * xi_j
+    if xi2 > 1e30:
+        return 2.0 * Q_j  # limit as xi -> inf
+    return 2.0 * Q_j * xi2 / (1.0 + xi2)
 
 
 class LogOscChainRotation:
@@ -123,38 +133,40 @@ class LogOscChainRotation:
 
         kinetic = np.sum(state.p ** 2) / self.mass
 
-        # === First thermostat (j=0) ===
+        # === First thermostat (j=0): log-osc variable ===
         G0 = kinetic - self.dim * kT
         dxi[0] = G0 / Q[0]
 
-        # Chain coupling from j=1
+        # Chain coupling: standard NHC-style -xi[1]*xi[0]
         if M > 1:
-            dxi[0] -= xi[1] * g_func(xi[0])
+            dxi[0] -= xi[1] * xi[0]
 
-        # Rotation: antisymmetric coupling in (xi_0, xi_1) plane
-        # We add alpha * xi_1 to dxi_0 and -alpha * xi_0 to dxi_1
-        # This is a Hamiltonian rotation that preserves phase space volume
-        # and is orthogonal to the gradient of H_ext, so it preserves the measure.
+        # Rotation: bounded antisymmetric using g_func for stability
+        # g(xi) is bounded in [-1,1], so this cannot cause divergence
         if M > 1 and alpha != 0:
-            dxi[0] += alpha * xi[1]
+            dxi[0] += alpha * g_func(xi[1])
 
-        # === Middle thermostats (j=1..M-2) ===
+        # === Chain thermostats (j=1..M-1): standard quadratic KE ===
         for j in range(1, M):
-            # Driving force: effective KE of xi_{j-1}
-            Fj = eff_ke(Q[j - 1], xi[j - 1])
-            dxi[j] = (Fj - kT) / Q[j]
+            # Driving force: "kinetic energy" of xi_{j-1}
+            if j == 1:
+                # Effective KE of xi_0 in log measure
+                Gj = eff_ke(Q[0], xi[0])
+            else:
+                # Standard quadratic KE for j>1
+                Gj = Q[j - 1] * xi[j - 1] ** 2
 
-            # Chain coupling from j+1
+            dxi[j] = (Gj - kT) / Q[j]
+
+            # Chain coupling from j+1 (standard NHC-style)
             if j < M - 1:
-                dxi[j] -= xi[j + 1] * g_func(xi[j])
+                dxi[j] -= xi[j + 1] * xi[j]
 
-            # Rotation coupling (antisymmetric)
+            # Rotation coupling: bounded antisymmetric using g_func
             if alpha != 0:
-                # Rotation with previous neighbor
-                dxi[j] -= alpha * xi[j - 1]
-                # Rotation with next neighbor
+                dxi[j] -= alpha * g_func(xi[j - 1])
                 if j < M - 1:
-                    dxi[j] += alpha * xi[j + 1]
+                    dxi[j] += alpha * g_func(xi[j + 1])
 
         return dxi
 
@@ -213,21 +225,26 @@ class LOCRIntegrator:
                 kinetic = np.sum(p ** 2) / mass
                 force = (kinetic - dim * kT) / Q[0]
             else:
-                Fj = eff_ke(Q[j - 1], xi[j - 1])
-                force = (Fj - kT) / Q[j]
+                if j == 1:
+                    # Effective KE of xi_0 in log measure
+                    Gj = eff_ke(Q[0], xi[0])
+                else:
+                    # Standard quadratic KE
+                    Gj = Q[j - 1] * xi[j - 1] ** 2
+                force = (Gj - kT) / Q[j]
 
-            # Chain coupling from j+1
+            # Chain coupling: standard NHC-style -xi[j+1]*xi[j]
             if j < M - 1:
-                force -= xi[j + 1] * g_func(xi[j])
+                force -= xi[j + 1] * xi[j]
 
-            # Rotation coupling
+            # Rotation coupling: bounded antisymmetric using g_func
             if alpha != 0:
                 if j == 0 and M > 1:
-                    force += alpha * xi[1]
+                    force += alpha * g_func(xi[1])
                 elif j > 0:
-                    force -= alpha * xi[j - 1]
+                    force -= alpha * g_func(xi[j - 1])
                     if j < M - 1:
-                        force += alpha * xi[j + 1]
+                        force += alpha * g_func(xi[j + 1])
 
             xi[j] = xi[j] + half_dt * force
 
