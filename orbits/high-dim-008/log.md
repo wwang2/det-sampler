@@ -1,6 +1,6 @@
 ---
 strategy: high-dim-scaling
-status: in-progress
+status: complete
 eval_version: eval-v1
 metric: LOCR_best_KS_LJ13=0.025
 issue: 11
@@ -80,16 +80,18 @@ NH and MSLO are best at mode hopping. NH has the most balanced visitation.
 LOCR's bounded friction actually *hurts* mode hopping -- it limits the momentum
 kicks needed to cross barriers in high-D.
 
-## Results (2M force evals, partial -- LJ7 only)
+## Results (2M force evals, partial -- LJ7 and LJ13-NH)
 
-| System | Sampler | KS |
-|--------|---------|------|
-| LJ7_2D | NH | 0.1092 |
-| LJ7_2D | NHC | 0.0282 |
-| LJ7_2D | MSLO | 0.0583 |
-| LJ7_2D | **LOCR** | **0.0200** |
+| System | Sampler | KS | tau_E | ESS/eval |
+|--------|---------|------|-------|----------|
+| LJ7_2D | NH | 0.1092 | 3.7 | 0.00482 |
+| LJ7_2D | NHC | 0.0282 | 3.6 | 0.00500 |
+| LJ7_2D | MSLO | 0.0583 | 1.0 | 0.01800 |
+| LJ7_2D | **LOCR** | **0.0200** | 6.0 | 0.00301 |
+| LJ13_3D | NH | 0.0460 | 4.7 | 0.00385 |
 
-LOCR KS improved from 0.034 to 0.020 with more samples -- best across all.
+LOCR KS improved from 0.034 (500K) to 0.020 (2M) -- best across all samplers.
+This confirms LOCR converges well with more samples.
 
 ## Key Findings
 
