@@ -30,7 +30,11 @@ from scipy import stats
 from typing import Optional
 
 # Add project root to path
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+try:
+    _this_dir = os.path.dirname(os.path.abspath(__file__))
+except NameError:
+    _this_dir = os.path.abspath('.')
+project_root = os.path.abspath(os.path.join(_this_dir, '..', '..'))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
@@ -676,7 +680,7 @@ EXPERIMENTS = {
         'n_force_evals': 10_000_000,
         'dt': 0.002,
         'init_fn': lambda rng: init_lj_config(7, 2, rng),
-        'save_every': 200,
+        'save_every': 50,
         'system_type': 'lj',
         'n_atoms': 7,
         'spatial_dim': 2,
@@ -687,7 +691,7 @@ EXPERIMENTS = {
         'n_force_evals': 10_000_000,
         'dt': 0.001,
         'init_fn': lambda rng: init_lj_config(13, 3, rng),
-        'save_every': 200,
+        'save_every': 50,
         'system_type': 'lj',
         'n_atoms': 13,
         'spatial_dim': 3,
@@ -698,16 +702,18 @@ EXPERIMENTS = {
         'n_force_evals': 5_000_000,
         'dt': 0.005,
         'init_fn': lambda rng: rng.normal(0, 0.5, size=20),
-        'save_every': 100,
+        'save_every': 20,
         'system_type': 'gaussian',
     },
     'GMM_10D': {
-        'potential_cls': lambda: GaussianMixtureND(dim=10, n_modes=3, separation=5.0, sigma=0.5),
+        # separation=3.0, sigma=1.0 gives barrier ~ 0.5*(3/1)^2 = 4.5 kT per dim
+        # feasible but challenging for deterministic thermostats
+        'potential_cls': lambda: GaussianMixtureND(dim=10, n_modes=3, separation=3.0, sigma=1.0),
         'dim': 10,
         'n_force_evals': 5_000_000,
         'dt': 0.01,
         'init_fn': lambda rng: rng.normal(0, 1.0, size=10),
-        'save_every': 100,
+        'save_every': 50,
         'system_type': 'gmm',
     },
 }
