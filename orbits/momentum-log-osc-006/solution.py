@@ -234,9 +234,19 @@ class RippledLogOsc:
         self.omega_xi = omega_xi
 
     def _v_prime(self, xi_val: float) -> float:
-        """V'(xi) = 2*xi/(1+xi^2) - epsilon*omega_xi*sin(omega_xi*xi)."""
-        return (2.0 * xi_val / (1.0 + xi_val**2)
-                - self.epsilon * self.omega_xi * np.sin(self.omega_xi * xi_val))
+        """V'(xi) = 2*xi/(1+xi^2) - epsilon*omega_xi*sin(omega_xi*xi).
+
+        Includes overflow protection for very large xi values.
+        """
+        xi2 = xi_val * xi_val
+        if not np.isfinite(xi2):
+            g_val = 0.0
+            sin_val = np.sin(self.omega_xi * xi_val) if np.isfinite(xi_val) else 0.0
+        else:
+            g_val = 2.0 * xi_val / (1.0 + xi2)
+            sin_val = np.sin(self.omega_xi * xi_val)
+        vp = g_val - self.epsilon * self.omega_xi * sin_val
+        return vp
 
     def initial_state(self, q0: np.ndarray, rng: np.random.Generator | None = None) -> ThermostatState:
         if rng is None:
