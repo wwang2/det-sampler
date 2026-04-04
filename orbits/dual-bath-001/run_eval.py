@@ -24,7 +24,7 @@ SEED = 42
 # Best parameters found through scanning
 Q_XI = 1.0
 Q_ETA = 1.0
-ALPHA = 0.5
+ALPHA = 0.1
 FIGURES_DIR = "/Users/wujiewang/code/det-sampler/.worktrees/dual-bath-001/orbits/dual-bath-001/figures"
 
 

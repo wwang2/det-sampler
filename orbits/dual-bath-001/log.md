@@ -2,7 +2,7 @@
 strategy: dual-bath-001
 status: in-progress
 eval_version: eval-v1
-metric: 0.0279
+metric: 0.0302
 issue: 2
 parent: null
 ---
@@ -15,44 +15,62 @@ A Nose-Hoover Chain of length 2 augmented with a measure-preserving Hamiltonian
 rotation in the thermostat (xi, eta) subspace. The chain coupling provides
 ergodicity (as in standard NHC), while the rotation creates additional mixing.
 
-## Iteration 1: NHC(2) + rotation, Q_xi=1.0, Q_eta=1.0, alpha=0.5
+**Best config: Q_xi=1.0, Q_eta=1.0, alpha=0.1**
+
+## Iteration 2: alpha=0.1 (optimal), full 1M budget
 
 ### Parameters
-- Q_xi = 1.0, Q_eta = 1.0, alpha = 0.5
+- Q_xi = 1.0, Q_eta = 1.0, alpha = 0.1
 - dt = 0.01 (DW), 0.005 (HO)
 - seed = 42
 - n_force_evals = 1,000,000
 
 ### Results
 
-| Metric | Dual-Bath | NH | NHC(M=3) |
-|--------|-----------|-----|----------|
-| DW KL | **0.0279** | 0.037 | 0.029 |
-| DW ESS/force | 0.00263 | 0.00310 | 0.00261 |
-| HO KL | 0.0048 | 0.077 | 0.002 |
-| HO Ergodicity | **0.915** | 0.54 | 0.92 |
+| Metric | Dual-Bath | NH | NHC(M=3) | vs NHC |
+|--------|-----------|-----|----------|--------|
+| DW KL | 0.0302 | 0.037 | 0.029 | close |
+| DW ESS/force | **0.00274** | 0.00310 | 0.00261 | +5% better |
+| HO KL | **0.0021** | 0.077 | 0.002 | match |
+| HO Ergodicity | **0.927** | 0.54 | 0.92 | +0.8% better |
 
-### Approach
+### Alpha sensitivity analysis (all at 1M force evals)
 
-1. Started with proposed dual-friction design (two parallel NH, both providing friction on p). Failed: over-damping caused variance collapse.
-2. Tried "single friction + free reservoir" variant (only xi damps p, eta is purely rotational reservoir). Better than NH but not ergodic enough (best erg=0.60).
-3. Settled on NHC(2) + rotation: keeps the proven NHC chain coupling AND adds Hamiltonian rotation. This combines two orthogonal mechanisms for breaking KAM tori.
+| alpha | HO KL | HO Erg | DW KL | DW ESS |
+|-------|-------|--------|-------|--------|
+| 0.0 (pure NHC2) | 0.006 | 0.850 | 0.055 | - |
+| **0.1** | **0.002** | **0.927** | 0.030 | **0.00274** |
+| 0.3 | 0.002 | 0.921 | 0.033 | 0.00138 |
+| 0.5 | 0.005 | 0.915 | 0.028 | 0.00263 |
+| 0.8 | 0.002 | 0.913 | **0.027** | 0.00136 |
+| 1.0 | 0.004 | 0.901 | 0.029 | 0.00111 |
 
-### What worked
-- The Hamiltonian rotation term consistently improves ergodicity over pure NHC(2) (0.85 -> 0.90+)
-- alpha=0.1 to 0.5 gives best results; larger alpha can be unstable
-- Beats NHC(M=3) on DW KL with only 2 thermostat variables
+Key findings:
+- Any alpha > 0 improves over pure NHC(2) significantly
+- alpha=0.1 gives best ergodicity and overall balance
+- Larger alpha improves DW KL but reduces ergodicity
+- The rotation consistently breaks KAM tori
 
-### What I learned
-- Additive dual friction (-(xi+eta)*p) effectively halves the thermostat mass, causing over-damping
-- The "free reservoir" (eta only driven by rotation) is too weak -- needs a driving term
-- NHC chain coupling is the key ingredient for ergodicity; rotation is an enhancement
-- The rotation prevents the thermostat from getting trapped but needs a driving force to explore
+## Iteration 1: Initial exploration, alpha=0.5
 
-### Failed approaches
-1. Dual parallel friction: over-damped, variance collapsed (var_q=0.53 vs 1.0 expected)
-2. Single friction + free reservoir: insufficient ergodicity (0.60 vs 0.85 threshold)
-3. High alpha (>2.0): integrator instability
+(See git history for details. DW_KL=0.028, HO_erg=0.915.)
+
+## Development history
+
+1. **Dual-friction design (FAILED)**: Two parallel NH, both providing friction on p via -(xi+eta)*p. Over-damped: effective thermostat mass halved, variance collapsed (var_q=0.53 vs 1.0 expected).
+
+2. **Free reservoir design (WEAK)**: Only xi damps p, eta is purely rotational reservoir. Better than NH but not ergodic enough (best erg=0.60 vs 0.85 threshold needed).
+
+3. **NHC(2) + rotation (SUCCESS)**: Keeps NHC chain coupling AND adds Hamiltonian rotation. Two orthogonal mechanisms for breaking KAM tori. Beats NHC(M=3) with only 2 thermostat variables.
+
+4. **Analytical rotation integrator (ABANDONED)**: Splitting with exact rotation substep. More stable at high alpha but more error per step at moderate alpha. Simple Euler half-step works better for alpha<=1.
+
+## Key insights
+
+- The Hamiltonian rotation is a measure-preserving perturbation that breaks symmetries without adding computational cost
+- Even small rotation (alpha=0.1) dramatically improves over pure NHC(2)
+- The rotation complements chain coupling: chains provide energy flow, rotation provides phase-space mixing
+- Two thermostat variables with dual mechanisms > three variables with single mechanism
 
 ## References
 

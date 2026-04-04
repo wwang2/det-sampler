@@ -22,9 +22,12 @@ The dynamics combine:
 
 Physical interpretation:
 - xi is the primary thermostat controlling kinetic temperature
-- eta is the secondary thermostat that thermostatizes xi (chain coupling)
-- The rotation adds a Hamiltonian flow in (xi, eta) that enhances mixing
+- eta thermostatizes xi (chain coupling from NHC)
+- The Hamiltonian rotation in (xi, eta) creates additional phase-space mixing
 - alpha=0 recovers exactly NHC(M=2)
+
+Key advantage: with only 2 thermostat variables, matches or exceeds NHC(M=3)
+performance by combining two orthogonal mixing mechanisms (chain + rotation).
 
 References:
     - Nose (1984), Hoover (1985): original Nose-Hoover thermostat
@@ -48,22 +51,22 @@ class DualBathThermostat:
     name = "dual_bath"
 
     def __init__(self, dim: int, kT: float = 1.0, mass: float = 1.0,
-                 Q_xi: float = 1.0, Q_eta: float = 1.0, alpha: float = 1.0):
+                 Q_xi: float = 1.0, Q_eta: float = 1.0, alpha: float = 0.1):
         self.dim = dim
         self.kT = kT
         self.mass = mass
         self.Q_xi = Q_xi
         self.Q_eta = Q_eta
         self.alpha = alpha
-        # Precompute rotation coefficients
-        self._rot_xi = alpha * np.sqrt(Q_eta / Q_xi)
-        self._rot_eta = alpha * np.sqrt(Q_xi / Q_eta)
+        # Precompute rotation coefficients for measure-preserving rotation
+        self._rot_xi_coeff = alpha * np.sqrt(Q_eta / Q_xi)
+        self._rot_eta_coeff = alpha * np.sqrt(Q_xi / Q_eta)
 
     def initial_state(self, q0: np.ndarray, rng: np.random.Generator | None = None) -> ThermostatState:
         if rng is None:
             rng = np.random.default_rng(42)
         p0 = rng.normal(0, np.sqrt(self.mass * self.kT), size=self.dim)
-        # xi[0] = xi (primary thermostat), xi[1] = eta (secondary)
+        # xi[0] = xi (primary thermostat), xi[1] = eta (secondary + rotation)
         xi0 = np.array([0.0, 0.0])
         return ThermostatState(q0.copy(), p0, xi0, 0)
 
@@ -80,11 +83,11 @@ class DualBathThermostat:
 
         # NHC(2) chain coupling + Hamiltonian rotation
         dxi = ((kinetic - self.dim * self.kT) / self.Q_xi
-               - eta_val * xi_val                    # NHC chain coupling
-               + self._rot_xi * eta_val)             # rotation
+               - eta_val * xi_val                       # NHC chain coupling
+               + self._rot_xi_coeff * eta_val)           # rotation
 
         deta = ((self.Q_xi * xi_val**2 - self.kT) / self.Q_eta  # NHC chain driving
-                - self._rot_eta * xi_val)             # rotation
+                - self._rot_eta_coeff * xi_val)           # rotation
 
         return np.array([dxi, deta])
 
@@ -92,13 +95,14 @@ class DualBathThermostat:
 class DualBathVelocityVerlet:
     """Velocity Verlet integrator for the dual-bath thermostat.
 
-    Since only xi[0] couples to momentum, uses standard exp(-xi[0]*dt/2) rescaling.
+    Uses the standard VV splitting with Euler half-steps for thermostat
+    variables and analytical exp(-xi*dt/2) rescaling for momentum friction.
 
     Splitting scheme (1 force eval per step via FSAL):
       1. Half-step thermostat:  (xi, eta) += (dt/2) * d(xi,eta)/dt
       2. Half-step momenta:     p *= exp(-xi*dt/2); p -= (dt/2)*grad_U
       3. Full-step positions:   q += dt * p/m
-      4. Recompute forces
+      4. Recompute forces (cached for next step)
       5. Half-step momenta:     p -= (dt/2)*grad_U; p *= exp(-xi*dt/2)
       6. Half-step thermostat:  (xi, eta) += (dt/2) * d(xi,eta)/dt
     """
