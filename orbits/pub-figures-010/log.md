@@ -1,6 +1,6 @@
 ---
 strategy: publication-figures
-status: in-progress
+status: complete
 eval_version: eval-v1
 metric: N/A (figure quality)
 issue: 10
@@ -18,9 +18,9 @@ Create 6 publication-quality (Nature/Science-level) figures for the deterministi
 | Fig 1 | The Problem | Done | NH fails on HO: torus trapping, bimodal P(q), quasi-periodic xi |
 | Fig 2 | The Solution | Done | Bounded friction g(xi), phase space comparison, Lyapunov + ergodicity vs Q |
 | Fig 3 | Trajectory on Landscape | Done | NH vs Log-Osc on double-well, MSLO on GMM, Log-Osc on Rosenbrock |
-| Fig 4 | Quantitative Comparison | Running | Bar charts: ergodicity, KL on double-well, KL on GMM |
+| Fig 4 | Quantitative Comparison | Done | Bar charts: ergodicity, KL on double-well, KL on GMM (log scale) |
 | Fig 5 | Multi-Scale Mechanism | Done | Friction signals, xi timeseries, PSD, GMM mode coverage |
-| Fig 6 | Scaling to High Dimensions | Running | ESS vs DOF, LJ-7 energy, 10D Gaussian variance errors |
+| Fig 6 | Scaling to High Dimensions | Done | ESS vs DOF, LJ-7 energy, 10D Gaussian variance errors |
 
 ## Approach
 
@@ -30,14 +30,23 @@ Each figure script is self-contained with:
 - Panel labels (a)-(f) in upper-left
 - Consistent colors: NH=#1f77b4, NHC=#ff7f0e, novel samplers from tab10(2+)
 
-## Key Results from Figure 4 (first run)
+## Key Results
 
-- Ergodicity scores: NH=0.68, NHC=0.93, Log-Osc=0.90, MSLO=0.93
-- KL double-well: NHC=0.011, MSLO=0.005 (best), NH=0.55
-- KL GMM: NHC=0.10, NH=0.37, MSLO=0.40
+### Figure 4 (300k force evals, 3 seeds)
+- Ergodicity (1D HO): NH=0.68, NHC=0.88, Log-Osc=0.84, LOCR=0.88, MSLO=0.85
+- KL double-well: MSLO=0.014 (best), NHC=0.035, LOCR=0.052, Log-Osc=0.061, NH=0.59
+- KL GMM: NH=0.54, NHC=0.52, MSLO=1.05, LOCR=1.09, Log-Osc=3.72
 
-MSLO achieves best KL on double-well. NHC remains strong baseline.
-LOCR (chain variant) had stability issues with Q=0.5, chain=3; revised to Q=1.0, chain=2.
+### Figure 6 (100k force evals)
+- ESS/eval: MSLO consistently highest (0.11-0.14), LOCR stable at 0.10
+- LJ-7: LOCR achieves lowest energy (<E>=-6.24), Log-Osc <E>=-3.97
+- 10D Gaussian: LOCR has lowest marginal variance error (max=0.96, mean=0.46)
+
+### Key findings
+- MSLO dominates on KL divergence for double-well (barrier crossing)
+- LOCR shows best dimensional scaling and accuracy on isotropic targets
+- GMM remains challenging for all novel samplers at this budget
+- LOCR (chain variant) stability improved with Q=1.0, chain_length=2 (was unstable at Q=0.5, chain=3)
 
 ## References
 
