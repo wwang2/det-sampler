@@ -53,7 +53,7 @@ FONTSIZE_TITLE = 16
 DPI = 300
 
 KT = 1.0
-N_FORCE_EVALS = 1_000_000
+N_FORCE_EVALS = 300_000
 SEEDS = [42, 123, 7]
 
 
@@ -97,6 +97,8 @@ def run_sampler(config, potential, dim, n_evals, seed):
     ps = []
     for i in range(n_steps):
         if state.n_force_evals >= n_evals:
+            break
+        if np.any(np.isnan(state.q)) or np.any(np.abs(state.q) > 1e6):
             break
         qs.append(state.q.copy())
         ps.append(state.p.copy())

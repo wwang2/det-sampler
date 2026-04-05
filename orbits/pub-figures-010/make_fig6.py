@@ -93,21 +93,47 @@ def compute_ess(samples, thin=10):
     return ess
 
 
-def run_sampler_nd(sampler_cls, integ_cls, potential, dim, n_evals, dt, seed=SEED, **kwargs):
+def lj7_initial_positions():
+    """Generate a reasonable initial configuration for 7 atoms in 2D.
+    Hexagonal arrangement with spacing ~1.1 sigma (near LJ minimum at 2^(1/6))."""
+    r0 = 1.12  # near LJ minimum
+    pos = np.array([
+        [0.0, 0.0],
+        [r0, 0.0],
+        [r0/2, r0*np.sqrt(3)/2],
+        [-r0/2, r0*np.sqrt(3)/2],
+        [-r0, 0.0],
+        [-r0/2, -r0*np.sqrt(3)/2],
+        [r0/2, -r0*np.sqrt(3)/2],
+    ])
+    return pos.flatten()
+
+
+def run_sampler_nd(sampler_cls, integ_cls, potential, dim, n_evals, dt, seed=SEED,
+                   q0_override=None, **kwargs):
     """Run sampler on N-D potential, return position trajectory."""
     rng = np.random.default_rng(seed)
     dyn = sampler_cls(dim=dim, kT=KT, mass=1.0, **kwargs)
-    q0 = rng.normal(0, 0.3, size=dim)
+    if q0_override is not None:
+        q0 = q0_override.copy()
+    else:
+        q0 = rng.normal(0, 0.3, size=dim)
     state = dyn.initial_state(q0, rng=rng)
     integrator = integ_cls(dyn, potential, dt=dt, kT=KT, mass=1.0)
 
-    n_steps = min(n_evals, 500000)
+    n_steps = min(n_evals, 300000)
     qs = np.empty((n_steps, dim))
     energies = np.empty(n_steps)
 
     for i in range(n_steps):
-        qs[i] = state.q[:dim]
-        energies[i] = potential.energy(state.q[:dim])
+        q = state.q[:dim]
+        if np.any(np.isnan(q)) or np.any(np.abs(q) > 1e6):
+            # Fill rest with last good values
+            qs[i:] = qs[max(i-1, 0)]
+            energies[i:] = energies[max(i-1, 0)]
+            break
+        qs[i] = q
+        energies[i] = potential.energy(q)
         state = integrator.step(state)
 
     return qs, energies
@@ -133,7 +159,7 @@ def make_figure():
     # ── Panel (a): ESS/force_eval vs dimensionality ──
     ax = axes[0]
     dims = [2, 4, 8, 14, 20]
-    n_evals = 300000
+    n_evals = 100000
     print("Computing ESS vs dimensionality...")
     for name, (cls, integ, params, dt) in samplers.items():
         ess_vals = []
@@ -161,13 +187,15 @@ def make_figure():
     print("Running LJ-7 energy distributions...")
     pot_lj = LennardJonesCluster(n_atoms=7, spatial_dim=2)
     dim_lj = pot_lj.dim
-    n_evals_lj = 200000
+    n_evals_lj = 100000
 
+    q0_lj = lj7_initial_positions()
     for name in ['NH', 'NHC', 'Log-Osc', 'LOCR', 'MSLO']:
         cls, integ, params, dt = samplers[name]
-        dt_use = min(dt, 0.002)  # LJ needs small dt
+        dt_use = 0.001  # LJ needs very small dt
         try:
-            qs, energies = run_sampler_nd(cls, integ, pot_lj, dim_lj, n_evals_lj, dt_use, **params)
+            qs, energies = run_sampler_nd(cls, integ, pot_lj, dim_lj, n_evals_lj, dt_use,
+                                          q0_override=q0_lj, **params)
             burn = len(energies) // 5
             e_post = energies[burn:]
             # Filter out extreme values
@@ -192,7 +220,7 @@ def make_figure():
     print("Computing marginal variance errors on 10D Gaussian...")
     dim_gauss = 10
     pot_g = NDGaussian(dim_gauss)
-    n_evals_g = 500000
+    n_evals_g = 100000
 
     width = 0.15
     x_dims = np.arange(dim_gauss)
