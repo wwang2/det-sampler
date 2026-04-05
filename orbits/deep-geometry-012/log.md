@@ -1,6 +1,6 @@
 ---
 strategy: deep-geometry-012
-status: in-progress
+status: complete
 eval_version: eval-v1
 metric: null
 issue: 14
@@ -73,7 +73,7 @@ Five complementary visualizations, each targeting a different aspect:
 
 - All simulations: 1D Harmonic Oscillator, omega=1, kT=1, mass=1
 - Phase space / torus: dt=0.01, 500k steps, seed=42
-- Poincare: dt=0.005, 5M steps, seed=42
+- Poincare: dt=0.008, 2M steps, seed=42 (~2500 crossings per method)
 - Mechanism: dt=0.01, 50k steps, seed=42
 
 ## References

@@ -68,8 +68,8 @@ LABEL_SIZE = 14; TICK_SIZE = 12; TITLE_SIZE = 15
 COLOR_NH = '#1f77b4'; COLOR_NHC = '#ff7f0e'; COLOR_LOGOSC = '#2ca02c'
 
 potential = HarmonicOscillator1D(omega=1.0)
-kT = 1.0; mass = 1.0; dt = 0.005  # small dt for accurate zero-crossing detection
-n_steps = 5_000_000; seed = 42
+kT = 1.0; mass = 1.0; dt = 0.008  # moderate dt for crossing detection
+n_steps = 2_000_000; seed = 42
 
 def collect_poincare(dynamics_cls, integrator_cls, Q=1.0, is_logosc=False, **kwargs):
     """Collect Poincare section points at q=0 crossings (positive direction)."""
@@ -149,7 +149,7 @@ for ax in axes:
     ax.set_ylim(0, p_max)  # p > 0 at crossing by construction
 
 plt.tight_layout(pad=1.5)
-fig.suptitle('Poincare sections at q = 0  (1D Harmonic Oscillator, 1M steps, dt=0.005)',
+fig.suptitle('Poincare sections at q = 0  (1D Harmonic Oscillator, 2M steps, dt=0.008)',
              fontsize=TITLE_SIZE, y=1.02)
 
 outpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'figures', 'poincare_sections.png')
