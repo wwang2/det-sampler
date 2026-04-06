@@ -1,0 +1,30 @@
+{
+  "champion": {
+    "kl": 0.15629769969851814,
+    "n_samples": 400000,
+    "Qs": [
+      0.1,
+      0.7,
+      10.0
+    ],
+    "type": "MultiScaleNHCTail"
+  },
+  "ESH_hybrid_N3": {
+    "kl": 12.916349537918112,
+    "n_samples": 66667,
+    "n_esh_per_thermo": 3,
+    "type": "ESH_hybrid"
+  },
+  "ESH_hybrid_N5": {
+    "kl": 12.668645741971897,
+    "n_samples": 40000,
+    "n_esh_per_thermo": 5,
+    "type": "ESH_hybrid"
+  },
+  "ESH_hybrid_N10": {
+    "kl": 12.448880274602832,
+    "n_samples": 20000,
+    "n_esh_per_thermo": 10,
+    "type": "ESH_hybrid"
+  }
+}
