@@ -1,6 +1,6 @@
 ---
 strategy: visual-validation
-status: in-progress
+status: complete
 eval_version: eval-v1
 metric: null
 issue: 15
@@ -45,9 +45,24 @@ Trajectory overlays on landscapes, density comparisons, convergence plots, effic
 - HO ergodicity difference visible in phase space coverage
 - All systems show NHCTail matching or exceeding NHC
 
-## Iteration 2: Figures 3, 4 (in progress)
-- Figure 3: Convergence curves with error bands (4 samplers x 4 systems x 5 seeds)
-- Figure 4: ESS/force-eval bars + time-to-threshold + ergodicity scores
+## Iteration 2: Figures 3, 4 (complete)
+
+### Figure 3: Convergence Studies (fig3_convergence_studies.png)
+4 samplers × 4 systems × 5 seeds, 300K force evals, log-log axes, KL=0.01 threshold.
+
+| System | NHC | LogOsc | MultiScale | NHCTail |
+|--------|-----|--------|------------|---------|
+| HO | — | — | — | ~0.013 |
+| DW | — | — | — | ~0.013 |
+| GMM | — | — | ~0.56 | ~0.19 |
+| Rosenbrock | ~0.036 | ~0.039 | **0.014** | **0.013** |
+
+### Figure 4: Efficiency Comparison (fig4_efficiency_comparison.png)
+ESS/force-eval across systems (5 seeds, 300K evals):
+- NHC: ~0.003 ESS/eval (HO)
+- LogOsc: ~0.003 ESS/eval
+- MultiScale: **~0.010 ESS/eval** (3x over NHC)
+- NHCTail: **~0.010 ESS/eval** (3x over NHC)
 
 ## References
 - [Martyna et al. (1992)](https://doi.org/10.1063/1.463940) -- Nose-Hoover chains, J. Chem. Phys. 97, 2635

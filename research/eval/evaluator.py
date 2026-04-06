@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Evaluation harness for deterministic thermostat samplers.
 
 Usage:

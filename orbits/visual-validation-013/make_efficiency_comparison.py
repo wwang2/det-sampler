@@ -45,7 +45,7 @@ FIGDIR = os.path.join(WORKTREE, 'orbits/visual-validation-013/figures')
 os.makedirs(FIGDIR, exist_ok=True)
 
 SEEDS = [42, 123, 7, 999, 314]
-N_FORCE_EVALS = 2_000_000
+N_FORCE_EVALS = 300_000
 
 COLORS = {
     'NHC': '#ff7f0e',

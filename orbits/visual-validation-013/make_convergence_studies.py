@@ -45,8 +45,8 @@ FIGDIR = os.path.join(WORKTREE, 'orbits/visual-validation-013/figures')
 os.makedirs(FIGDIR, exist_ok=True)
 
 SEEDS = [42, 123, 7, 999, 314]
-N_FORCE_EVALS = 2_000_000
-KL_CHECKPOINTS = 40  # more checkpoints for smoother curves
+N_FORCE_EVALS = 300_000
+KL_CHECKPOINTS = 30  # checkpoints for convergence curves
 
 # Style colors per style.md
 COLORS = {
@@ -110,7 +110,7 @@ def main():
 
     sampler_names = ['NHC', 'LogOsc', 'MultiScale', 'NHCTail']
     # Common eval points for interpolation
-    eval_points = np.logspace(np.log10(50000), np.log10(N_FORCE_EVALS), 30)
+    eval_points = np.logspace(np.log10(5000), np.log10(N_FORCE_EVALS), 30)
 
     for sys_idx, (pot_cls, pot_kwargs, dim, dt_map, label) in enumerate(SYSTEMS):
         ax = axes[sys_idx]
