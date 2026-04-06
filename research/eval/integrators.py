@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Numerical integration schemes for thermostat dynamics.
 
 Each integrator takes a sampler's equations of motion and advances them one step.

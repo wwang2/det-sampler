@@ -4,6 +4,7 @@ These serve as reference implementations to validate the evaluator
 and establish baseline metrics to beat.
 """
 
+from __future__ import annotations
 import numpy as np
 from .integrators import ThermostatState
 

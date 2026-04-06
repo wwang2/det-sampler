@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Benchmark potential energy surfaces for thermostat sampler evaluation."""
 
 import numpy as np
