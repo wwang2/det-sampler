@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Logarithmic Oscillator Thermostat (LOG-OSC).
 
 Replaces the standard quadratic thermostat kinetic energy Q*xi^2/2 in the
