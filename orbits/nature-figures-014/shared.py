@@ -32,7 +32,20 @@ SEEDS = [42, 123, 7, 999, 314]
 # ── Friction function ──
 def g_func(xi_val):
     """Bounded friction: g(xi) = 2*xi/(1+xi^2), in [-1, 1]."""
-    return 2.0 * xi_val / (1.0 + xi_val**2)
+    xi2 = xi_val * xi_val
+    if np.isscalar(xi_val):
+        if xi2 > 1e30:
+            return 2.0 / xi_val if abs(xi_val) > 0 else 0.0
+        return 2.0 * xi_val / (1.0 + xi2)
+    # array case
+    result = np.zeros_like(np.asarray(xi_val, dtype=float))
+    big = xi2 > 1e30
+    small = ~big
+    if np.any(small):
+        result[small] = 2.0 * xi_val[small] / (1.0 + xi2[small])
+    if np.any(big):
+        result[big] = np.where(xi_val[big] != 0, 2.0 / xi_val[big], 0.0)
+    return result
 
 
 # ── LogOsc Thermostat ──
@@ -236,7 +249,11 @@ class NHCTailThermostat:
                 idx = base + j
                 if j == 1:
                     # Driven by effective KE of primary log-osc variable
-                    eff_ke = 2.0 * self.Qs[k] * xi[base]**2 / (1.0 + xi[base]**2)
+                    xi_b2 = xi[base]**2
+                    if xi_b2 > 1e30:
+                        eff_ke = 2.0 * self.Qs[k]
+                    else:
+                        eff_ke = 2.0 * self.Qs[k] * xi_b2 / (1.0 + xi_b2)
                     Gj = eff_ke - self.kT
                 else:
                     Gj = self.Q_chain * xi[idx - 1]**2 - self.kT
