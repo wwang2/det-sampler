@@ -240,44 +240,56 @@ def run_anisotropic_gaussian_experiment():
         ("Champion", champion_Qs),
     ]
 
+    # Use 3 seeds for robustness — single seed results are noisy
+    rng_seeds = [42, 123, 777]
     results = {}
     q_samples_dict = {}
-    rng_seed = 42
 
     for name, Qs in configs:
-        print(f"\n--- Running: {name} Q={Qs} ---")
-        dynamics = MultiScaleLogOsc(dim=d, Qs=Qs, kT=kT)
-        q0 = np.zeros(d)
-        state = dynamics.initial_state(q0, rng=np.random.default_rng(rng_seed))
-        integrator = MultiScaleLogOscVerlet(dynamics, pot, dt=dt, kT=kT)
+        print(f"\n--- Running: {name} Q={[f'{q:.4f}' for q in Qs]} (3 seeds) ---")
+        seed_scores = []
+        last_q_arr = None
 
-        all_q = []
-        burnin = n_force_evals // 10
-        n_evals_done = 0
+        for seed in rng_seeds:
+            dynamics = MultiScaleLogOsc(dim=d, Qs=Qs, kT=kT)
+            q0 = np.zeros(d)
+            state = dynamics.initial_state(q0, rng=np.random.default_rng(seed))
+            integrator = MultiScaleLogOscVerlet(dynamics, pot, dt=dt, kT=kT)
 
-        while state.n_force_evals < n_force_evals:
-            state = integrator.step(state)
-            if np.any(np.isnan(state.q)):
-                print(f"  NaN detected at step {state.n_force_evals}!")
-                break
-            if state.n_force_evals >= burnin:
-                all_q.append(state.q.copy())
+            all_q = []
+            burnin = n_force_evals // 10
 
-        q_arr = np.array(all_q)
-        print(f"  Collected {len(q_arr)} samples after burn-in")
+            while state.n_force_evals < n_force_evals:
+                state = integrator.step(state)
+                if np.any(np.isnan(state.q)):
+                    print(f"  NaN at step {state.n_force_evals} (seed={seed})!")
+                    break
+                if state.n_force_evals >= burnin:
+                    all_q.append(state.q.copy())
 
-        if len(q_arr) > 100:
-            score_dict = ergodicity_score_gaussian(q_arr, pot.kappa, kT=kT)
-            results[name] = score_dict
-            q_samples_dict[name] = q_arr
-            print(f"  Ergodicity score: {score_dict['score']:.4f}")
-            print(f"  Mean KS stat:     {score_dict['mean_ks']:.4f}")
-            print(f"  Max KS stat:      {score_dict['max_ks']:.4f}")
-            print(f"  Mean var error:   {score_dict['mean_var_err']:.4f}")
+            q_arr = np.array(all_q)
+            if len(q_arr) > 100:
+                score_dict = ergodicity_score_gaussian(q_arr, pot.kappa, kT=kT)
+                seed_scores.append(score_dict['score'])
+                last_q_arr = q_arr
+                print(f"    seed={seed}: score={score_dict['score']:.4f}  "
+                      f"max_ks={score_dict['max_ks']:.4f}  mean_var_err={score_dict['mean_var_err']:.4f}")
+
+        if seed_scores:
+            mean_score = float(np.mean(seed_scores))
+            std_score = float(np.std(seed_scores))
+            results[name] = {
+                'score': mean_score,
+                'score_std': std_score,
+                'seed_scores': seed_scores,
+            }
+            if last_q_arr is not None:
+                q_samples_dict[name] = last_q_arr
+            print(f"  Mean score: {mean_score:.4f} +/- {std_score:.4f}")
         else:
             results[name] = {'score': 0.0, 'error': 'insufficient samples'}
 
-    # Compute improvement ratio
+    # Compute improvement ratio using mean scores
     score_derived = results.get("Derived (theory)", {}).get('score', 0.0)
     score_champion = results.get("Champion", {}).get('score', 0.0)
     if score_champion > 0:
@@ -288,8 +300,8 @@ def run_anisotropic_gaussian_experiment():
     print(f"\n{'='*60}")
     print("RESULTS SUMMARY")
     print(f"{'='*60}")
-    print(f"Derived score:   {score_derived:.4f}")
-    print(f"Champion score:  {score_champion:.4f}")
+    print(f"Derived mean score:  {score_derived:.4f} +/- {results.get('Derived (theory)', {}).get('score_std', 0):.4f}")
+    print(f"Champion mean score: {score_champion:.4f} +/- {results.get('Champion', {}).get('score_std', 0):.4f}")
     print(f"Improvement ratio: {improvement_ratio:.4f}")
     if improvement_ratio > 1.0:
         print(">>> Theory-derived Qs BEAT the champion! <<<")

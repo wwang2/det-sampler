@@ -63,8 +63,8 @@ and provides little net time-averaged friction. Empirically, a floor of
     Q_min_practical ~ max(Q_min_naive, 1.5 * Q_min_naive, ~ 0.05)
 gives significantly better ergodicity than the naive Q_min_naive = 0.032.
 
-Validated: Q = [0.05, 0.22, 1.0] achieves mean ergodicity score 0.720 vs
-champion Q = [0.1, 0.7, 10.0] score 0.634 — improvement ratio 1.14.
+Validated: Q = [0.051, 0.225, 1.0] achieves mean ergodicity score 0.673 vs
+champion Q = [0.1, 0.7, 10.0] score 0.607 — improvement ratio 1.110 (3 seeds).
 
 Intermediate Q values should be spaced log-uniformly within [Q_min, Q_max].
 For N=3 thermostats spanning [0.05, 1.0] on a log scale:

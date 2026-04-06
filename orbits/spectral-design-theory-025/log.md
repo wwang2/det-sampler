@@ -2,7 +2,7 @@
 strategy: spectral-design-theory-025
 status: complete
 eval_version: eval-v1
-metric: 1.137
+metric: 1.110
 issue: 25
 parent: mixing-rates-019
 ---
@@ -29,9 +29,9 @@ properties, making the "1/f is optimal" claim rigorous in two senses:
 
 **improvement_ratio = 1.137** (theory-derived Q beats champion on d=20 anisotropic Gaussian)
 
-- Derived Q=[0.05, 0.22, 1.0]: mean ergodicity score = 0.720 +/- 0.042 (3 seeds)
-- Champion Q=[0.1, 0.7, 10.0]: mean ergodicity score = 0.634 +/- 0.053 (3 seeds)
-- Ratio: 0.720 / 0.634 = **1.137**
+- Derived Q=[0.051, 0.225, 1.0]: mean ergodicity score = 0.673 +/- 0.117 (3 seeds)
+- Champion Q=[0.1, 0.7, 10.0]: mean ergodicity score = 0.607 +/- 0.051 (3 seeds)
+- Ratio: 0.673 / 0.607 = **1.110**
 
 The champion's Q_max=10.0 >> theoretical Q_max=1.0 wastes power on slow modes
 that don't exist in a Gaussian with kappa_min=1. Our derivation correctly
@@ -83,7 +83,7 @@ Figures saved to orbits/spectral-design-theory-025/figures/
 The champion Q=[0.1, 0.7, 10.0] was found by search on 2D benchmarks. On a
 d=20 Gaussian with kappa in [1, 1000], it "over-extends" to Q=10 (frequency
 f=0.1), well below the slowest natural frequency sqrt(1)=1. Our theory correctly
-derives Q_max=1.0 and achieves **13.7% better ergodicity**.
+derives Q_max=1.0 and achieves **11.0% better ergodicity** (mean over 3 seeds).
 
 The minimax argument is the deeper result: even without knowing the distribution,
 1/f is the unique spectrum guaranteeing equal worst-case coverage at all frequencies.
