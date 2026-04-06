@@ -1,0 +1,33 @@
+{
+  "anisotropic_gaussian": {
+    "Derived (theory)": {
+      "score": 0.5169061612157833,
+      "mean_ks": 0.11348387406389997,
+      "max_ks": 0.3790571129200678,
+      "mean_var_err": 0.5696995890244534,
+      "ks_component": 0.6209428870799323,
+      "var_component": 0.4303004109755466
+    },
+    "Champion": {
+      "score": 0.5691535030150031,
+      "mean_ks": 0.09010657128195142,
+      "max_ks": 0.4165627128844394,
+      "mean_var_err": 0.44478058370978335,
+      "ks_component": 0.5834372871155606,
+      "var_component": 0.5552194162902166
+    }
+  },
+  "improvement_ratio": 0.9082016687546548,
+  "double_well": {
+    "Derived (Kramers)": {
+      "kl": 0.032638468762138224,
+      "n_crossings": 683,
+      "n_samples": 450001
+    },
+    "Champion": {
+      "kl": 0.027608093397872544,
+      "n_crossings": 670,
+      "n_samples": 450001
+    }
+  }
+}
