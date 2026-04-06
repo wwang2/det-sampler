@@ -1,0 +1,1136 @@
+[
+  {
+    "kappa_ratio": 3.0,
+    "N": 1,
+    "seed": 42,
+    "tau_int": 27.621791174246773,
+    "ergodicity_score": 0.2,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 1,
+    "seed": 123,
+    "tau_int": 10.66442615211058,
+    "ergodicity_score": 0.2,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 1,
+    "seed": 7,
+    "tau_int": 2.0247627113168285,
+    "ergodicity_score": 0.0,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 2,
+    "seed": 42,
+    "tau_int": 25.46958658020987,
+    "ergodicity_score": 0.0,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 2,
+    "seed": 123,
+    "tau_int": 56.034248503155325,
+    "ergodicity_score": 0.0,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 2,
+    "seed": 7,
+    "tau_int": 8.158612998556626,
+    "ergodicity_score": 0.0,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 3,
+    "seed": 42,
+    "tau_int": 16.548224724270025,
+    "ergodicity_score": 0.0,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 3,
+    "seed": 123,
+    "tau_int": 24.31725384841414,
+    "ergodicity_score": 0.2,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 3,
+    "seed": 7,
+    "tau_int": 6.81690244632009,
+    "ergodicity_score": 0.0,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 4,
+    "seed": 42,
+    "tau_int": 11.812983466505402,
+    "ergodicity_score": 0.2,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 4,
+    "seed": 123,
+    "tau_int": 283.6657644138028,
+    "ergodicity_score": 0.2,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 4,
+    "seed": 7,
+    "tau_int": 10.725478922221658,
+    "ergodicity_score": 0.2,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 5,
+    "seed": 42,
+    "tau_int": 16.753250179347706,
+    "ergodicity_score": 0.2,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 5,
+    "seed": 123,
+    "tau_int": 16.436444586857856,
+    "ergodicity_score": 0.2,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 5,
+    "seed": 7,
+    "tau_int": 10.228068931304495,
+    "ergodicity_score": 0.2,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 6,
+    "seed": 42,
+    "tau_int": 11.59886211993194,
+    "ergodicity_score": 0.2,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 6,
+    "seed": 123,
+    "tau_int": 7.76347598625474,
+    "ergodicity_score": 0.2,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 6,
+    "seed": 7,
+    "tau_int": 195.2595536466636,
+    "ergodicity_score": 0.2,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 8,
+    "seed": 42,
+    "tau_int": 8.364406428127673,
+    "ergodicity_score": 0.0,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 8,
+    "seed": 123,
+    "tau_int": 8.35115609945112,
+    "ergodicity_score": 0.2,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 3.0,
+    "N": 8,
+    "seed": 7,
+    "tau_int": 7.967325020183783,
+    "ergodicity_score": 0.2,
+    "n_samples": 10000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 1,
+    "seed": 42,
+    "tau_int": 3.935008845914363,
+    "ergodicity_score": 0.2,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 1,
+    "seed": 123,
+    "tau_int": 72.2929398096399,
+    "ergodicity_score": 0.0,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 1,
+    "seed": 7,
+    "tau_int": 39.54057031392627,
+    "ergodicity_score": 0.0,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 2,
+    "seed": 42,
+    "tau_int": 12.71466468350572,
+    "ergodicity_score": 0.2,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 2,
+    "seed": 123,
+    "tau_int": 10.41732238483302,
+    "ergodicity_score": 0.2,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 2,
+    "seed": 7,
+    "tau_int": 6.751827508762129,
+    "ergodicity_score": 0.2,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 3,
+    "seed": 42,
+    "tau_int": 3.6412355827991676,
+    "ergodicity_score": 0.2,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 3,
+    "seed": 123,
+    "tau_int": 11.952413799589475,
+    "ergodicity_score": 0.2,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 3,
+    "seed": 7,
+    "tau_int": 88.10771792018994,
+    "ergodicity_score": 0.0,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 4,
+    "seed": 42,
+    "tau_int": 237.11697199520276,
+    "ergodicity_score": 0.0,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 4,
+    "seed": 123,
+    "tau_int": 136.37691393136942,
+    "ergodicity_score": 0.0,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 4,
+    "seed": 7,
+    "tau_int": 224.8035398721921,
+    "ergodicity_score": 0.0,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 5,
+    "seed": 42,
+    "tau_int": 9.268495237861922,
+    "ergodicity_score": 0.0,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 5,
+    "seed": 123,
+    "tau_int": 69.4783886010752,
+    "ergodicity_score": 0.0,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 5,
+    "seed": 7,
+    "tau_int": 12.687572319058052,
+    "ergodicity_score": 0.0,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 6,
+    "seed": 42,
+    "tau_int": 158.5329977685088,
+    "ergodicity_score": 0.0,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 6,
+    "seed": 123,
+    "tau_int": 14.79376565865941,
+    "ergodicity_score": 0.0,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 6,
+    "seed": 7,
+    "tau_int": 4.383614262629864,
+    "ergodicity_score": 0.0,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 8,
+    "seed": 42,
+    "tau_int": 10.712946895510598,
+    "ergodicity_score": 0.0,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 8,
+    "seed": 123,
+    "tau_int": 20.956297317942262,
+    "ergodicity_score": 0.0,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 10.0,
+    "N": 8,
+    "seed": 7,
+    "tau_int": 11.909159138512702,
+    "ergodicity_score": 0.0,
+    "n_samples": 6451,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 1,
+    "seed": 42,
+    "tau_int": 22.80998202193338,
+    "ergodicity_score": 0.0,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 1,
+    "seed": 123,
+    "tau_int": 2.0130614050096387,
+    "ergodicity_score": 0.0,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 1,
+    "seed": 7,
+    "tau_int": 26.19561645502222,
+    "ergodicity_score": 0.0,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 2,
+    "seed": 42,
+    "tau_int": 1.4518528049948676,
+    "ergodicity_score": 0.4,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 2,
+    "seed": 123,
+    "tau_int": 1.4982240208222504,
+    "ergodicity_score": 0.2,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 2,
+    "seed": 7,
+    "tau_int": 1.5282013599421176,
+    "ergodicity_score": 0.4,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 3,
+    "seed": 42,
+    "tau_int": 9.337535158418921,
+    "ergodicity_score": 0.2,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 3,
+    "seed": 123,
+    "tau_int": 4.254500843217369,
+    "ergodicity_score": 0.2,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 3,
+    "seed": 7,
+    "tau_int": 1.3327433501535402,
+    "ergodicity_score": 0.0,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 4,
+    "seed": 42,
+    "tau_int": 13.501492491335025,
+    "ergodicity_score": 0.0,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 4,
+    "seed": 123,
+    "tau_int": 9.993435632959464,
+    "ergodicity_score": 0.0,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 4,
+    "seed": 7,
+    "tau_int": 8.653270324802838,
+    "ergodicity_score": 0.0,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 5,
+    "seed": 42,
+    "tau_int": 6.092797454085618,
+    "ergodicity_score": 0.2,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 5,
+    "seed": 123,
+    "tau_int": 9.466646698987626,
+    "ergodicity_score": 0.0,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 5,
+    "seed": 7,
+    "tau_int": 5.498838196776765,
+    "ergodicity_score": 0.2,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 6,
+    "seed": 42,
+    "tau_int": 45.613531768398694,
+    "ergodicity_score": 0.2,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 6,
+    "seed": 123,
+    "tau_int": 74.43625650018959,
+    "ergodicity_score": 0.2,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 6,
+    "seed": 7,
+    "tau_int": 5.1693511819629325,
+    "ergodicity_score": 0.2,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 8,
+    "seed": 42,
+    "tau_int": 86.70345681625744,
+    "ergodicity_score": 0.0,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 8,
+    "seed": 123,
+    "tau_int": 126.66390158029768,
+    "ergodicity_score": 0.2,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 30.0,
+    "N": 8,
+    "seed": 7,
+    "tau_int": 61.62170015536585,
+    "ergodicity_score": 0.0,
+    "n_samples": 3703,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 1,
+    "seed": 42,
+    "tau_int": 5.852676377718664,
+    "ergodicity_score": 0.2,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 1,
+    "seed": 123,
+    "tau_int": 28.344837642623236,
+    "ergodicity_score": 0.2,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 1,
+    "seed": 7,
+    "tau_int": 9.718708105673981,
+    "ergodicity_score": 0.2,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 2,
+    "seed": 42,
+    "tau_int": 7.966213316538266,
+    "ergodicity_score": 0.2,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 2,
+    "seed": 123,
+    "tau_int": 5.9425872473091,
+    "ergodicity_score": 0.4,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 2,
+    "seed": 7,
+    "tau_int": 5.619440890791273,
+    "ergodicity_score": 0.4,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 3,
+    "seed": 42,
+    "tau_int": 2.724129849594502,
+    "ergodicity_score": 0.4,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 3,
+    "seed": 123,
+    "tau_int": 2.661862160373198,
+    "ergodicity_score": 0.6,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 3,
+    "seed": 7,
+    "tau_int": 1.9047028382917452,
+    "ergodicity_score": 0.0,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 4,
+    "seed": 42,
+    "tau_int": 1.4880525085685368,
+    "ergodicity_score": 0.4,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 4,
+    "seed": 123,
+    "tau_int": 1.5331578874989098,
+    "ergodicity_score": 0.2,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 4,
+    "seed": 7,
+    "tau_int": 1.5831943307899494,
+    "ergodicity_score": 0.4,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 5,
+    "seed": 42,
+    "tau_int": 1.4812274773105236,
+    "ergodicity_score": 0.4,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 5,
+    "seed": 123,
+    "tau_int": 2.6075047458612484,
+    "ergodicity_score": 0.0,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 5,
+    "seed": 7,
+    "tau_int": 19.102342809475413,
+    "ergodicity_score": 0.4,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 6,
+    "seed": 42,
+    "tau_int": 3.110071873721324,
+    "ergodicity_score": 0.2,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 6,
+    "seed": 123,
+    "tau_int": 1.4985106822299814,
+    "ergodicity_score": 0.4,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 6,
+    "seed": 7,
+    "tau_int": 1.4236344380080848,
+    "ergodicity_score": 0.2,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 8,
+    "seed": 42,
+    "tau_int": 4.767551363856637,
+    "ergodicity_score": 0.2,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 8,
+    "seed": 123,
+    "tau_int": 62.71441800596189,
+    "ergodicity_score": 0.2,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 100.0,
+    "N": 8,
+    "seed": 7,
+    "tau_int": 1.3257216571066153,
+    "ergodicity_score": 0.0,
+    "n_samples": 2000,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 1,
+    "seed": 42,
+    "tau_int": 1.0798932290528398,
+    "ergodicity_score": 0.4,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 1,
+    "seed": 123,
+    "tau_int": 1.1696510625052936,
+    "ergodicity_score": 0.4,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 1,
+    "seed": 7,
+    "tau_int": 1.14381445453501,
+    "ergodicity_score": 0.6,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 2,
+    "seed": 42,
+    "tau_int": 6.438586077846194,
+    "ergodicity_score": 0.8,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 2,
+    "seed": 123,
+    "tau_int": 20.167379641080128,
+    "ergodicity_score": 0.8,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 2,
+    "seed": 7,
+    "tau_int": 6.164519149334239,
+    "ergodicity_score": 0.2,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 3,
+    "seed": 42,
+    "tau_int": 1.7068433121390965,
+    "ergodicity_score": 0.2,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 3,
+    "seed": 123,
+    "tau_int": 16.710768988781005,
+    "ergodicity_score": 0.0,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 3,
+    "seed": 7,
+    "tau_int": 1.1090016428279657,
+    "ergodicity_score": 0.6,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 4,
+    "seed": 42,
+    "tau_int": 2.3335315019530314,
+    "ergodicity_score": 0.0,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 4,
+    "seed": 123,
+    "tau_int": 1.1848176523657241,
+    "ergodicity_score": 0.4,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 4,
+    "seed": 7,
+    "tau_int": 1.120440564164695,
+    "ergodicity_score": 0.4,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 5,
+    "seed": 42,
+    "tau_int": 1.1799010117590023,
+    "ergodicity_score": 0.4,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 5,
+    "seed": 123,
+    "tau_int": 12.266710475674058,
+    "ergodicity_score": 0.4,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 5,
+    "seed": 7,
+    "tau_int": 10.008458259746716,
+    "ergodicity_score": 0.4,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 6,
+    "seed": 42,
+    "tau_int": 15.052140769055887,
+    "ergodicity_score": 0.4,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 6,
+    "seed": 123,
+    "tau_int": 1.376345638800158,
+    "ergodicity_score": 0.4,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 6,
+    "seed": 7,
+    "tau_int": 1.4272014887131024,
+    "ergodicity_score": 0.4,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 8,
+    "seed": 42,
+    "tau_int": 2.508172676301188,
+    "ergodicity_score": 0.0,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 8,
+    "seed": 123,
+    "tau_int": 1.6905356255175619,
+    "ergodicity_score": 0.6,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 300.0,
+    "N": 8,
+    "seed": 7,
+    "tau_int": 3.6642347431909115,
+    "ergodicity_score": 0.2,
+    "n_samples": 1156,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 1,
+    "seed": 42,
+    "tau_int": 1.7322850081469767,
+    "ergodicity_score": 0.4,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 1,
+    "seed": 123,
+    "tau_int": 2.291266882833581,
+    "ergodicity_score": 0.2,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 1,
+    "seed": 7,
+    "tau_int": 1.7322132740292264,
+    "ergodicity_score": 0.0,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 2,
+    "seed": 42,
+    "tau_int": 1.8987997981063134,
+    "ergodicity_score": 0.4,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 2,
+    "seed": 123,
+    "tau_int": 1.7529802664226721,
+    "ergodicity_score": 0.4,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 2,
+    "seed": 7,
+    "tau_int": 25.770355342395703,
+    "ergodicity_score": 0.2,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 3,
+    "seed": 42,
+    "tau_int": 1.8138459027939073,
+    "ergodicity_score": 0.2,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 3,
+    "seed": 123,
+    "tau_int": 1.5831269885493262,
+    "ergodicity_score": 0.4,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 3,
+    "seed": 7,
+    "tau_int": 1.6491232722778584,
+    "ergodicity_score": 0.2,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 4,
+    "seed": 42,
+    "tau_int": 1.7268355918633596,
+    "ergodicity_score": 0.6,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 4,
+    "seed": 123,
+    "tau_int": 1.5370181306691588,
+    "ergodicity_score": 0.6,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 4,
+    "seed": 7,
+    "tau_int": 2.557242787916411,
+    "ergodicity_score": 0.6,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 5,
+    "seed": 42,
+    "tau_int": 4.798876132730521,
+    "ergodicity_score": 0.6,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 5,
+    "seed": 123,
+    "tau_int": 1.955884351714498,
+    "ergodicity_score": 0.2,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 5,
+    "seed": 7,
+    "tau_int": 9.61130051309564,
+    "ergodicity_score": 0.0,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 6,
+    "seed": 42,
+    "tau_int": 2.5436027402365458,
+    "ergodicity_score": 0.2,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 6,
+    "seed": 123,
+    "tau_int": 2.862077877848597,
+    "ergodicity_score": 0.6,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 6,
+    "seed": 7,
+    "tau_int": 1.6735813130080945,
+    "ergodicity_score": 0.4,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 8,
+    "seed": 42,
+    "tau_int": 2.0311739917001326,
+    "ergodicity_score": 0.4,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 8,
+    "seed": 123,
+    "tau_int": 6.008282796996136,
+    "ergodicity_score": 0.4,
+    "n_samples": 632,
+    "diverged": false
+  },
+  {
+    "kappa_ratio": 1000.0,
+    "N": 8,
+    "seed": 7,
+    "tau_int": 2.121364694810013,
+    "ergodicity_score": 0.2,
+    "n_samples": 632,
+    "diverged": false
+  }
+]
