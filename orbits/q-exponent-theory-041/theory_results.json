@@ -1,0 +1,15 @@
+{
+  "key_finding": "The -1.55 exponent is a crossover artifact. Regime A (omega<0.73): resonance, exponent=-2.00. Regime B (omega>0.73): driven, exponent=-0.26. Single power-law fit across both gives -1.55.",
+  "formulas": {
+    "gprime_avg": "(2Q-1)/(Q+1)",
+    "omega_xi_sq": "(2Q-1)/(Q(Q+1))",
+    "omega_xi_max": 0.7320508075688773,
+    "Q_star": 1.3660254037844386
+  },
+  "regime_A_exponent": -1.998181898554129,
+  "regime_B_exponent": -0.2615260575529482,
+  "full_range_exponent": -1.549646816203294,
+  "resonance_exponent": -2.119574997269346,
+  "empirical_exponent": -1.55,
+  "nhc_exponent": -2.0
+}
