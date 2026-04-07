@@ -1,8 +1,8 @@
 ---
 strategy: mode-hopping-benchmark
-status: in-progress
+status: complete
 eval_version: eval-v1
-metric: 1.17
+metric: 9.82
 issue: 42
 parents:
   - q-optimization-035
@@ -125,3 +125,32 @@ the advantage exists (high-D, well-separated modes) and where it does not
 - Orbit #035: q-optimization, first head-to-head NHC comparison
 - Orbit #040: Q-omega mapping, corrected Q formula
 - Orbit #039: NHC optimization on GMM
+
+## Iteration 2: 10D Confirmation (10 seeds, 7 NHC Q values)
+
+Confirmed 10D result with 10 seeds and expanded NHC Q_ref sweep {0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 10.0}:
+
+- **Multi-scale (N=5):** 133.6 +/- 152.1 crossings, 34% modes visited
+- **Best NHC (Q=0.1):** 13.6 +/- 19.9 crossings, 36% modes visited
+- **Ratio: 9.82x** (up from 7.19x with more seeds and wider NHC sweep)
+
+NHC performance across Q values at 10D:
+| Q_ref | Crossings | Modes visited |
+|-------|-----------|---------------|
+| 0.01  | 4.7       | 18%           |
+| 0.05  | 9.0       | 32%           |
+| 0.1   | 13.6      | 36%           |
+| 0.5   | 5.6       | 30%           |
+| 1.0   | 1.0       | 28%           |
+| 5.0   | 4.9       | 28%           |
+| 10.0  | 1.8       | 28%           |
+
+NHC is uniformly poor across all Q values. Our multi-scale thermostat
+achieves ~10x more crossings regardless of which NHC Q is chosen.
+This is not a tuning issue -- NHC fundamentally struggles with mode
+hopping in 10D because a single Q scale cannot cover the range of
+frequencies needed for barrier crossing.
+
+High variance (std > mean) for our method: some seeds find efficient
+transition paths while others get trapped. This suggests the exploration
+is genuinely chaotic, not systematic.
