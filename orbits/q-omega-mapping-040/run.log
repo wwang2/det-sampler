@@ -1,0 +1,10 @@
+Part 1+4: 1500 runs
+  log-osc done 716.2s
+  nhc done 616.3s
+Part 3: 1296 runs
+  done 1268.5s
+
+Fit log-osc: Q_opt = 2.342 * omega^-1.550  R2=0.906
+Fit NHC:     Q_opt = 0.953 * omega^-2.008  R2=1.000
+Total: 43.4 min
+Figures saved to /Users/wujiewang/code/det-sampler/.worktrees/q-omega-mapping-040/orbits/q-omega-mapping-040/figures
