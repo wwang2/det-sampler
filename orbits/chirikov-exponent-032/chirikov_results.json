@@ -1,0 +1,50 @@
+{
+  "0.1": {
+    "crit_ratio": 1.6822628499369965,
+    "kappa": 0.1,
+    "Q1": 1.0,
+    "threshold": 0.05
+  },
+  "0.3": {
+    "crit_ratio": 1.4376693121552553,
+    "kappa": 0.3,
+    "Q1": 1.0,
+    "threshold": 0.05
+  },
+  "1.0": {
+    "crit_ratio": null,
+    "kappa": 1.0,
+    "Q1": 1.0,
+    "threshold": 0.05
+  },
+  "3.0": {
+    "crit_ratio": 8.095475669977374,
+    "kappa": 3.0,
+    "Q1": 1.0,
+    "threshold": 0.05
+  },
+  "10.0": {
+    "crit_ratio": 1.6822628499369965,
+    "kappa": 10.0,
+    "Q1": 1.0,
+    "threshold": 0.05
+  },
+  "30.0": {
+    "crit_ratio": 1.05,
+    "kappa": 30.0,
+    "Q1": 1.0,
+    "threshold": 0.05
+  },
+  "100.0": {
+    "crit_ratio": 1.05,
+    "kappa": 100.0,
+    "Q1": 1.0,
+    "threshold": 0.05
+  },
+  "300.0": {
+    "crit_ratio": 1.05,
+    "kappa": 300.0,
+    "Q1": 1.0,
+    "threshold": 0.05
+  }
+}
