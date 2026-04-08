@@ -1,0 +1,77 @@
+Targets: ['1d_harmonic', '2d_double_well', '2d_gmm', '5d_aniso_gauss', '10d_aniso_gauss', '10d_gmm']
+Methods: LogOsc-3, LogOsc-5, NHC-3, NHC-5, Langevin, NH-1
+
+======================================================================
+TUNING PHASE
+======================================================================
+  Total tuning tasks: 360
+  Tuning completed in 231.9s (360 results)
+  1d_harmonic          LogOsc-3   -> best=auto score=5.15
+  1d_harmonic          LogOsc-5   -> best=auto score=23.70
+  1d_harmonic          NHC-3      -> best=Q=1.0 score=5.88
+  1d_harmonic          NHC-5      -> best=Q=1.0 score=5.68
+  1d_harmonic          Langevin   -> best=g=1.0 score=17.87
+  1d_harmonic          NH-1       -> best=Q=1.0 score=2.36
+  2d_double_well       LogOsc-3   -> best=auto score=19.58
+  2d_double_well       LogOsc-5   -> best=auto score=18.98
+  2d_double_well       NHC-3      -> best=Q=0.1 score=19.21
+  2d_double_well       NHC-5      -> best=Q=0.1 score=21.89
+  2d_double_well       Langevin   -> best=g=1.0 score=35.15
+  2d_double_well       NH-1       -> best=Q=0.1 score=13.68
+  2d_gmm               LogOsc-3   -> best=auto score=4.33
+  2d_gmm               LogOsc-5   -> best=auto score=4.33
+  2d_gmm               NHC-3      -> best=Q=10.0 score=10.67
+  2d_gmm               NHC-5      -> best=Q=0.1 score=11.33
+  2d_gmm               Langevin   -> best=g=0.1 score=11.00
+  2d_gmm               NH-1       -> best=Q=10.0 score=71.33
+  5d_aniso_gauss       LogOsc-3   -> best=auto score=534.30
+  5d_aniso_gauss       LogOsc-5   -> best=auto score=328.31
+  5d_aniso_gauss       NHC-3      -> best=Q=10.0 score=16.61
+  5d_aniso_gauss       NHC-5      -> best=Q=31.6 score=8.12
+  5d_aniso_gauss       Langevin   -> best=g=3.0 score=54.64
+  5d_aniso_gauss       NH-1       -> best=Q=10.0 score=5.63
+  10d_aniso_gauss      LogOsc-3   -> best=auto score=761.40
+  10d_aniso_gauss      LogOsc-5   -> best=auto score=422.98
+  10d_aniso_gauss      NHC-3      -> best=Q=100.0 score=5.33
+  10d_aniso_gauss      NHC-5      -> best=Q=31.6 score=5.93
+  10d_aniso_gauss      Langevin   -> best=g=3.0 score=49.96
+  10d_aniso_gauss      NH-1       -> best=Q=100.0 score=4.94
+  10d_gmm              LogOsc-3   -> best=auto score=0.00
+  10d_gmm              LogOsc-5   -> best=auto score=12.00
+  10d_gmm              NHC-3      -> best=Q=1.0 score=7.00
+  10d_gmm              NHC-5      -> best=Q=0.1 score=0.00
+  10d_gmm              Langevin   -> best=g=0.1 score=8.67
+  10d_gmm              NH-1       -> best=Q=0.1 score=231.67
+
+======================================================================
+FINAL PHASE
+======================================================================
+  Total final tasks: 360
+  Final completed in 910.4s (360 results)
+
+Saved results to /Users/wujiewang/code/det-sampler/.worktrees/comprehensive-bench-044/orbits/comprehensive-bench-044/results.json
+
+Generating figures...
+  Saved fig_1d_harmonic_metrics.png
+  Saved fig_2d_double_well_metrics.png
+  Saved fig_2d_gmm_metrics.png
+  Saved fig_5d_aniso_gauss_metrics.png
+  Saved fig_10d_aniso_gauss_metrics.png
+  Saved fig_10d_gmm_metrics.png
+  Saved fig_2d_double_well_density.png
+  Saved fig_2d_gmm_density.png
+  Saved fig_summary_table.png
+
+Total elapsed: 1145.0s
+
+==========================================================================================
+SUMMARY TABLE
+==========================================================================================
+Target                  LogOsc-3    LogOsc-5       NHC-3       NHC-5    Langevin        NH-1
+--------------------------------------------------------------------------------------------
+1d_harmonic                7.7         7.8         5.6         5.8        16.2         3.4  
+2d_double_well            20.0        16.8        21.3        20.4        33.6        14.2  
+2d_gmm                      35          60          30          37          27         182  
+5d_aniso_gauss          1557.3       559.7       740.5         8.6        59.9         8.5  
+10d_aniso_gauss         1241.5       635.6         6.1         6.3        54.4         5.5  
+10d_gmm                      7         310          21          32          22         570  

@@ -13,7 +13,7 @@
       },
       "LogOsc-5": {
         "best_param": "auto",
-        "tau_mean": 7.769290276775313,
+        "tau_mean": 7.769290276775314,
         "tau_std": 9.13880100788054,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
@@ -24,7 +24,7 @@
       "NHC-3": {
         "best_param": "Q=1.0",
         "tau_mean": 5.5990039222032,
-        "tau_std": 0.10629521526321274,
+        "tau_std": 0.10629521526321319,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
         "frac_modes_mean": 1.0,
@@ -34,7 +34,7 @@
       "NHC-5": {
         "best_param": "Q=1.0",
         "tau_mean": 5.821832643374723,
-        "tau_std": 0.15211797770169005,
+        "tau_std": 0.15211797770169055,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
         "frac_modes_mean": 1.0,
@@ -44,7 +44,7 @@
       "Langevin": {
         "best_param": "g=1.0",
         "tau_mean": 16.24235945541029,
-        "tau_std": 0.7372332242416408,
+        "tau_std": 0.737233224241641,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
         "frac_modes_mean": 1.0,
@@ -53,7 +53,7 @@
       },
       "NH-1": {
         "best_param": "Q=1.0",
-        "tau_mean": 3.424664790891687,
+        "tau_mean": 3.4246647908916863,
         "tau_std": 1.0507467150591618,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
@@ -66,7 +66,7 @@
       "LogOsc-3": {
         "best_param": "auto",
         "tau_mean": 19.963863948630028,
-        "tau_std": 1.9620930110716104,
+        "tau_std": 1.9620930110716086,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
         "frac_modes_mean": 1.0,
@@ -76,7 +76,7 @@
       "LogOsc-5": {
         "best_param": "auto",
         "tau_mean": 16.758274383912475,
-        "tau_std": 0.6669323186819385,
+        "tau_std": 0.6669323186819384,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
         "frac_modes_mean": 1.0,
@@ -86,7 +86,7 @@
       "NHC-3": {
         "best_param": "Q=0.1",
         "tau_mean": 21.346790679923647,
-        "tau_std": 0.5457003491424173,
+        "tau_std": 0.5457003491424182,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
         "frac_modes_mean": 1.0,
@@ -96,7 +96,7 @@
       "NHC-5": {
         "best_param": "Q=0.1",
         "tau_mean": 20.38263138953635,
-        "tau_std": 0.9267160747778834,
+        "tau_std": 0.9267160747778843,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
         "frac_modes_mean": 1.0,
@@ -106,7 +106,7 @@
       "Langevin": {
         "best_param": "g=1.0",
         "tau_mean": 33.62360635272779,
-        "tau_std": 1.7692856152203251,
+        "tau_std": 1.7692856152203262,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
         "frac_modes_mean": 1.0,
@@ -115,8 +115,8 @@
       },
       "NH-1": {
         "best_param": "Q=0.1",
-        "tau_mean": 14.206477326835131,
-        "tau_std": 0.41898661332448994,
+        "tau_mean": 14.206477326835127,
+        "tau_std": 0.4189866133244902,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
         "frac_modes_mean": 1.0,
@@ -127,7 +127,7 @@
     "2d_gmm": {
       "LogOsc-3": {
         "best_param": "auto",
-        "tau_mean": 5198.382417121436,
+        "tau_mean": 5198.3824171214355,
         "tau_std": 4945.617560825238,
         "mode_crossings_mean": 35.4,
         "mode_crossings_std": 27.568822970885066,
@@ -158,7 +158,7 @@
       "NHC-5": {
         "best_param": "Q=0.1",
         "tau_mean": 5129.547524476796,
-        "tau_std": 2696.972527963418,
+        "tau_std": 2696.9725279634176,
         "mode_crossings_mean": 36.8,
         "mode_crossings_std": 5.2306787322488075,
         "frac_modes_mean": 1.0,
@@ -167,8 +167,8 @@
       },
       "Langevin": {
         "best_param": "g=0.1",
-        "tau_mean": 8653.636455376816,
-        "tau_std": 3630.5153341173445,
+        "tau_mean": 8653.636455376818,
+        "tau_std": 3630.5153341173454,
         "mode_crossings_mean": 27.3,
         "mode_crossings_std": 7.280796659706959,
         "frac_modes_mean": 0.96,
@@ -177,8 +177,8 @@
       },
       "NH-1": {
         "best_param": "Q=10.0",
-        "tau_mean": 2083.9571004558857,
-        "tau_std": 2574.156955319755,
+        "tau_mean": 2083.9571004558848,
+        "tau_std": 2574.1569553197546,
         "mode_crossings_mean": 182.1,
         "mode_crossings_std": 217.56307131496374,
         "frac_modes_mean": 0.6,
@@ -190,7 +190,7 @@
       "LogOsc-3": {
         "best_param": "auto",
         "tau_mean": 1557.3322115356534,
-        "tau_std": 642.2150904832416,
+        "tau_std": 642.2150904832417,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
         "frac_modes_mean": 1.0,
@@ -210,7 +210,7 @@
       "NHC-3": {
         "best_param": "Q=10.0",
         "tau_mean": 740.5164523125964,
-        "tau_std": 747.4268804855283,
+        "tau_std": 747.4268804855284,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
         "frac_modes_mean": 1.0,
@@ -220,7 +220,7 @@
       "NHC-5": {
         "best_param": "Q=31.6",
         "tau_mean": 8.61026829326313,
-        "tau_std": 0.15442459097484937,
+        "tau_std": 0.15442459097484926,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
         "frac_modes_mean": 1.0,
@@ -230,7 +230,7 @@
       "Langevin": {
         "best_param": "g=3.0",
         "tau_mean": 59.860556588597646,
-        "tau_std": 7.212713699141364,
+        "tau_std": 7.212713699141365,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
         "frac_modes_mean": 1.0,
@@ -239,8 +239,8 @@
       },
       "NH-1": {
         "best_param": "Q=10.0",
-        "tau_mean": 8.508229650953998,
-        "tau_std": 6.420361632954677,
+        "tau_mean": 8.508229650953997,
+        "tau_std": 6.420361632954675,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
         "frac_modes_mean": 1.0,
@@ -252,7 +252,7 @@
       "LogOsc-3": {
         "best_param": "auto",
         "tau_mean": 1241.4851277386479,
-        "tau_std": 251.09850723499156,
+        "tau_std": 251.0985072349915,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
         "frac_modes_mean": 1.0,
@@ -271,8 +271,8 @@
       },
       "NHC-3": {
         "best_param": "Q=100.0",
-        "tau_mean": 6.149196675507875,
-        "tau_std": 0.3931668850760792,
+        "tau_mean": 6.149196675507876,
+        "tau_std": 0.39316688507607966,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
         "frac_modes_mean": 1.0,
@@ -281,8 +281,8 @@
       },
       "NHC-5": {
         "best_param": "Q=31.6",
-        "tau_mean": 6.2754424837665335,
-        "tau_std": 0.23897075755312797,
+        "tau_mean": 6.275442483766533,
+        "tau_std": 0.23897075755312835,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
         "frac_modes_mean": 1.0,
@@ -292,7 +292,7 @@
       "Langevin": {
         "best_param": "g=3.0",
         "tau_mean": 54.36804192800927,
-        "tau_std": 3.4090391423448354,
+        "tau_std": 3.4090391423448367,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
         "frac_modes_mean": 1.0,
@@ -302,7 +302,7 @@
       "NH-1": {
         "best_param": "Q=100.0",
         "tau_mean": 5.512342253370117,
-        "tau_std": 0.6253366426890796,
+        "tau_std": 0.6253366426890797,
         "mode_crossings_mean": 0.0,
         "mode_crossings_std": 0.0,
         "frac_modes_mean": 1.0,
@@ -354,7 +354,7 @@
       "Langevin": {
         "best_param": "g=0.1",
         "tau_mean": 6147.820465131377,
-        "tau_std": 3231.797361926297,
+        "tau_std": 3231.7973619262966,
         "mode_crossings_mean": 22.3,
         "mode_crossings_std": 11.95031380341119,
         "frac_modes_mean": 0.76,
@@ -364,7 +364,7 @@
       "NH-1": {
         "best_param": "Q=0.1",
         "tau_mean": 221.34799611479326,
-        "tau_std": 283.9680230765459,
+        "tau_std": 283.96802307654593,
         "mode_crossings_mean": 570.2,
         "mode_crossings_std": 521.5890719714131,
         "frac_modes_mean": 0.44000000000000006,
@@ -376,15 +376,15 @@
   "best_params": {
     "1d_harmonic|LogOsc-3": {
       "label": "auto",
-      "tuning_score": 5.147317333415022
+      "tuning_score": 5.147317333415021
     },
     "1d_harmonic|LogOsc-5": {
       "label": "auto",
-      "tuning_score": 23.698373252817394
+      "tuning_score": 23.6983732528174
     },
     "1d_harmonic|NHC-3": {
       "label": "Q=1.0",
-      "tuning_score": 5.881500222115657
+      "tuning_score": 5.881500222115659
     },
     "1d_harmonic|NHC-5": {
       "label": "Q=1.0",
@@ -392,11 +392,11 @@
     },
     "1d_harmonic|Langevin": {
       "label": "g=1.0",
-      "tuning_score": 17.871455068768142
+      "tuning_score": 17.87145506876814
     },
     "1d_harmonic|NH-1": {
       "label": "Q=1.0",
-      "tuning_score": 2.3573833820913124
+      "tuning_score": 2.3573833820913133
     },
     "2d_double_well|LogOsc-3": {
       "label": "auto",
@@ -456,23 +456,23 @@
     },
     "5d_aniso_gauss|NHC-3": {
       "label": "Q=10.0",
-      "tuning_score": 16.606460934922207
+      "tuning_score": 16.60646093492221
     },
     "5d_aniso_gauss|NHC-5": {
       "label": "Q=31.6",
-      "tuning_score": 8.119180188239202
+      "tuning_score": 8.1191801882392
     },
     "5d_aniso_gauss|Langevin": {
       "label": "g=3.0",
-      "tuning_score": 54.63694013852063
+      "tuning_score": 54.636940138520636
     },
     "5d_aniso_gauss|NH-1": {
       "label": "Q=10.0",
-      "tuning_score": 5.629623719488112
+      "tuning_score": 5.629623719488111
     },
     "10d_aniso_gauss|LogOsc-3": {
       "label": "auto",
-      "tuning_score": 761.4025098302519
+      "tuning_score": 761.4025098302518
     },
     "10d_aniso_gauss|LogOsc-5": {
       "label": "auto",
@@ -488,7 +488,7 @@
     },
     "10d_aniso_gauss|Langevin": {
       "label": "g=3.0",
-      "tuning_score": 49.95939032954663
+      "tuning_score": 49.959390329546615
     },
     "10d_aniso_gauss|NH-1": {
       "label": "Q=100.0",
@@ -519,5 +519,5 @@
       "tuning_score": 231.66666666666666
     }
   },
-  "elapsed_sec": 882.6715672016144
+  "elapsed_sec": 1142.3532621860504
 }
