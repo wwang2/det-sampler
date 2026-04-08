@@ -1,8 +1,8 @@
 ---
 strategy: per-mode-coupling-048
-status: in-progress
+status: complete
 eval_version: eval-v1
-metric: tau_int=5.0 (per-mode) vs 4.1 (shared-K)
+metric: tau_int=4.6 (per-mode best) vs 4.2 (shared-K)
 issue: 48
 parents:
   - orbit/paper-experiments-047
@@ -91,11 +91,42 @@ Sort dimensions by kappa, split into N=5 contiguous groups of 2 dimensions each.
 
 4. Per-mode coupling may be more useful when there are more dimensions per group (so partial K averages are more distinct) or when the potential has stronger cross-dimension coupling.
 
+5. **Q-spread is far more effective than per-mode grouping for decorrelation.** Using spread Q values (100, 200, 400, 700, 1000) with N=5 groups achieves mean |rho|=0.010, better than massive N=10 with constant Q (mean |rho|=0.166). Different Q values make xi_i oscillate at different frequencies, breaking correlation even when the drive signals are similar.
+
+6. **Massive thermostatting (N=dim) degrades mixing.** With only 1 dimension per thermostat, the partial kinetic energy K_i = p_d^2 is a chi-squared(1) random variable -- extremely noisy. The thermostat cannot distinguish genuine heating from statistical fluctuations, leading to erratic friction and 3-4x worse tau_int.
+
+7. **The shared-K "bug" is actually a feature.** Perfect xi correlation means all N thermostats act as a single effective thermostat with amplified friction g_eff = N * tanh(S(t)/Q). This is equivalent to a single tanh thermostat with a very small effective Q, giving strong, coherent temperature control.
+
+## Result (Iteration 2): Massive thermostatting + Q spread
+
+Tested whether N=dim (one thermostat per dimension) gives better results. The answer is NO for mixing, YES for independence.
+
+### Exp 5: Massive thermostatting + Q spread (10D aniso, kappa=100)
+
+| Config | N | Mean |rho| | Max |rho| | tau_int (median) | IQR |
+|--------|---|-----------|-----------|-----------------|-----|
+| Massive, Q=100 | 10 | 0.166 | 0.967 | 12.0 | 14.5 |
+| Massive, Q-spread | 10 | 0.015 | 0.328 | 17.1 | 25.5 |
+| Groups N=5, Q=100 | 5 | 0.123 | 0.415 | 4.6 | 0.9 |
+| Groups N=5, Q-spread | 5 | 0.010 | 0.050 | 4.6 | 0.9 |
+| Shared-K (baseline) | 5 | 1.000 | 1.000 | 4.2 | - |
+
+Key findings from iteration 2:
+
+1. **Q-spread is the dominant factor for independence.** Groups N=5 with Q-spread achieves mean |rho|=0.010 -- near-perfect independence with only 5 thermostats.
+
+2. **Massive thermostatting (N=dim) HURTS mixing.** tau_int=12-17 vs 4.2-4.6 for N=5. With only 1 dimension per thermostat, each partial K is extremely noisy (chi-squared with 1 dof), creating erratic friction that impedes coherent momentum transfer.
+
+3. **Independence and mixing are orthogonal.** The best independence (Q-spread, mean |rho|=0.010) gives the same mixing as constant Q (tau=4.6). The best mixing (shared-K, tau=4.2) has perfect correlation. Breaking correlation neither helps nor hurts mixing when N is appropriate.
+
+4. **N=5 groups is the sweet spot.** Enough dimensions per group (2) to stabilize partial K, enough thermostats to provide multi-scale friction.
+
 ## Seeds
 
 - Exp 1: seed=42 (default)
 - Exp 3: seeds 1000-1004
 - Exp 4: seed=42
+- Exp 5: seeds 2000-2004, correlation: seed=42
 
 ## Prior Art & Novelty
 

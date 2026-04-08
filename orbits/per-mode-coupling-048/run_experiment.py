@@ -86,9 +86,7 @@ def sim_permode(pot, Qs, groups, dt, nsteps, kT=1.0, seed=0, rec=1,
     Each xi_i is driven by K_i = sum_{d in groups[i]} p_d^2, not the full K.
     Friction on p_d comes only from xi_{i(d)} where d in groups[i(d)].
 
-    Splitting (BAOAB-like, symmetric):
-      xi half-step -> p friction half-step -> p kick half -> q full ->
-      p kick half -> p friction half-step -> xi half-step
+    Vectorized: uses dim_to_therm map + np.bincount to avoid Python loops.
     """
     rng = np.random.default_rng(seed)
     dim = pot.dim
@@ -104,16 +102,13 @@ def sim_permode(pot, Qs, groups, dt, nsteps, kT=1.0, seed=0, rec=1,
     h = 0.5 * dt
     gU = pot.gradient(q)
 
-    # Build reverse map: dim_d -> thermostat index
+    # Build reverse map: dim_d -> thermostat index (vectorized)
     dim_to_therm = np.zeros(dim, dtype=int)
-    grp_sizes = np.zeros(N, dtype=int)
+    grp_sizes = np.zeros(N, dtype=float)
     for i, grp in enumerate(groups):
         for d in grp:
             dim_to_therm[d] = i
         grp_sizes[i] = len(grp)
-
-    # Convert groups to arrays for vectorized access
-    grp_arrays = [np.array(g, dtype=int) for g in groups]
 
     # Recording
     nr = nsteps // rec
@@ -123,17 +118,15 @@ def sim_permode(pot, Qs, groups, dt, nsteps, kT=1.0, seed=0, rec=1,
     ri = 0
 
     for s in range(nsteps):
-        # Half-step xi: each thermostat sees its group's kinetic energy
-        for i in range(N):
-            grp = grp_arrays[i]
-            K_grp = float(np.sum(p[grp] ** 2))
-            xi[i] += h * (K_grp - grp_sizes[i] * kT) / Qs[i]
+        # Half-step xi: vectorized via bincount
+        p2 = p * p
+        K_per_therm = np.bincount(dim_to_therm, weights=p2, minlength=N)
+        xi += h * (K_per_therm - grp_sizes * kT) / Qs
 
-        # Half-step p: friction from assigned thermostat
-        for i in range(N):
-            grp = grp_arrays[i]
-            gval = g_tanh(xi[i])
-            p[grp] *= np.clip(np.exp(-gval * h), 1e-10, 1e10)
+        # Half-step p: friction from assigned thermostat (vectorized)
+        g_xi = np.tanh(xi)  # (N,)
+        friction_per_dim = g_xi[dim_to_therm]  # (dim,) -- each dim gets its thermostat's g
+        p *= np.clip(np.exp(-friction_per_dim * h), 1e-10, 1e10)
 
         # Half-step p: kick from potential
         p -= h * gU
@@ -147,17 +140,15 @@ def sim_permode(pot, Qs, groups, dt, nsteps, kT=1.0, seed=0, rec=1,
         # Half-step p: kick from potential
         p -= h * gU
 
-        # Half-step p: friction (symmetric)
-        for i in range(N):
-            grp = grp_arrays[i]
-            gval = g_tanh(xi[i])
-            p[grp] *= np.clip(np.exp(-gval * h), 1e-10, 1e10)
+        # Half-step p: friction (symmetric, vectorized)
+        g_xi = np.tanh(xi)
+        friction_per_dim = g_xi[dim_to_therm]
+        p *= np.clip(np.exp(-friction_per_dim * h), 1e-10, 1e10)
 
         # Half-step xi
-        for i in range(N):
-            grp = grp_arrays[i]
-            K_grp = float(np.sum(p[grp] ** 2))
-            xi[i] += h * (K_grp - grp_sizes[i] * kT) / Qs[i]
+        p2 = p * p
+        K_per_therm = np.bincount(dim_to_therm, weights=p2, minlength=N)
+        xi += h * (K_per_therm - grp_sizes * kT) / Qs
 
         # Record
         if (s + 1) % rec == 0 and ri < nr:
@@ -727,11 +718,174 @@ def plot_all(exp1, exp2, exp3, exp4):
 
 
 # ============================================================================
+# Experiment 5: Massive thermostatting (N=dim) + spread Q
+# ============================================================================
+
+def run_exp5():
+    """Test whether N=dim (one thermostat per dimension) gives better independence
+    and mixing than N=5 groups. Also test spread Q values."""
+    print("\n=== Experiment 5: Massive thermostatting + Q spread ===")
+    dim = 10
+    dt = 0.01
+    nsteps = 500_000
+    kT = 1.0
+    n_seeds = 5
+    seeds = list(range(2000, 2000 + n_seeds))
+    rec = 10
+
+    pot = AnisotropicGaussian(dim, kappa=100.0)
+    sorted_dims = np.argsort(pot.kappas)
+
+    # Configurations to test
+    configs = {}
+
+    # 1. Massive: N=10, each xi gets exactly 1 dimension, Q=100
+    groups_massive = [[int(sorted_dims[d])] for d in range(dim)]
+    configs['massive_Q100'] = {
+        'groups': groups_massive, 'Qs': np.full(dim, 100.0), 'N': dim
+    }
+
+    # 2. Massive with spread Q: Q_i = 100 * kappa_i^0.5 (proportional to mode freq)
+    kappas_sorted = pot.kappas[sorted_dims]
+    Qs_spread = 100.0 * np.sqrt(kappas_sorted / kappas_sorted[0])
+    configs['massive_Qspread'] = {
+        'groups': groups_massive, 'Qs': Qs_spread, 'N': dim
+    }
+
+    # 3. Groups of 2 (N=5), Q=100 (repeat from exp1 for comparison)
+    groups_5 = [[int(sorted_dims[d]) for d in grp] for grp in make_groups(dim, 5)]
+    configs['groups5_Q100'] = {
+        'groups': groups_5, 'Qs': np.full(5, 100.0), 'N': 5
+    }
+
+    # 4. Groups of 2 (N=5), spread Q
+    Qs_5_spread = np.array([100, 200, 400, 700, 1000], dtype=float)
+    configs['groups5_Qspread'] = {
+        'groups': groups_5, 'Qs': Qs_5_spread, 'N': 5
+    }
+
+    results = {}
+
+    # For each config, measure: xi correlation + tau_int
+    for cname, cfg in configs.items():
+        print(f"\n  Config: {cname} (N={cfg['N']})")
+
+        # Xi correlation (single seed, long run)
+        res = sim_permode(pot, cfg['Qs'], cfg['groups'], dt, nsteps, seed=42,
+                          rec=1, record_xi=True)
+        xi_trace = res['xi']
+        corr = np.corrcoef(xi_trace.T)
+        N = cfg['N']
+        mask = ~np.eye(N, dtype=bool)
+        offdiag = corr[mask]
+        mean_abs_rho = float(np.mean(np.abs(offdiag)))
+        max_abs_rho = float(np.max(np.abs(offdiag)))
+        print(f"    xi corr: mean|rho|={mean_abs_rho:.4f}, max|rho|={max_abs_rho:.4f}")
+
+        # tau_int (multiple seeds)
+        taus = []
+        for s in seeds:
+            res_t = sim_permode(pot, cfg['Qs'], cfg['groups'], dt, 400_000,
+                                seed=s, rec=rec)
+            tau = tau_int_q2(res_t['qs'], pot.kappas)
+            taus.append(tau)
+        med_tau = float(np.median(taus))
+        iqr_tau = float(np.percentile(taus, 75) - np.percentile(taus, 25))
+        print(f"    tau_int: {med_tau:.1f} (IQR={iqr_tau:.1f})")
+
+        results[cname] = {
+            'mean_abs_rho': mean_abs_rho,
+            'max_abs_rho': max_abs_rho,
+            'tau_int_median': med_tau,
+            'tau_int_iqr': iqr_tau,
+            'taus': taus,
+            'corr': corr.tolist(),
+        }
+
+    # Also add shared-K baseline
+    print(f"\n  Baseline: shared_K (N=5)")
+    taus_sk = []
+    for s in seeds:
+        qs_sk = sim_shared(pot, np.full(5, 100.0), dt, 400_000, seed=s, rec=rec)['qs']
+        taus_sk.append(tau_int_q2(qs_sk, pot.kappas))
+    med_sk = float(np.median(taus_sk))
+    print(f"    tau_int: {med_sk:.1f}")
+    results['shared_K'] = {'tau_int_median': med_sk, 'taus': taus_sk,
+                           'mean_abs_rho': 1.0, 'max_abs_rho': 1.0}
+
+    return results
+
+
+def plot_exp5(exp5):
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
+    plt.rcParams.update({
+        'font.size': 12, 'axes.labelsize': 14, 'axes.titlesize': 14,
+        'xtick.labelsize': 11, 'ytick.labelsize': 11,
+    })
+
+    configs = ['massive_Q100', 'massive_Qspread', 'groups5_Q100', 'groups5_Qspread', 'shared_K']
+    labels = ['Massive\nN=10, Q=100', 'Massive\nN=10, Q-spread', 'Groups\nN=5, Q=100',
+              'Groups\nN=5, Q-spread', 'Shared-K\nN=5, Q=100']
+    colors = ['#2ca02c', '#98df8a', '#1f77b4', '#aec7e8', '#d62728']
+
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5.5))
+
+    # Panel (a): mean |rho| off-diagonal
+    ax = axes[0]
+    rhos = [exp5[c]['mean_abs_rho'] for c in configs]
+    x = np.arange(len(configs))
+    bars = ax.bar(x, rhos, color=colors, edgecolor='black', linewidth=0.5, alpha=0.85)
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, fontsize=9)
+    ax.set_ylabel(r'Mean $|\rho(\xi_i, \xi_j)|$ off-diagonal')
+    ax.set_title(r'(a) $\xi$ independence (lower = better)')
+    for i, r in enumerate(rhos):
+        ax.text(i, r + 0.02, f'{r:.3f}', ha='center', va='bottom', fontsize=10)
+    ax.set_ylim(0, 1.15)
+
+    # Panel (b): tau_int
+    ax = axes[1]
+    taus = [exp5[c]['tau_int_median'] for c in configs]
+    iqrs = [exp5[c].get('tau_int_iqr', 0) for c in configs]
+    bars = ax.bar(x, taus, yerr=iqrs, color=colors, capsize=4,
+                  edgecolor='black', linewidth=0.5, alpha=0.85)
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, fontsize=9)
+    ax.set_ylabel(r'$\tau_{\mathrm{int}}(q^2)$')
+    ax.set_title(r'(b) Mixing (lower = better)')
+    ax.set_ylim(0, None)
+    for i, (t, iq) in enumerate(zip(taus, iqrs)):
+        ax.text(i, t + iq + 0.5, f'{t:.1f}', ha='center', va='bottom', fontsize=10)
+
+    fig.suptitle('Massive thermostatting vs grouped per-mode coupling (10D aniso, kappa=100)', fontsize=13, y=1.02)
+    plt.tight_layout()
+    fig.savefig(os.path.join(FIG_DIR, 'fig5_massive_vs_grouped.png'), dpi=150, bbox_inches='tight')
+    plt.close(fig)
+    print("  Saved fig5_massive_vs_grouped.png")
+
+
+# ============================================================================
 # Main
 # ============================================================================
 
 if __name__ == '__main__':
+    import sys
     t_total = time.time()
+
+    # Check if running only exp5
+    if len(sys.argv) > 1 and sys.argv[1] == 'exp5':
+        exp5 = run_exp5()
+        with open(os.path.join(OUT_DIR, 'results_exp5.json'), 'w') as f:
+            json.dump({k: {kk: vv for kk, vv in v.items() if kk != 'corr'}
+                       for k, v in exp5.items()}, f, indent=2,
+                      default=lambda x: x.tolist() if isinstance(x, np.ndarray) else x)
+        print("\n=== Plotting Exp 5 ===")
+        plot_exp5(exp5)
+        print(f"\nExp 5 runtime: {time.time()-t_total:.1f}s")
+        sys.exit(0)
 
     # Exp 1
     exp1 = run_exp1()
@@ -747,9 +901,6 @@ if __name__ == '__main__':
     exp3 = run_exp3()
 
     # Exp 4 (uses traces from exp 1)
-    # Re-run exp1 briefly for xi+q2 traces since we need them
-    # Actually we already have q2 from exp1, but need xi again
-    # Let's re-run a shorter version
     print("\n  Re-running per-mode + shared for cross-correlation...")
     dim = 10; N = 5; dt = 0.01; nsteps = 200_000
     pot = AnisotropicGaussian(dim, kappa=100.0)
@@ -763,7 +914,10 @@ if __name__ == '__main__':
                          record_xi=True, record_q2=True)
 
     exp4 = run_exp4(res_pm2['xi'], res_pm2['q2'], res_sk2['xi'], res_sk2['q2'], groups_sorted)
-    exp1['groups'] = groups_sorted  # store for plotting
+    exp1['groups'] = groups_sorted
+
+    # Exp 5: massive + spread Q
+    exp5 = run_exp5()
 
     # Save results
     results = {
@@ -771,6 +925,8 @@ if __name__ == '__main__':
         'exp2_psd': {k: v for k, v in exp2.items() if not isinstance(v, np.ndarray)},
         'exp3_mixing': {k: v for k, v in exp3.items()},
         'exp4_crosscorr': exp4,
+        'exp5_massive': {k: {kk: vv for kk, vv in v.items() if kk != 'corr'}
+                         for k, v in exp5.items()},
     }
 
     with open(os.path.join(OUT_DIR, 'results.json'), 'w') as f:
@@ -780,5 +936,6 @@ if __name__ == '__main__':
     # Plot
     print("\n=== Plotting ===")
     plot_all(exp1, exp2, exp3, exp4)
+    plot_exp5(exp5)
 
     print(f"\nTotal runtime: {time.time()-t_total:.1f}s")
