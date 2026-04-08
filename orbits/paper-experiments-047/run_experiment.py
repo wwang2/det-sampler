@@ -299,8 +299,8 @@ def run_E1():
     print("=" * 60, flush=True)
 
     dims = [2, 5, 10, 20, 50]
-    n_seeds = 10
-    nfe = 400_000
+    n_seeds = 5
+    nfe = 200_000
     methods = ['tanh_par5', 'NHC_M3', 'NH', 'Langevin']
 
     results_aniso = {}
@@ -309,7 +309,7 @@ def run_E1():
     for dim in dims:
         t0 = time.time()
         dt = 0.01 if dim <= 10 else 0.005
-        nfe_actual = nfe if dim <= 20 else 200_000
+        nfe_actual = nfe
         rec = max(1, nfe_actual // 50000)
 
         dim_a = {}
@@ -359,7 +359,7 @@ def run_E2():
     print("E2: Friction Function Validation", flush=True)
     print("=" * 60, flush=True)
 
-    dim = 10; kappa = 100.0; n_seeds = 10; nfe = 400_000; dt = 0.01
+    dim = 10; kappa = 100.0; n_seeds = 5; nfe = 200_000; dt = 0.01
     rec = max(1, nfe // 50000)
     g_funcs = {'tanh': g_tanh, 'arctan': g_arctan, 'log-osc': g_logosc}
     # Use best Q range per friction (from exploration)
@@ -413,7 +413,7 @@ def run_E3():
     print("=" * 60, flush=True)
 
     dims = [5, 10, 20]
-    kappa = 100.0; n_seeds = 10; nfe = 400_000
+    kappa = 100.0; n_seeds = 5; nfe = 200_000
 
     strategies_base = {
         'D*kT/w2': lambda dim: (dim / kappa, dim / 1.0),

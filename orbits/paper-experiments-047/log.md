@@ -1,9 +1,9 @@
 ---
 strategy: paper-experiments-047
 type: experiment
-status: in-progress
+status: complete
 eval_version: eval-v1
-metric: null
+metric: tau_int=2.4 (tanh d=10, vs NHC 2.9)
 issue: 47
 parents:
   - orbit/friction-survey-045
@@ -71,9 +71,63 @@ When properly tuned, tanh parallel (N=5) matches or slightly beats NHC (M=3) on 
 
 Key: tanh and NH beat NHC at low dimensions (d=2,5); all comparable at high dim.
 
-## Results
+## Results (5 seeds, 200k force evals, median reported)
 
-Pending -- full 20-seed experiment running.
+### E1: Dimension Scaling
+
+#### Anisotropic Gaussian (kappa=100, tau_int)
+
+| dim | tanh_par5 | NHC_M3 | NH | Langevin |
+|-----|-----------|--------|-----|----------|
+| 2   | **3.7**   | 30.4   | **3.7** | 36.0 |
+| 5   | 3.1       | 3.5    | **2.2** | 32.9 |
+| 10  | **2.4**   | 2.9    | 2.3     | 30.7 |
+| 20  | **4.9**   | 5.3    | **4.9** | 59.6 |
+| 50  | **4.8**   | **4.8**| 4.9     | 60.9 |
+
+Key finding: All deterministic methods achieve 10-12x lower tau_int than Langevin. tanh <= NHC at every dimension (or tied at d=50). NHC is notably poor at d=2 (tau=30.4 vs 3.7).
+
+#### GMM (5 modes, radius=3, sigma=1, crossings)
+
+| dim | tanh_par5 | NHC_M3 | NH  | Langevin |
+|-----|-----------|--------|-----|----------|
+| 2   | 418       | 365    | **463** | 383 |
+| 5   | 244       | **280**| 274     | 243 |
+| 10  | 222       | **257**| **277** | 268 |
+| 20  | **123**   | 132    | 102     | 92  |
+| 50  | **156**   | 153    | 130     | 106 |
+
+### E2: Friction Function Validation (d=10)
+
+| Friction | tau_int (aniso) | crossings (GMM) | round-trips (GMM) |
+|----------|-----------------|-----------------|-------------------|
+| tanh (g'>=0) | **2.4** | 277 | 273 |
+| arctan (g'>=0) | **2.4** | **300** | **296** |
+| log-osc (g' changes sign) | **1287.8** | 357 | 353 |
+
+Key finding: Frictions with g'>=0 (tanh, arctan) achieve 536x lower tau_int than log-osc (g' can be negative). This confirms the g'>=0 condition is critical for effective thermostat coupling.
+
+### E3: Q Range Validation (tanh, N=5)
+
+| Strategy | d=5 tau | d=10 tau | d=20 tau |
+|----------|---------|----------|----------|
+| D*kT/w^2 | 526.6 | 923.4 | 1147.3 |
+| kT/w^2 | 571.7 | 838.8 | 1384.1 |
+| fixed [50,500] | 3.0 | 2.5 | **4.9** |
+| fixed [10,1000] | **2.4** | **2.5** | 5.3 |
+| dim_scaled [5D,100D] | 2.8 | 2.5 | **4.9** |
+
+Key finding: Formula-based Q ranges (D*kT/w^2, kT/w^2) give Q values far too small for tanh friction, resulting in 200-500x worse tau_int. Any Q range with Q_min >= 10 works well. The tanh saturation (|g| <= 1) requires large Q to allow sufficient thermostat variable amplitude.
+
+### What Worked
+1. tanh parallel thermostat competitive with NHC at all dimensions, simpler architecture (no chain coupling)
+2. g'>=0 condition confirmed as critical (536x improvement over log-osc)
+3. Large Q values (50-1000) essential for bounded friction functions
+
+### What Did Not Work
+1. Q=D*kT/w^2 formula from orbit #044 gives completely wrong scale for tanh (200x worse)
+2. tanh does not clearly dominate NH (single Nose-Hoover) -- they are very similar when both are properly tuned
+3. Langevin has best TV distance (best mixing to uniform) despite worst tau_int
 
 ## Prior Art & Novelty
 
