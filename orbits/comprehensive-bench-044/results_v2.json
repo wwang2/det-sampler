@@ -1,0 +1,91 @@
+{
+  "summary": {
+    "1d_harmonic": {
+      "LogOsc-3-tuned": {
+        "mean": 2.142361066937692,
+        "std": 0.3683936439441579,
+        "Q_center": 0.01
+      },
+      "LogOsc-5-tuned": {
+        "mean": 3.203045287692248,
+        "std": 0.7992571209212449,
+        "Q_center": 10.0
+      }
+    },
+    "2d_double_well": {
+      "LogOsc-3-tuned": {
+        "mean": 1.4036647449414321,
+        "std": 0.2990095886791526,
+        "Q_center": 0.01
+      },
+      "LogOsc-5-tuned": {
+        "mean": 759.737518123203,
+        "std": 1532.4169523440314,
+        "Q_center": 0.01
+      }
+    },
+    "2d_gmm": {
+      "LogOsc-3-tuned": {
+        "mean": 194.4,
+        "std": 210.78719126170833,
+        "Q_center": 100.0
+      },
+      "LogOsc-5-tuned": {
+        "mean": 206.7,
+        "std": 198.3053453641631,
+        "Q_center": 100.0
+      }
+    },
+    "5d_aniso_gauss": {
+      "LogOsc-3-tuned": {
+        "mean": 61.28931846180153,
+        "std": 160.384951944729,
+        "Q_center": 31.6
+      },
+      "LogOsc-5-tuned": {
+        "mean": 9.476328828025288,
+        "std": 9.68868915153527,
+        "Q_center": 316.0
+      }
+    },
+    "10d_aniso_gauss": {
+      "LogOsc-3-tuned": {
+        "mean": 45.38570166469357,
+        "std": 119.51507429351142,
+        "Q_center": 316.0
+      },
+      "LogOsc-5-tuned": {
+        "mean": 5.547019671974967,
+        "std": 0.6406694239953776,
+        "Q_center": 316.0
+      }
+    },
+    "10d_gmm": {
+      "LogOsc-3-tuned": {
+        "mean": 359.1,
+        "std": 351.63857865712066,
+        "Q_center": 10.0
+      },
+      "LogOsc-5-tuned": {
+        "mean": 320.8,
+        "std": 287.30325441943745,
+        "Q_center": 31.6
+      }
+    }
+  },
+  "best_params": {
+    "1d_harmonic|N=3": 0.01,
+    "1d_harmonic|N=5": 10.0,
+    "2d_double_well|N=3": 0.01,
+    "2d_double_well|N=5": 0.01,
+    "2d_gmm|N=3": 100.0,
+    "2d_gmm|N=5": 100.0,
+    "5d_aniso_gauss|N=3": 31.6,
+    "5d_aniso_gauss|N=5": 316.0,
+    "10d_aniso_gauss|N=3": 316.0,
+    "10d_aniso_gauss|N=5": 316.0,
+    "10d_gmm|N=3": 10.0,
+    "10d_gmm|N=5": 31.6
+  },
+  "elapsed": 476.8915162086487
+}
