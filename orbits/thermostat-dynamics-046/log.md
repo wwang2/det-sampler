@@ -1,7 +1,7 @@
 ---
 strategy: thermostat-dynamics-046
 type: experiment
-status: in-progress
+status: complete
 eval_version: eval-v1
 metric: 1.029
 issue: 46
