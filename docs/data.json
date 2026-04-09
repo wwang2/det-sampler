@@ -156,8 +156,8 @@
       "eval_version": "eval-v1",
       "issue": 44,
       "parents": [
-        "orbit/q-optimization-035",
-        "orbit/q-omega-mapping-040"
+        "q-optimization-035",
+        "q-omega-mapping-040"
       ],
       "issue_comments": [
         {
@@ -204,7 +204,7 @@
       "eval_version": "eval-v1",
       "issue": 55,
       "parents": [
-        "orbit/learn-thermostat-050"
+        "learn-thermostat-050"
       ],
       "issue_comments": [
         {
@@ -379,7 +379,7 @@
       "eval_version": "eval-v1",
       "issue": 54,
       "parents": [
-        "orbit/gprime-ablation-052"
+        "gprime-ablation-052"
       ],
       "issue_comments": [
         {
@@ -419,7 +419,7 @@
       "eval_version": "eval-v1",
       "issue": 45,
       "parents": [
-        "orbit/q-exponent-theory-041"
+        "q-exponent-theory-041"
       ],
       "issue_comments": [
         {
@@ -491,7 +491,7 @@
       "eval_version": "eval-v1",
       "issue": 52,
       "parents": [
-        "orbit/friction-survey-045"
+        "friction-survey-045"
       ],
       "issue_comments": [
         {
@@ -654,7 +654,7 @@
       "eval_version": "eval-v1",
       "issue": 36,
       "parents": [
-        "orbit/optimal-spectrum-theory-034"
+        "optimal-spectrum-theory-034"
       ],
       "issue_comments": [
         {
@@ -967,7 +967,7 @@
       "eval_version": "eval-v1",
       "issue": 34,
       "parents": [
-        "orbit/figure-update-033"
+        "figure-update-033"
       ],
       "issue_comments": [
         {
@@ -1011,9 +1011,9 @@
       "eval_version": "eval-v1",
       "issue": 47,
       "parents": [
-        "orbit/friction-survey-045",
-        "orbit/comprehensive-bench-044",
-        "orbit/q-optimization-035"
+        "friction-survey-045",
+        "comprehensive-bench-044",
+        "q-optimization-035"
       ],
       "issue_comments": [
         {
@@ -1043,7 +1043,7 @@
       "eval_version": "eval-v1",
       "issue": 49,
       "parents": [
-        "orbit/paper-experiments-047"
+        "paper-experiments-047"
       ],
       "issue_comments": [
         {
@@ -1091,8 +1091,8 @@
       "eval_version": "eval-v1",
       "issue": 48,
       "parents": [
-        "orbit/paper-experiments-047",
-        "orbit/friction-survey-045"
+        "paper-experiments-047",
+        "friction-survey-045"
       ],
       "issue_comments": [
         {
@@ -1175,7 +1175,7 @@
       "eval_version": "eval-v1",
       "issue": 41,
       "parents": [
-        "orbit/q-omega-mapping-040"
+        "q-omega-mapping-040"
       ],
       "issue_comments": [
         {
@@ -1202,7 +1202,7 @@
       "eval_version": "eval-v1",
       "issue": 40,
       "parents": [
-        "orbit/nhc-sweep-039"
+        "nhc-sweep-039"
       ],
       "issue_comments": [
         {
@@ -1221,7 +1221,7 @@
       "eval_version": "custom-035",
       "issue": 35,
       "parents": [
-        "orbit/figure-update-033",
+        "figure-update-033",
         "alpha-spectrum-comparison-031"
       ],
       "issue_comments": [
@@ -1315,7 +1315,7 @@
       "eval_version": "eval-v1",
       "issue": 37,
       "parents": [
-        "orbit/optimal-spectrum-theory-034"
+        "optimal-spectrum-theory-034"
       ],
       "issue_comments": [
         {
@@ -1334,7 +1334,7 @@
       "eval_version": "eval-v1",
       "issue": 46,
       "parents": [
-        "orbit/q-omega-mapping-040"
+        "q-omega-mapping-040"
       ],
       "issue_comments": [
         {
