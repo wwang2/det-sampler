@@ -1,0 +1,824 @@
+{
+  "campaign": {
+    "title": "Novel Deterministic Thermostat Samplers for the Canonical Ensemble",
+    "problem": "Design and validate novel deterministic, continuous-time thermostat dynamics that sample the canonical (Boltzmann) distribution, with provable asymptotic correctness, clear thermostat interpretations, and diverse mixing/kinetic characteristics.",
+    "eval_version": "eval-v1",
+    "repo": "wwang2/det-sampler",
+    "best": {
+      "orbit": "multiscale-chain-009",
+      "metric": 0.054,
+      "metric_name": "GMM KL divergence",
+      "direction": "minimize"
+    },
+    "metric_description": "KL divergence (primary, minimize); ESS per force eval (secondary, maximize); autocorrelation time (secondary, minimize); ergodicity score on 1D HO (pass threshold 0.85)",
+    "eval_methodology": {
+      "version": "eval-v1",
+      "summary": "Fixed budget of 1M force evaluations. Stage 1: 2D double-well + 1D harmonic oscillator (gate). Stage 2: 5-mode GMM + Rosenbrock (moderate). Stage 3: Lennard-Jones clusters (full validation). KL via histogram binning (low-D) or k-NN estimator. Ergodicity score = geometric mean of KS-statistic component, variance-match component, and phase-space coverage on 20x20 grid."
+    },
+    "direction": "minimize KL divergence, minimize autocorrelation, maximize ESS/force-eval",
+    "baselines": {
+      "nose_hoover": {
+        "double_well_2d_kl": 0.037,
+        "harmonic_1d_kl": 0.077,
+        "ergodicity_score": 0.54,
+        "ergodic": false
+      },
+      "nose_hoover_chain_m3": {
+        "double_well_2d_kl": 0.029,
+        "harmonic_1d_kl": 0.002,
+        "ergodicity_score": 0.92,
+        "ergodic": true,
+        "ess_per_force_eval": 0.00431
+      }
+    },
+    "references": [
+      "Nose 1984, Hoover 1985 — original Nose-Hoover thermostat",
+      "Martyna et al. 1992 — Nose-Hoover Chains",
+      "Versteeg 2021 (NeurIPS) — ESH dynamics (arxiv:2111.02434)",
+      "Robnik et al. 2023 — MCLMC (arxiv:2303.18221)",
+      "Hoover-Holian — higher moment control",
+      "Patra-Bhattacharya 2014 — all-DOF thermostat",
+      "Bulgac-Kusnezov — deterministic spin thermostat"
+    ],
+    "timeline": [
+      {
+        "author": "wwang2",
+        "date": "2026-04-03T23:04:30Z",
+        "body": "Debate: Problem Statement Review. Consensus: SUPPORT (2/3). Agent 3's concern resolved by tiered analytical verification.",
+        "images": []
+      },
+      {
+        "author": "wwang2",
+        "date": "2026-04-04T00:30:37Z",
+        "body": "orbit/log-osc-001 complete: KL=0.010 (DW), ergodicity=0.944 (HO). Single thermostat variable with bounded friction breaks KAM tori more effectively than 3-chain NHC.",
+        "images": []
+      },
+      {
+        "author": "wwang2",
+        "date": "2026-04-04T01:18:37Z",
+        "body": "orbit/dual-bath-001 complete: KL=0.002 (HO), ergodicity=0.927, DW KL=0.030. NHC(2)+rotation beats NHC(M=3) on 3/4 metrics.",
+        "images": []
+      },
+      {
+        "author": "wwang2",
+        "date": "2026-04-04T01:33:02Z",
+        "body": "orbit/esh-thermo-001 complete: Ergodicity=0.949. SinhDrive-NHC. Caveat: O(beta^2) bias, not Tier 1 compliant.",
+        "images": []
+      },
+      {
+        "author": "wwang2",
+        "date": "2026-04-04T15:29:22Z",
+        "body": "Round 2 Results: log-osc-stage2-003 GMM KL=0.377; general-nonlinear-004 tested 11 friction functions, log-osc is the best.",
+        "images": []
+      },
+      {
+        "author": "wwang2",
+        "date": "2026-04-04T17:30:24Z",
+        "body": "NEW WINNER: orbit/log-osc-multiT-005. Multi-Scale Log-Osc at Qs=[0.1, 0.7, 10.0]. GMM KL = 0.148 -- 2.6x improvement.",
+        "images": []
+      },
+      {
+        "author": "wwang2",
+        "date": "2026-04-04T17:31:33Z",
+        "body": "orbit/log-osc-chain-002 complete: NEW DW KL RECORD. LOCR -- Log-Osc Chain (M=3, Q=1.0). DW KL=0.007.",
+        "images": []
+      },
+      {
+        "author": "wwang2",
+        "date": "2026-04-04T17:38:07Z",
+        "body": "orbit/momentum-log-osc-006 complete: Rippled thermostat potential. ANY V(xi) preserves canonical invariant measure. DW KL=0.009.",
+        "images": []
+      },
+      {
+        "author": "wwang2",
+        "date": "2026-04-04T22:59:41Z",
+        "body": "orbit/unified-theory-007 complete: Master Theorem formalized. ANY V(xi) preserves canonical measure -- machine-checked with SymPy. Lyapunov: Log-osc 10x more chaotic than NH.",
+        "images": []
+      },
+      {
+        "author": "wwang2",
+        "date": "2026-04-04T23:19:53Z",
+        "body": "orbit/high-dim-008 complete: Bounded friction advantage grows with dimension. LJ-13: LOCR 40% better than NHC.",
+        "images": []
+      },
+      {
+        "author": "wwang2",
+        "date": "2026-04-05T00:28:46Z",
+        "body": "NEW CHAMPION: orbit/multiscale-chain-009. Multi-Scale NHC-Tail dominates ALL benchmarks. GMM KL=0.054, HO Erg=0.932, DW KL=0.008.",
+        "images": []
+      },
+      {
+        "author": "wwang2",
+        "date": "2026-04-05T04:25:48Z",
+        "body": "Novelty Reassessment: Master Theorem not novel (Watanabe & Kobayashi 2007). Genuine contributions: log-osc form, multi-scale Q, NHC-Tail, Q>kT/2.",
+        "images": []
+      },
+      {
+        "author": "wwang2",
+        "date": "2026-04-05T14:22:59Z",
+        "body": "Orbit Updates: general-chains-015 complete (K_eff = xi * V'(xi) universal chain formula); hormander-ergo-017 complete (negative result: brackets don't distinguish frictions).",
+        "images": []
+      },
+      {
+        "author": "wwang2",
+        "date": "2026-04-05T14:27:54Z",
+        "body": "All 3 Theory Orbits Complete: general-chains-015 (HIGH novelty), spectral-1f-016 (VERY HIGH novelty: 1/f noise connection), hormander-ergo-017 (valuable negative result).",
+        "images": []
+      },
+      {
+        "author": "wwang2",
+        "date": "2026-04-06T03:35:20Z",
+        "body": "Leaderboard updated: multiscale-chain-009 (winner, GMM KL=0.054), log-osc-multiT-005 (winner, GMM KL=0.148), general-chains-015 (promising), spectral-1f-016 (promising).",
+        "images": []
+      }
+    ]
+  },
+  "orbits": [
+    {
+      "name": "alpha-spectrum-comparison-031",
+      "status": "promising",
+      "strategy": "alpha-spectrum-comparison-031",
+      "metric": 2.5448,
+      "eval_version": "eval-v1",
+      "issue": 31,
+      "parents": ["spectral-design-theory-025"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-07T16:55:00Z", "body": "P3 NOT CONFIRMED: alpha=1 (1/f) NOT the minimizer of effective tau. alpha=1.5 has lower raw tau. All runs non-ergodic at N=1.", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-07T16:56:00Z", "body": "Complete: 1/f (alpha=1) achieves lowest effective tau_int but alpha=1.5 has lower raw tau.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "brainstorm-interpretations-030",
+      "status": "promising",
+      "strategy": "brainstorm-interpretations-030",
+      "metric": 8.5,
+      "eval_version": "eval-v1",
+      "issue": 30,
+      "parents": ["spectral-design-theory-025"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-07T16:00:00Z", "body": "Brainstorm complete. Top insight: F1 (Q-range law) and F2 (1/f optimality) are the same statement -- log-uniform Q grid is Prony approximation to 1/t memory kernel.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "chirikov-exponent-032",
+      "status": "promising",
+      "strategy": "chirikov-exponent-032",
+      "metric": 8.0955,
+      "eval_version": "eval-v1",
+      "issue": 32,
+      "parents": ["ergodicity-phase-diagram-027"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-07T17:00:00Z", "body": "C(kappa) is NOT a simple power law. Resonance singularity at omega*Q1=1.", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-07T17:01:00Z", "body": "Non-monotonic behavior confirmed. Sub-resonance C decreases, exact resonance C>100, post-resonance C decreases again.", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-07T17:02:00Z", "body": "Verified: resonance singularity at kappa=1 confirmed NOT FOUND (C>100).", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "comprehensive-bench-044",
+      "status": "promising",
+      "strategy": "comprehensive-bench-044",
+      "metric": null,
+      "eval_version": "eval-v1",
+      "issue": 44,
+      "parents": ["q-optimization-035", "q-omega-mapping-040"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-08T02:01:42Z", "body": "Q-tuning is the dominant factor. Auto-Q formula fails catastrophically in high dimensions. With proper Q tuning, LogOsc-5 matches NH-1 and NHC-5.", "images": [], "agent": "orbit-agent"},
+        {"author": "wwang2", "date": "2026-04-08T02:02:22Z", "body": "Complete. Critical discovery: Q should scale with DIMENSION. Q_center ~ D*kT/omega^2.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "deep-geometry-012",
+      "status": "promising",
+      "strategy": "deep-geometry-012",
+      "metric": null,
+      "eval_version": "eval-v1",
+      "issue": 14,
+      "parents": ["unified-theory-007"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-05T12:00:00Z", "body": "5 complementary geometry visualizations: 3D phase space, friction geometry, torus comparison, Poincare sections, mechanism schematic.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "dual-bath-001",
+      "status": "promising",
+      "strategy": "dual-bath-001",
+      "metric": 0.0302,
+      "eval_version": "eval-v1",
+      "issue": 2,
+      "parents": [],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-04T01:17:25Z", "body": "Stage 1 complete. NHC(2)+rotation beats NHC(M=3) on 3/4 metrics with only 2 thermostat variables. HO KL=0.0021, Erg=0.927.", "images": [], "agent": "orbit-agent"}
+      ]
+    },
+    {
+      "name": "ergodicity-phase-diagram-027",
+      "status": "promising",
+      "strategy": "ergodicity-phase-diagram-027",
+      "metric": 1.56,
+      "eval_version": "eval-v1",
+      "issue": 27,
+      "parents": ["spectral-design-theory-025"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-07T15:00:00Z", "body": "Mapped ergodicity boundary. Critical Q2/Q1 > 1.56 at Q1=1.0, kappa=1.0. Transition is soft (gradual).", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-07T15:01:00Z", "body": "Complete: N=1 reliably non-ergodic. Critical ratio depends on kappa.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "esh-comparison-043",
+      "status": "promising",
+      "strategy": "esh-comparison",
+      "metric": 3.17,
+      "eval_version": "eval-v1",
+      "issue": 43,
+      "parents": ["q-optimization-035"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-07T23:38:59Z", "body": "Head-to-head ESH vs log-osc. ESH+resample ~3x faster on Gaussians, we 8x better on mode hopping.", "images": [], "agent": "orbit-agent"},
+        {"author": "wwang2", "date": "2026-04-07T23:39:27Z", "body": "Complete. ESH is microcanonical; ours is canonical by construction. Drop-in simplicity advantage.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "esh-duality-018",
+      "status": "promising",
+      "strategy": "esh-duality-018",
+      "metric": 1.0809,
+      "eval_version": "eval-v1",
+      "issue": 20,
+      "parents": ["spectral-1f-016"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-05T15:00:00Z", "body": "ESH is NOT a special case of our Master Theorem. Structurally distinct frameworks. New ESH-inspired thermostat V(xi) identified.", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-05T15:01:00Z", "body": "Complete: Three independent arguments show ESH cannot be embedded. Negative result but clarifying.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "esh-hybrid-026",
+      "status": "promising",
+      "strategy": "esh-hybrid-026",
+      "metric": 1.1047,
+      "eval_version": "eval-v1",
+      "issue": 26,
+      "parents": ["esh-duality-018"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-06T00:00:00Z", "body": "ESH hybrid fails -- 20x worse than champion. Naive combination has no simple stationary measure. div(F) != 0.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "esh-thermo-001",
+      "status": "promising",
+      "strategy": "esh-thermo-001",
+      "metric": 0.949,
+      "eval_version": "eval-v1",
+      "issue": 4,
+      "parents": [],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-04T01:31:41Z", "body": "SinhDrive-NHC achieves ergodicity=0.949 on 1D HO. Q=0.15, beta=0.05, M=3. Caveat: O(beta^2) bias, not Tier 1 compliant.", "images": [], "agent": "orbit-agent"}
+      ]
+    },
+    {
+      "name": "figure-update-033",
+      "status": "promising",
+      "strategy": "figure-update-033",
+      "metric": 3.0,
+      "eval_version": "eval-v1",
+      "issue": 33,
+      "parents": ["spectral-design-theory-025"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-07T17:30:00Z", "body": "3 publication figures generated: fig2_1f_optimality, fig3_resonance, fig4_n_scaling.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "forensic-qeff-054",
+      "status": "promising",
+      "strategy": "forensic-qeff-matching",
+      "metric": 0.77,
+      "eval_version": "eval-v1",
+      "issue": 54,
+      "parents": ["gprime-ablation-052"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-09T14:34:28Z", "body": "Q_eff = Q/g'(0) confirmed as operative parameter. At matched Q_eff=10, three friction functions give indistinguishable mixing.", "images": [], "agent": "orbit-agent"},
+        {"author": "wwang2", "date": "2026-04-09T14:38:20Z", "body": "verifier: METRIC VERIFIED BUT STATISTICALLY INSIGNIFICANT. Median values match but ratio 0.77 NOT significant (Mann-Whitney p>0.05).", "images": [], "agent": "verifier"},
+        {"author": "wwang2", "date": "2026-04-09T14:38:27Z", "body": "completion-review: Code vs claims mostly consistent. E1 correctly implements Q_eff matching.", "images": [], "agent": "completion-review"}
+      ]
+    },
+    {
+      "name": "friction-survey-045",
+      "status": "promising",
+      "strategy": "friction-survey-045",
+      "metric": 1.0,
+      "eval_version": "eval-v1",
+      "issue": 45,
+      "parents": ["q-exponent-theory-041"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-08T02:22:41Z", "body": "tanh raises frequency ceiling 0.732->1.0, wins 5D benchmark. g'(xi)>=0 avoids cancellation. tau_int=698 vs log-osc 920.", "images": [], "agent": "orbit-agent"},
+        {"author": "wwang2", "date": "2026-04-09T04:28:01Z", "body": "Spawned child: #52 (gprime-ablation-052) -- controlled g'>=0 ablation at fixed g'(0)=2", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "general-chains-015",
+      "status": "promising",
+      "strategy": "general-chains-015",
+      "metric": 0.0018,
+      "eval_version": "eval-v1",
+      "issue": 17,
+      "parents": ["unified-theory-007"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-05T14:00:00Z", "body": "K_eff = xi * V'(xi) universal chain formula -- genuinely novel. SymPy verified. ArctanChain HO KL=0.0018 (4.8x better than NHC).", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-05T14:01:00Z", "body": "Complete: All bounded-friction chains beat NHC on HO ergodicity.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "general-nonlinear-004",
+      "status": "exploring",
+      "strategy": "general-nonlinear-004",
+      "metric": null,
+      "eval_version": "eval-v1",
+      "issue": 7,
+      "parents": ["log-osc-001"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-04T15:00:00Z", "body": "Systematic exploration of 11 nonlinear friction functions. log-osc is the best.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "gprime-ablation-052",
+      "status": "promising",
+      "strategy": "controlled-ablation",
+      "metric": 15.52,
+      "eval_version": "eval-v1",
+      "issue": 52,
+      "parents": ["friction-survey-045"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-09T04:55:18Z", "body": "NEGATIVE RESULT: sign of g'(xi) is NOT the causal factor for tanh-vs-logosc gap. clipped-log-osc behaves identically to log-osc.", "images": [], "agent": "orbit-agent"},
+        {"author": "wwang2", "date": "2026-04-09T04:59:35Z", "body": "verifier: CENTRAL CLAIMS VERIFIED. Friction functions correctly implemented.", "images": [], "agent": "verifier"},
+        {"author": "wwang2", "date": "2026-04-09T05:00:21Z", "body": "completion-review: One critical docstring mismatch (clipped-log-osc description). Actual code is correct.", "images": [], "agent": "completion-review"},
+        {"author": "wwang2", "date": "2026-04-09T13:54:38Z", "body": "completion-review (cleanup pass 1): Module docstring now matches code. Result table corrected.", "images": [], "agent": "completion-review"},
+        {"author": "wwang2", "date": "2026-04-09T14:00:01Z", "body": "completion-review (cleanup pass 2): All cleanup items verified against commit 70cfe32.", "images": [], "agent": "completion-review"},
+        {"author": "wwang2", "date": "2026-04-09T14:16:02Z", "body": "Spawned child: #54 (forensic-qeff-054)", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "high-dim-008",
+      "status": "promising",
+      "strategy": "high-dim-scaling",
+      "metric": 0.025,
+      "eval_version": "eval-v1",
+      "issue": 11,
+      "parents": ["log-osc-multiT-005"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-04T23:19:00Z", "body": "Bounded friction advantage grows with dimension. LJ-13: LOCR 40% better. 20D Gaussian: 3.8x better.", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-04T23:20:00Z", "body": "Complete: LOCR best on LJ-13 (KS=0.025), MSLO best for 10D GMM mode hopping.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "high-dim-022",
+      "status": "promising",
+      "strategy": "high-dim-022",
+      "metric": 0.15,
+      "eval_version": "eval-v1",
+      "issue": 24,
+      "parents": ["multiscale-chain-009"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-06T00:00:00Z", "body": "MultiScaleNHCTail vs NHC on d=20 anisotropic Gaussian. Ergodicity score improvement: +0.15.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "hormander-ergo-017",
+      "status": "promising",
+      "strategy": "hormander-ergo-017",
+      "metric": null,
+      "eval_version": "eval-v1",
+      "issue": 19,
+      "parents": ["unified-theory-007"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-05T14:20:00Z", "body": "NEGATIVE RESULT: Lie brackets don't distinguish NH from bounded friction. All achieve rank 3 at 100%. Non-ergodicity is dynamical (KAM).", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "kam-failure-map-053",
+      "status": "promising",
+      "strategy": "kam-failure-map-053",
+      "metric": 0.43,
+      "eval_version": "eval-v1",
+      "issue": 53,
+      "parents": ["chirikov-exponent-032"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-09T04:36:16Z", "body": "N=1 KAM failure map (400 cells x 3 seeds). log-osc: 0.630, tanh: 0.627. Ratio 1.00 -- statistically indistinguishable.", "images": [], "agent": "orbit-agent"},
+        {"author": "wwang2", "date": "2026-04-09T04:38:30Z", "body": "verifier: VERIFIED. Metrics match. tanh ergodic fraction 0.6275 CONFIRMED.", "images": [], "agent": "verifier"},
+        {"author": "wwang2", "date": "2026-04-09T04:40:37Z", "body": "completion-review: Integrator label mismatch (called BAOAB, actually G-B-O-A-O-B-G Trotter). Integrator itself correct.", "images": [], "agent": "completion-review"},
+        {"author": "wwang2", "date": "2026-04-09T04:54:39Z", "body": "completion-review (cleanup pass 1): All six checklist items verified.", "images": [], "agent": "completion-review"}
+      ]
+    },
+    {
+      "name": "langevin-limit-036",
+      "status": "promising",
+      "strategy": "langevin-limit-036",
+      "metric": 7.57,
+      "eval_version": "eval-v1",
+      "issue": 36,
+      "parents": ["optimal-spectrum-theory-034"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-07T18:01:05Z", "body": "Complete. Kernel sharpening ratio=7.57. Multi-scale thermostat recovers Langevin as N->inf. At finite N=3, outperforms Langevin on multi-timescale targets.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "learn-thermostat-050",
+      "status": "malformed",
+      "strategy": null,
+      "metric": null,
+      "eval_version": null,
+      "issue": 50,
+      "parents": [],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-08T21:05:55Z", "body": "Complete. Learned Q DIFFERS from theory but ESS identical -- optimum on a wide plateau.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "log-osc-001",
+      "status": "promising",
+      "strategy": "log-osc-001",
+      "metric": 0.01,
+      "eval_version": "eval-v1",
+      "issue": 3,
+      "parents": [],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-04T00:29:35Z", "body": "Stage 1 complete. HO ergodicity=0.944 (single thermostat beats 3-chain NHC). DW KL=0.010. Bounded friction g(xi)=2xi/(1+xi^2).", "images": [], "agent": "orbit-agent"}
+      ]
+    },
+    {
+      "name": "log-osc-chain-002",
+      "status": "promising",
+      "strategy": "log-osc-chain-002",
+      "metric": 0.943,
+      "eval_version": "eval-v1",
+      "issue": 5,
+      "parents": ["log-osc-001"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-04T15:29:02Z", "body": "LOCR: Log-Osc Chain M=3. HO KL=0.001, Erg=0.943, DW KL=0.007. Best DW KL record.", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-04T15:30:00Z", "body": "Complete: Beats NHC and log-osc-001 baselines on KL divergence.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "log-osc-multiT-005",
+      "status": "promising",
+      "strategy": "log-osc-multiT-005",
+      "metric": 0.148,
+      "eval_version": "eval-v1",
+      "issue": 8,
+      "parents": ["log-osc-001"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-04T17:29:00Z", "body": "Multi-Scale Log-Osc Qs=[0.1,0.7,10.0]. GMM KL=0.148 (2.6x improvement). First sampler with KL<0.20 on 5-mode GMM while ergodic.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "log-osc-stage2-003",
+      "status": "exploring",
+      "strategy": "log-osc-stage2-003",
+      "metric": null,
+      "eval_version": "eval-v1",
+      "issue": 6,
+      "parents": ["log-osc-001"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-04T15:00:00Z", "body": "Stage 2 benchmarks. GMM KL=0.377 -- comparable to NH, better than NHC.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "mixing-rates-019",
+      "status": "promising",
+      "strategy": "mixing-rates-019",
+      "metric": 20546,
+      "eval_version": "eval-v1",
+      "issue": 21,
+      "parents": ["spectral-1f-016"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-05T16:00:00Z", "body": "N=3 (1/f noise) minimizes tau_int among N<=5 on 2D GMM. tau_int ~ exp(-0.241 * alpha).", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-05T16:01:00Z", "body": "Complete: 1/f advantage peaks at moderate barriers (2 kT). At extreme barriers only Brownian noise escapes.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "mode-hopping-042",
+      "status": "promising",
+      "strategy": "mode-hopping-benchmark",
+      "metric": 9.82,
+      "eval_version": "eval-v1",
+      "issue": 42,
+      "parents": ["q-optimization-035", "q-omega-mapping-040"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-07T23:43:29Z", "body": "Initial: crossings_ratio at barrier=4.0 = 1.17x modest. But 7.19x at 10D GMM.", "images": [], "agent": "orbit-agent"},
+        {"author": "wwang2", "date": "2026-04-07T23:46:28Z", "body": "10D confirmation: 133.6 vs NHC best 13.6 = 9.82x advantage.", "images": [], "agent": "orbit-agent"},
+        {"author": "wwang2", "date": "2026-04-07T23:46:52Z", "body": "Complete. 10x mode hopping advantage at 10D. Higher-D is where multi-scale shines.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "momentum-log-osc-006",
+      "status": "promising",
+      "strategy": "momentum-log-osc-006",
+      "metric": 0.0088,
+      "eval_version": "eval-v1",
+      "issue": 9,
+      "parents": ["log-osc-001"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-04T17:38:00Z", "body": "MLOSC-A fails. MLOSC-B (rippled thermostat): ANY V(xi) preserves canonical measure. Best DW KL=0.0088.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "multiscale-chain-009",
+      "status": "promising",
+      "strategy": "multiscale-chain-009",
+      "metric": 0.054,
+      "eval_version": "eval-v1",
+      "issue": 12,
+      "parents": ["log-osc-multiT-005"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-05T00:28:00Z", "body": "NEW CHAMPION: Multi-Scale NHC-Tail. Qs=[0.1,0.7,10.0], chain_length=2. GMM KL=0.054. Dominates ALL benchmarks.", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-05T00:29:00Z", "body": "Complete: Log-osc normalizes only when Q>kT/2. NHC-Tail adds chain coupling to Q>kT/2 thermostats only.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "n-scaling-028",
+      "status": "promising",
+      "strategy": "n-scaling-028",
+      "metric": -0.1082,
+      "eval_version": "eval-v1",
+      "issue": 28,
+      "parents": ["spectral-design-theory-025"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-07T15:30:00Z", "body": "N_opt = -0.108 * log10(kappa_ratio) + 1.855 (elbow criterion). Weak R^2=0.02.", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-07T15:31:00Z", "body": "Complete: Scaling law suggestive but weak. More data needed.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "n-scaling-robust-029",
+      "status": "promising",
+      "strategy": "n-scaling-robust-029",
+      "metric": -1.1338,
+      "eval_version": "eval-v1",
+      "issue": 29,
+      "parents": ["n-scaling-028"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-07T16:00:00Z", "body": "N_opt = -1.134 * log10(kappa_ratio) + 4.638. R^2=0.327, p=0.2357. SUGGESTIVE.", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-07T16:01:00Z", "body": "Complete: 10 seeds, 800k evals. Scaling law noisy but suggestive.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "nature-figures-014",
+      "status": "promising",
+      "strategy": "nature-figures-014",
+      "metric": null,
+      "eval_version": "eval-v1",
+      "issue": 16,
+      "parents": ["pub-figures-010"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-05T13:00:00Z", "body": "5 Nature-quality figures produced. NHC(M=3) primary baseline. 2x4 benchmark panel.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "nhc-qualitative-038",
+      "status": "promising",
+      "strategy": "nhc-qualitative",
+      "metric": 6,
+      "eval_version": "v1",
+      "issue": 38,
+      "parents": ["q-optimization-035"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-07T18:48:00Z", "body": "6 figures generated. NHC concentrates near origin; parallel fills ellipse. NHC misses GMM modes.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "nhc-sweep-039",
+      "status": "dead-end",
+      "strategy": null,
+      "metric": null,
+      "eval_version": null,
+      "issue": 39,
+      "parents": [],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-09T04:18:53Z", "body": "Relabeled exploring->dead-end during housekeeping. No results. Branch preserved.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "optimal-spectrum-theory-034",
+      "status": "exploring",
+      "strategy": "optimal-spectrum-theory-034",
+      "metric": null,
+      "eval_version": "eval-v1",
+      "issue": 34,
+      "parents": ["figure-update-033"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-07T17:30:00Z", "body": "Analytical derivation of optimal Q distribution. In progress.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "paper-draft-021",
+      "status": "promising",
+      "strategy": "paper-draft-021",
+      "metric": null,
+      "eval_version": "eval-v1",
+      "issue": 22,
+      "parents": ["pub-narrative-011"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-06T00:00:00Z", "body": "Full paper draft (~7 pages). Must cite Watanabe & Kobayashi 2007, Tapias et al. 2017, Butler 2018.", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-06T00:01:00Z", "body": "Complete: All sections from abstract through references. 7 figures specified.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "paper-experiments-047",
+      "status": "promising",
+      "strategy": "paper-experiments-047",
+      "metric": 2.4,
+      "eval_version": "eval-v1",
+      "issue": 47,
+      "parents": ["friction-survey-045", "comprehensive-bench-044", "q-optimization-035"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-08T03:56:01Z", "body": "All 3 experiments complete. tanh parallel <= NHC at ALL dimensions. Deterministic 10-12x faster than Langevin.", "images": ["https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/paper-experiments-047/orbits/paper-experiments-047/figures/fig_E1_"], "agent": "orbit-agent"},
+        {"author": "wwang2", "date": "2026-04-08T03:56:56Z", "body": "Complete. E2 STRONGEST: tanh tau=2.4 vs log-osc tau=1288 -- 536x difference. g'>=0 is catastrophic when violated.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "paper-final-049",
+      "status": "promising",
+      "strategy": "paper-final-experiments",
+      "metric": 19.5,
+      "eval_version": "eval-v1",
+      "issue": 49,
+      "parents": ["paper-experiments-047"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-08T19:41:46Z", "body": "NH_tanh wins ALL 4 targets vs HMC. 10D Aniso: 19.5x better. 5D: 94x better.", "images": ["https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/paper-final-049/orbits/paper-final-049/"], "agent": "orbit-agent"},
+        {"author": "wwang2", "date": "2026-04-08T19:42:20Z", "body": "Complete. NH-tanh beats HMC 19.5x on 10D anisotropic.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "paper-update-023",
+      "status": "promising",
+      "strategy": "paper-update-023",
+      "metric": null,
+      "eval_version": "eval-v1",
+      "issue": 23,
+      "parents": ["paper-draft-021"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-06T01:00:00Z", "body": "Paper updated with mixing-rates results.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "per-mode-coupling-048",
+      "status": "promising",
+      "strategy": "per-mode-coupling-048",
+      "metric": 4.6,
+      "eval_version": "eval-v1",
+      "issue": 48,
+      "parents": ["paper-experiments-047", "friction-survey-045"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-08T04:27:02Z", "body": "NEGATIVE: Per-mode coupling breaks xi correlation but does NOT improve mixing. Shared-K is a FEATURE.", "images": [], "agent": "orbit-agent"},
+        {"author": "wwang2", "date": "2026-04-08T04:27:45Z", "body": "Complete. Perfect correlation means all N thermostats act as one strong thermostat.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "pub-figures-010",
+      "status": "promising",
+      "strategy": "publication-figures",
+      "metric": null,
+      "eval_version": "eval-v1",
+      "issue": 10,
+      "parents": ["log-osc-001", "log-osc-multiT-005", "log-osc-chain-002"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-05T01:00:00Z", "body": "6 publication-quality figures. Problem, Solution, Trajectories, Quantitative, Multi-Scale Mechanism, Scaling.", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-05T01:01:00Z", "body": "Complete: Fixed seeds, style guide compliance (14pt labels, 12pt ticks, 300 DPI).", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "pub-narrative-011",
+      "status": "promising",
+      "strategy": "pub-narrative-011",
+      "metric": null,
+      "eval_version": "eval-v1",
+      "issue": 13,
+      "parents": ["unified-theory-007"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-05T05:00:00Z", "body": "Full paper narrative + 7 figures (5 schematics + 2 illustrations). Six-section narrative.", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-05T05:01:00Z", "body": "Complete: Intro, Framework, Why Bounded Friction, Multi-Scale, Results, Discussion.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "q-exponent-theory-041",
+      "status": "promising",
+      "strategy": "q-exponent-theory-041",
+      "metric": null,
+      "eval_version": "eval-v1",
+      "issue": 41,
+      "parents": ["q-omega-mapping-040"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-07T23:33:55Z", "body": "-1.55 exponent is a crossover: resonance (omega<0.73, -2.00) vs driven (omega>0.73, -0.26).", "images": [], "agent": "orbit-agent"},
+        {"author": "wwang2", "date": "2026-04-07T23:34:40Z", "body": "Complete. The -1.55 is a crossover artifact. Log-osc frequency ceiling omega_max=0.707.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "q-omega-mapping-040",
+      "status": "exploring",
+      "strategy": "q-omega-mapping-040",
+      "metric": null,
+      "eval_version": "eval-v1",
+      "issue": 40,
+      "parents": ["nhc-sweep-039"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-07T22:37:36Z", "body": "Two scaling laws: Log-osc Q=2.34*omega^(-1.55), NHC Q=0.95*omega^(-2.00). F1 prescription wrong for BOTH.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "q-optimization-035",
+      "status": "promising",
+      "strategy": "q-optimization-and-nhc-comparison",
+      "metric": 2.48,
+      "eval_version": "custom-035",
+      "issue": 35,
+      "parents": ["figure-update-033", "alpha-spectrum-comparison-031"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-07T18:15:35Z", "body": "Complete. Parallel 2.48x faster than best NHC on stiff kappa=100. Log-uniform is a robust default.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "spectral-1f-016",
+      "status": "promising",
+      "strategy": "spectral-1f-016",
+      "metric": 0.105,
+      "eval_version": "eval-v1",
+      "issue": 18,
+      "parents": ["multiscale-chain-009"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-05T15:00:00Z", "body": "Multi-scale log-osc with log-spaced Q generates 1/f noise via Dutta-Horn mechanism. N=3 sweet spot: alpha=0.98.", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-05T15:01:00Z", "body": "Complete: Transition N=1->N=3 exactly coincides with sharp improvement in multi-modal sampling.", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-05T15:02:00Z", "body": "N>=3 sufficient for 1/f. N=3 optimal for cost-performance.", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-05T15:03:00Z", "body": "VERY HIGH novelty: First connection between deterministic thermostats and 1/f noise.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "spectral-design-theory-025",
+      "status": "promising",
+      "strategy": "spectral-design-theory-025",
+      "metric": 1.11,
+      "eval_version": "eval-v1",
+      "issue": 25,
+      "parents": ["mixing-rates-019"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-06T12:00:00Z", "body": "Optimal friction spectrum design theory. Q-range from curvature, 1/f is min-max optimal, Kramers for barriers.", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-06T12:01:00Z", "body": "improvement_ratio=1.137 (theory-derived Q beats champion on d=20).", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-06T12:02:00Z", "body": "Complete: Q-range derivation, min-max optimality, Kramers formula for Q_max.", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-06T12:03:00Z", "body": "Spawned 5 child orbits.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "systematize-037",
+      "status": "promising",
+      "strategy": "systematize-037",
+      "metric": 0.00148,
+      "eval_version": "eval-v1",
+      "issue": 37,
+      "parents": ["optimal-spectrum-theory-034"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-07T18:02:22Z", "body": "Complete. Single-file reference implementation (~330 lines). ESS/force-eval=1.48e-3. Auto-tuning via diag-Hessian probing.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "thermostat-dynamics-046",
+      "status": "promising",
+      "strategy": "thermostat-dynamics-046",
+      "metric": 1.029,
+      "eval_version": "eval-v1",
+      "issue": 46,
+      "parents": ["q-omega-mapping-040"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-08T01:39:43Z", "body": "CRITICAL: all parallel xi_i perfectly correlated (rho=1.000). Same drive signal. alpha_DH=1.03 for N=5.", "images": [], "agent": "orbit-agent"},
+        {"author": "wwang2", "date": "2026-04-08T01:40:59Z", "body": "Complete. Bombshell: Dutta-Horn requires independent sources. 'Each thermostat resonates with different mode' is WRONG.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "unified-theory-007",
+      "status": "promising",
+      "strategy": "unified-theory-007",
+      "metric": null,
+      "eval_version": "eval-v1",
+      "issue": 10,
+      "parents": ["log-osc-001"],
+      "issue_comments": [
+        {"author": "wwang2", "date": "2026-04-04T22:59:00Z", "body": "Master Theorem: ANY V(xi) preserves canonical measure (SymPy). Lyapunov: log-osc 10x more chaotic than NH. Optimal Q=0.5.", "images": [], "agent": null},
+        {"author": "wwang2", "date": "2026-04-04T23:00:00Z", "body": "Complete: Master Theorem, Lyapunov 10x chaos, two-regime ergodicity, multi-scale 1/f reduces autocorrelation 5-7x.", "images": [], "agent": null}
+      ]
+    },
+    {
+      "name": "visual-validation-013",
+      "status": "promising",
+      "strategy": "visual-validation",
+      "metric": null,
+      "eval_version": "eval-v1",
+      "issue": 15,
+      "parents": ["multiscale-chain-009"],
+      "issue_comments": []
+    },
+    {
+      "name": "why-deterministic-051",
+      "status": "malformed",
+      "strategy": null,
+      "metric": null,
+      "eval_version": null,
+      "issue": null,
+      "parents": [],
+      "issue_comments": []
+    }
+  ]
+}
