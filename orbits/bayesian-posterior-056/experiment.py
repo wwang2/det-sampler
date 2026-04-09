@@ -266,10 +266,11 @@ def run_e1():
     d = 2
 
     # NH-tanh with multi-scale Q for better mixing
+    # Q=[0.01, 0.1, 1.0] found by parameter sweep to give best mixing
     print("Running NH-tanh (multi-scale Q)...")
     nh_samples, nh_time = run_nh_multiscale(
-        banana_grad, d, n_steps=100000, dt=0.005, Qs=[0.1, 1.0, 10.0],
-        kT=1.0, burn_in=10000, thin=8, seed=SEED
+        banana_grad, d, n_steps=500000, dt=0.005, Qs=[0.01, 0.1, 1.0],
+        kT=1.0, burn_in=50000, thin=4, seed=SEED
     )
     print(f"  NH-tanh: {len(nh_samples)} samples in {nh_time:.2f}s")
 
@@ -289,13 +290,13 @@ def run_e1():
 
     # --- KL convergence curves ---
     print("Computing KL convergence curves...")
-    n_nh = 100000
+    n_nh = 500000
     n_sgld = 200000
     checkpoints_nh = np.logspace(2.5, np.log10(n_nh), 15).astype(int)
     checkpoints_sgld = np.logspace(2.5, np.log10(n_sgld), 15).astype(int)
 
     nh_all, _ = run_nh_multiscale(
-        banana_grad, d, n_steps=n_nh, dt=0.005, Qs=[0.1, 1.0, 10.0],
+        banana_grad, d, n_steps=n_nh, dt=0.005, Qs=[0.01, 0.1, 1.0],
         kT=1.0, burn_in=0, thin=1, seed=SEED
     )
     sgld_all, _ = run_sgld(
