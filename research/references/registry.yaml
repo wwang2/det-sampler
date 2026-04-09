@@ -1,0 +1,17 @@
+- key: tapias2016
+  title: "Geometric integrator for simulations in the canonical ensemble"
+  authors: "Diego Tapias, David P. Sanders, Alessandro Bravetti"
+  year: 2016
+  url: "https://doi.org/10.1103/PhysRevE.94.062123"
+  type: paper
+  finding: "Introduced the log-osc thermostat g(xi) = 2xi/(1+xi^2) for deterministic canonical sampling"
+  cited_by: [orbit/gprime-ablation-052]
+
+- key: martyna1992
+  title: "Nose-Hoover chains: The canonical ensemble via continuous dynamics"
+  authors: "Glenn J. Martyna, Michael L. Klein, Mark Tuckerman"
+  year: 1992
+  url: "https://doi.org/10.1063/1.463940"
+  type: paper
+  finding: "Extended Nose-Hoover to chains of thermostats (NHC) to ensure ergodicity on small/stiff systems"
+  cited_by: [orbit/gprime-ablation-052]
