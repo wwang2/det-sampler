@@ -1,17 +1,17 @@
 """gprime-ablation-052: Isolate the role of sign(g'(xi)) from g'(0) coupling.
 
-Benchmarks five friction-function variants on the same d=10 anisotropic-Gaussian
+Benchmarks four friction-function variants on the same d=10 anisotropic-Gaussian
 target as paper-experiments-047 / friction-survey-045 E2:
 
     d=10, kappa_ratio=100, 20 seeds, 200k force evals, N=5 parallel thermostats,
-    Q in [50, 500] (scan, pick best median tau_int per method).
+    Q_c in {0.3, 1, 3, 10, 30, 100, 300}, pick best median tau_int per method.
 
 Variants (all g'(0)=2 except the tanh reference):
-    log-osc            g = 2 xi / (1 + xi^2)              g' changes sign
-    clipped-log-osc    g = max(0, 2 xi/(1+xi^2))           g' >= 0, discontinuous
+    log-osc            g = 2 xi / (1 + xi^2)              g' changes sign at |xi|=1
+    clipped-log-osc    g = 2 xi/(1+xi^2) for |xi|<=1,     g' >= 0, odd-symmetric
+                        else sign(xi)                      saturating at +/-1
     tanh-scaled        g = 2 tanh(xi)                      g' >= 0, smooth
-    tanh-ref           g =   tanh(xi)                      g'(0)=1 reference
-    log-osc-ref        g = 2 xi / (1 + xi^2)               same as log-osc (alias)
+    tanh-ref           g =   tanh(xi)                      g'(0)=1, reference
 """
 from __future__ import annotations
 import json, os, time
@@ -185,5 +185,183 @@ def main():
     return out
 
 
+
+
+
+# ---------- Item 2: Q=1e8 Hamiltonian-floor control --------------------------
+def run_floor_control(nsteps=200_000, nseeds=5, dim=10, kappa_ratio=100.0):
+    """Run all 4 friction methods at Q=1e8 (thermostat effectively off).
+    
+    Expected: all methods give tau_int ~ 4.97-5.02, confirming the Hamiltonian
+    floor claim. Results appended to results.json under 'floor_control' key.
+    """
+    kappas = make_kappas(dim, kappa_ratio)
+    dt = 0.05 / np.sqrt(kappa_ratio)
+    Qc = 1e8
+    Nth = 5
+    Qs = np.exp(np.linspace(np.log(Qc / 3.0), np.log(3.0 * Qc), Nth))
+    results = {}
+    seeds = list(range(1000, 1000 + nseeds))
+    for method, g_func in FRICTIONS.items():
+        taus = []
+        for seed in seeds:
+            tr = simulate(g_func, kappas, Qs, dt, nsteps, seed=seed, rec=4)
+            taus.append((seed, tau_int(tr)))
+        med = float(sorted([t for _, t in taus])[len(taus) // 2])
+        results[method] = dict(Qc=Qc, taus=taus, median=med)
+        print(f"  [floor_control] {method}: median tau = {med:.2f}")
+    return results
+
+
+# ---------- Item 5: Double-well control experiment ---------------------------
+def double_well_force(x, kappas_unused=None):
+    """Gradient of V(x) = (x^2 - 1)^2 for 1D, extended to d dims as sum_i V(x_i)."""
+    return 4.0 * x * (x * x - 1.0)
+
+
+def simulate_dw(g_func, dim, Qs, dt, nsteps, kT=1.0, seed=0, rec=4):
+    """Simulate parallel thermostats on a 1D symmetric double-well V(x)=sum_i (x_i^2-1)^2."""
+    rng = np.random.default_rng(seed)
+    N = len(Qs)
+    Qs = np.asarray(Qs, float)
+    q = rng.normal(0.0, 1.0, size=dim)
+    p = rng.normal(0.0, np.sqrt(kT), size=dim)
+    xi = np.zeros(N)
+    h = 0.5 * dt
+    gU = double_well_force(q)
+    nr = nsteps // rec
+    qs = np.empty((nr, dim))
+    ri = 0
+    for s in range(nsteps):
+        K = float(np.dot(p, p))
+        xi += h * (K - dim * kT) / Qs
+        gt = float(np.sum(g_func(xi)))
+        p *= np.exp(-np.clip(gt * h, -50, 50))
+        p -= h * gU
+        q = q + dt * p
+        gU = double_well_force(q)
+        p -= h * gU
+        gt = float(np.sum(g_func(xi)))
+        p *= np.exp(-np.clip(gt * h, -50, 50))
+        K = float(np.dot(p, p))
+        xi += h * (K - dim * kT) / Qs
+        if (s + 1) % rec == 0 and ri < nr:
+            qs[ri] = q
+            ri += 1
+        if not np.isfinite(p).all():
+            qs[ri:] = np.nan
+            break
+    return qs[:ri]
+
+
+def run_double_well_control(Qc=10.0, nsteps=200_000, nseeds=20, dim=1):
+    """Run all 4 friction methods on 1D symmetric double-well V(x)=(x^2-1)^2.
+    
+    This tests that the tau_int estimator works on a non-trivial (non-harmonic)
+    target and that the 'no g' sign effect' conclusion is not an estimator artifact.
+    Results appended to results.json under 'double_well_control' key.
+    """
+    dt = 0.005  # conservative for double-well
+    Nth = 5
+    Qs = np.exp(np.linspace(np.log(max(Qc / 3.0, 0.01)), np.log(3.0 * Qc), Nth))
+    results = {"config": dict(Qc=Qc, dt=dt, nsteps=nsteps, nseeds=nseeds, dim=dim,
+                              potential="V(x) = (x^2 - 1)^2")}
+    seeds = list(range(1000, 1000 + nseeds))
+    for method, g_func in FRICTIONS.items():
+        taus = []
+        for seed in seeds:
+            tr = simulate_dw(g_func, dim, Qs, dt, nsteps, seed=seed, rec=4)
+            taus.append((seed, tau_int(tr)))
+        tau_vals = [t for _, t in taus]
+        tau_s = sorted(tau_vals)
+        n = len(tau_s)
+        med = float((tau_s[n//2 - 1] + tau_s[n//2]) / 2.0) if n % 2 == 0 else float(tau_s[n//2])
+        q25_idx = (n - 1) * 0.25; lo = int(q25_idx); frac = q25_idx - lo
+        q25 = float(tau_s[lo] * (1 - frac) + tau_s[min(lo+1, n-1)] * frac)
+        q75_idx = (n - 1) * 0.75; lo75 = int(q75_idx); frac75 = q75_idx - lo75
+        q75 = float(tau_s[lo75] * (1 - frac75) + tau_s[min(lo75+1, n-1)] * frac75)
+        results[method] = dict(Qc=Qc, taus=taus, median=med, q25=q25, q75=q75)
+        print(f"  [double_well] {method}: median tau = {med:.2f} IQR=[{q25:.2f}, {q75:.2f}]")
+    return results
+
+
+# ---------- Item 3: Compute active_summary (best Q with median > 10) --------
+def compute_active_summary(res):
+    """Pick argmin(median tau) subject to median > 10 for each method.
+    
+    The threshold 10 filters out the Hamiltonian floor (~5), ensuring the
+    reported 'best' is in the thermostat-active regime. Returns dict keyed
+    by method with Qc, median, q25, q75.
+    """
+    summary = {}
+    per = res["per_method_per_Q"]
+    def _median(vals):
+        s = sorted(vals)
+        n = len(s)
+        if n % 2 == 1:
+            return s[n // 2]
+        return (s[n // 2 - 1] + s[n // 2]) / 2.0
+
+    def _percentile(vals, pct):
+        s = sorted(vals)
+        k = (len(s) - 1) * pct / 100.0
+        lo = int(k)
+        hi = min(lo + 1, len(s) - 1)
+        frac = k - lo
+        return s[lo] * (1 - frac) + s[hi] * frac
+
+    for method, byQ in per.items():
+        best = None
+        for qk, rec in byQ.items():
+            tau_vals = [t for _, t in rec["taus"]]
+            med = _median(tau_vals)
+            if med <= 10.0:
+                continue  # skip Hamiltonian floor
+            q25 = _percentile(tau_vals, 25)
+            q75 = _percentile(tau_vals, 75)
+            if best is None or med < best["median"]:
+                best = dict(Qc=qk, median=med, q25=q25, q75=q75)
+        if best is None:
+            # All Qs are in the floor — take the one closest to threshold
+            for qk, rec in byQ.items():
+                tau_vals = [t for _, t in rec["taus"]]
+                med = _median(tau_vals)
+                if best is None or med < best["median"]:
+                    best = dict(Qc=qk, median=med, q25=_percentile(tau_vals, 25),
+                                q75=_percentile(tau_vals, 75))
+        summary[method] = best
+    return summary
+
+
+def run_controls_and_summarize():
+    """Run floor control, double-well control, compute active_summary, update results.json."""
+    path = os.path.join(OUT, "results.json")
+    with open(path) as f:
+        res = json.load(f)
+
+    print("\n=== Floor control (Q=1e8) ===")
+    res["floor_control"] = run_floor_control()
+
+    print("\n=== Double-well control (Qc=10, 1D) ===")
+    res["double_well_control"] = run_double_well_control()
+
+    print("\n=== Active summary (median > 10 filter) ===")
+    active = compute_active_summary(res)
+    res["active_summary"] = active
+    for method, info in active.items():
+        print(f"  {method}: {info['Qc']} -> median tau = {info['median']:.2f}")
+
+    with open(path, "w") as f:
+        json.dump(res, f, indent=2, default=float)
+    print(f"\nUpdated {path}")
+    return res
+
+
 if __name__ == "__main__":
-    main()
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "--controls":
+        run_controls_and_summarize()
+    elif len(sys.argv) > 1 and sys.argv[1] == "--sweep":
+        main()
+    else:
+        main()
