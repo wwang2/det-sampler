@@ -88,8 +88,8 @@ All computations use seed=42. Monte Carlo rank analysis: 10,000 samples in [-4,4
 
 - [Hormander (1967)](https://doi.org/10.1007/BF02392081) -- Hypoelliptic second order differential equations
 - [Jurdjevic (1997)](https://doi.org/10.1017/CBO9780511530036) -- Geometric Control Theory
-- [Butler (2018)](https://doi.org/10.1088/1361-6544/aae41c) -- KAM tori in Nose-Hoover
-- [Butler (2021)](https://doi.org/10.1007/s00220-021-04190-5) -- KAM for general thermostats
+- [Butler (2018)](https://arxiv.org/abs/1806.10198) -- KAM tori in Nose-Hoover
+- [Butler (2021)](https://doi.org/10.1088/1361-6544/ac7d8b) -- KAM for general thermostats
 - [Legoll, Luskin, Moeckel (2007)](https://doi.org/10.1007/s00205-006-0029-1) -- Non-ergodicity of NH for HO
 - Builds on unified-theory-007 (#10) for Lyapunov data and Master Theorem
 - Builds on log-osc-001 (#3) for the log-oscillator thermostat discovery

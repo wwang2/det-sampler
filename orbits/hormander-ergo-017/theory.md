@@ -146,8 +146,8 @@ The Lie bracket analysis performed here is valuable as a NECESSARY condition che
 
 - [Hormander (1967)](https://doi.org/10.1007/BF02392081) -- Hypoelliptic second order differential equations. The original bracket condition for SDEs.
 - [Jurdjevic (1997)](https://doi.org/10.1017/CBO9780511530036) -- Geometric Control Theory. Standard reference for Lie bracket conditions and controllability.
-- [Butler (2018)](https://doi.org/10.1088/1361-6544/aae41c) -- KAM tori in the Nose-Hoover system at weak coupling.
-- [Butler (2021)](https://doi.org/10.1007/s00220-021-04190-5) -- Generalization to temperature-dependent thermostats. Proves KAM tori persist for ANY single thermostat.
+- [Butler (2018)](https://arxiv.org/abs/1806.10198) -- KAM tori in the Nose-Hoover system at weak coupling.
+- [Butler (2021)](https://doi.org/10.1088/1361-6544/ac7d8b) -- Generalization to temperature-dependent thermostats. Proves KAM tori persist for ANY single thermostat.
 - [Legoll, Luskin, Moeckel (2007)](https://doi.org/10.1007/s00205-006-0029-1) -- Non-ergodicity of Nose-Hoover thermostat for harmonic oscillator.
 - [Nose (1984)](https://doi.org/10.1063/1.447334) -- Original Nose thermostat.
 - [Hoover (1985)](https://doi.org/10.1103/PhysRevA.31.1695) -- Nose-Hoover reformulation.
