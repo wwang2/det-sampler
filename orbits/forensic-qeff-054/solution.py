@@ -5,7 +5,7 @@ parameter, and that the entire performance difference between tanh-ref
 (g'(0)=1) and tanh-scaled (g'(0)=2) is due to Q_eff being different.
 
 Experiments:
-  E0: Re-analysis of parent data + short xi trajectory recording
+  E0: Short new trajectories (50k steps, 3 seeds) recording full xi time series
   E1: Decisive Q_eff matching test (tanh-scaled@Q=20 vs tanh-ref@Q=10)
   E2: Kappa sweep (if E1 confirms)
   E3: Residual tail-shape isolation (if E1 confirms)
@@ -367,23 +367,31 @@ def plot_e1(results):
             transform=ax.transAxes, fontsize=12, va='top',
             bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
 
-    # (b) All conditions: tau_int vs Q_eff
+    # (b) All conditions: tau_int vs Q_eff (linear x-axis, lines connecting per method)
     ax = axes[1]
     all_labels = list(results.keys())
     all_labels = [l for l in all_labels if not l.startswith("_")]
+    # Group by method for connecting lines
+    from collections import defaultdict
+    by_method = defaultdict(list)
     for label in all_labels:
         r = results[label]
-        color = colors_map[r['method']]
-        marker = {'tanh-ref': 'o', 'tanh-scaled': 's', 'log-osc': '^'}[r['method']]
-        ax.errorbar(r['Qeff'], r['median'],
-                    yerr=[[r['median'] - r['q25']], [r['q75'] - r['median']]],
-                    fmt=marker, color=color, markersize=10, capsize=5,
-                    label=f"{r['method']} Q={r['Qc']:.0f}", zorder=5)
+        by_method[r['method']].append(r)
+    for method, pts in by_method.items():
+        pts_sorted = sorted(pts, key=lambda r: r['Qeff'])
+        color = colors_map[method]
+        marker = {'tanh-ref': 'o', 'tanh-scaled': 's', 'log-osc': '^'}[method]
+        qeffs = [r['Qeff'] for r in pts_sorted]
+        meds = [r['median'] for r in pts_sorted]
+        yerr_lo = [r['median'] - r['q25'] for r in pts_sorted]
+        yerr_hi = [r['q75'] - r['median'] for r in pts_sorted]
+        ax.errorbar(qeffs, meds, yerr=[yerr_lo, yerr_hi],
+                    fmt=marker + '-', color=color, markersize=10, capsize=5,
+                    label=method, zorder=5, lw=1.5)
     ax.set_xlabel(r"$Q_{\rm eff} = Q / g'(0)$")
     ax.set_ylabel(r"$\tau_{\rm int}$ (median)")
     ax.set_title("(b) All conditions vs Q_eff", fontweight='bold')
     ax.legend(fontsize=9, frameon=False, loc='upper right')
-    ax.set_xscale('log')
     ax.set_yscale('log')
 
     path = os.path.join(FIG, "e1_qeff_matching.png")
@@ -507,7 +515,7 @@ def plot_e2(results):
             'r--', lw=1.5, label=r'$\propto 1/\sqrt{\kappa}$')
     ax.set_xlabel(r"$\kappa$ (anisotropy ratio)")
     ax.set_ylabel(r"$\alpha_{\rm opt}$")
-    ax.set_title(r"(b) Optimal coupling vs anisotropy", fontweight='bold')
+    ax.set_title(r"(b) Optimal coupling vs anisotropy (floor-contaminated)", fontweight='bold', fontsize=13)
     ax.legend(fontsize=11, frameon=False)
     ax.set_xscale('log')
 

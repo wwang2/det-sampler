@@ -20,6 +20,7 @@ parents:
 - **kappa**: anisotropy ratio (largest eigenvalue / smallest eigenvalue of target covariance)
 - **IQR**: interquartile range [25th percentile, 75th percentile]
 - **ACF**: autocorrelation function
+- **NH**: Nose-Hoover (single thermostat, N=1)
 
 ## Result
 
@@ -45,12 +46,17 @@ Furthermore, **tail shape is irrelevant at matched Q_eff.** Log-osc (which has a
 sign-changing g' tail) gives tau=221 at Q_eff=10, comparable to tanh-ref's 317 and
 tanh-scaled's 243. The sign of g' in the tail does not matter when Q_eff is matched.
 
+*E2 (kappa sweep) was contaminated by the Hamiltonian floor at fixed Q=10; a proper study
+would co-sweep Q and alpha. Results omitted from conclusions.*
+
 ## Approach
 
 ### E0: Thermostat variable analysis
 
-Ran short trajectories (50k steps, 3 seeds) recording the full xi trajectory for all
-three friction functions at Q=10. The goal was to test whether the thermostat variable's
+Ran short new trajectories (50k steps, 3 seeds) recording the full xi time series for all
+three friction functions at Q=10. These are independent simulations (not a re-analysis of
+parent results.json), chosen to be short enough for quick turnaround while still capturing
+the thermostat variable's equilibrium distribution. The goal was to test whether xi's
 distribution scales with Q_eff as predicted by the equilibrium theory.
 
 The naive prediction for a linearized thermostat is std(xi) = 1/sqrt(g'(0) * Q). This
@@ -76,6 +82,12 @@ For further confirmation, log-osc at Q=20 (Q_eff = 20/2 = 10) gives tau=221, als
 comparable. Meanwhile, both methods at Q_eff=5 (Q=10 for g'(0)=2) give tau > 900.
 And tanh-ref at Q=20 (Q_eff=20) gives tau=6.6, which is the Hamiltonian floor --
 confirming that Q_eff=20 is too large for this target.
+
+Notably, tanh-scaled@Q=20 shows a bimodal tau distribution with IQR [23, 372] (q25=23
+vs tanh-ref's q25=112), suggesting that some seeds find fast-mixing trajectories while
+others get trapped for long periods. This seed-dependent bistability is potentially
+interesting for future investigation: it may indicate sensitivity to initial conditions
+near a mixing-rate bifurcation at this Q_eff value.
 
 ### E2: Alpha-kappa sweep (caveats)
 
