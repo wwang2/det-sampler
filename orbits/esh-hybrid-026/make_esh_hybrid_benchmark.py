@@ -40,6 +40,129 @@ SEEDS = [42, 123, 7]
 
 
 # ============================================================
+# Flat ESH Hybrid integrator: samples every THERMO step
+# ============================================================
+
+class ESHHybridFlatIntegrator:
+    """ESH Hybrid that exposes individual thermostat steps for dense sampling.
+
+    Internally maintains a cycle counter. Every thermo_per_esh thermostat
+    steps, it runs L_esh ESH steps first (the 'ESH burst'). Then resumes
+    thermostat steps. This way the evaluator sees one q-sample per force
+    eval (like NHCTail), rather than one per cycle.
+
+    Force eval cost:
+      - ESH burst: L_esh evals  (amortized over thermo_per_esh steps)
+      - Thermostat: 1 eval/step
+      Total rate: (L_esh + thermo_per_esh) / thermo_per_esh evals per sample
+      For L_esh=10, thermo_per_esh=100: 1.1 evals/sample vs 1.0 for NHCTail
+    """
+
+    def __init__(self, dynamics, potential, dt: float,
+                 kT: float = 1.0, mass: float = 1.0,
+                 L_esh: int = 10, thermo_per_esh: int = 100,
+                 dt_esh: float = 0.05, dt_thermo: float = 0.03):
+        self.dynamics = dynamics
+        self.potential = potential
+        self.dt = dt_thermo  # used by evaluator
+        self.kT = kT
+        self.mass = mass
+        self.L_esh = L_esh
+        self.thermo_per_esh = thermo_per_esh
+        self.dt_esh = dt_esh
+        self.dt_thermo = dt_thermo
+        self._cached_grad_U = None
+        self._thermo_step_count = 0  # steps since last ESH burst
+
+    def _run_esh_burst(self, q, p, xi, n_evals, grad_U):
+        """Run L_esh ESH leapfrog steps. Returns updated (q, p, xi, n_evals, grad_U)."""
+        dyn = self.dynamics
+        for _ in range(self.L_esh):
+            if np.any(np.isnan(q)) or np.any(np.isnan(p)):
+                return q, p, xi, n_evals, None
+
+            p_norm = np.linalg.norm(p)
+            if p_norm < 1e-300:
+                p_norm = 1e-300
+            half_dt = 0.5 * self.dt_esh
+
+            p_half = p - half_dt * grad_U * (p_norm / dyn.dim)
+            p_half_norm = np.linalg.norm(p_half)
+            if p_half_norm < 1e-300:
+                p_half_norm = 1e-300
+
+            q = q + self.dt_esh * p_half / p_half_norm
+            grad_U = self.potential.gradient(q)
+            n_evals += 1
+            p = p_half - half_dt * grad_U * (p_half_norm / dyn.dim)
+
+        return q, p, xi, n_evals, grad_U
+
+    def step(self, state: ThermostatState) -> ThermostatState:
+        """One thermostat step. Runs ESH burst every thermo_per_esh steps."""
+        q, p, xi, n_evals = state
+        dyn = self.dynamics
+
+        if self._cached_grad_U is not None:
+            grad_U = self._cached_grad_U
+        else:
+            grad_U = self.potential.gradient(q)
+            n_evals += 1
+
+        # ESH burst every thermo_per_esh thermostat steps
+        if self._thermo_step_count % self.thermo_per_esh == 0:
+            q, p, xi, n_evals, grad_U_new = self._run_esh_burst(q, p, xi, n_evals, grad_U)
+            if grad_U_new is not None:
+                grad_U = grad_U_new
+            else:
+                self._cached_grad_U = None
+                return ThermostatState(q, p, xi, n_evals)
+            # After ESH burst, rescale ||p|| to canonical thermal value sqrt(d*kT).
+            # ESH preserves log||p|| not ||p||^2/2 so kinetic energy can drift far
+            # from d*kT, causing xi variables to explode over subsequent thermo steps.
+            # Rescaling restores the canonical momentum magnitude while keeping the
+            # direction (from the ESH exploration) intact.
+            p_norm = np.linalg.norm(p)
+            if p_norm > 1e-300:
+                p_target = np.sqrt(dyn.dim * self.kT)
+                p = p * (p_target / p_norm)
+
+        # One thermostat Verlet step
+        half_dt = 0.5 * self.dt_thermo
+
+        xi_dot = dyn._dxi_dt(p, xi)
+        xi = xi + half_dt * xi_dot
+
+        total_g = dyn._total_friction(xi)
+        scale = np.exp(-total_g * half_dt)
+        scale = np.clip(scale, 1e-10, 1e10)
+        p = p * scale
+        p = p - half_dt * grad_U
+
+        q = q + self.dt_thermo * p / dyn.mass
+
+        if np.any(np.isnan(q)) or np.any(np.isnan(p)):
+            self._cached_grad_U = None
+            return ThermostatState(q, p, xi, n_evals)
+
+        grad_U = self.potential.gradient(q)
+        n_evals += 1
+
+        p = p - half_dt * grad_U
+        total_g = dyn._total_friction(xi)
+        scale = np.exp(-total_g * half_dt)
+        scale = np.clip(scale, 1e-10, 1e10)
+        p = p * scale
+
+        xi_dot = dyn._dxi_dt(p, xi)
+        xi = xi + half_dt * xi_dot
+
+        self._thermo_step_count += 1
+        self._cached_grad_U = grad_U
+        return ThermostatState(q, p, xi, n_evals)
+
+
+# ============================================================
 # ESH + periodic velocity refreshment
 # ============================================================
 
@@ -260,13 +383,12 @@ def main():
     all_results['esh_refresh'] = esh_refresh_result
     print(f"  ESH+refresh: mean KL={esh_refresh_result['kl_mean']:.4f} ± {esh_refresh_result['kl_std']:.4f}")
 
-    # ---- 4. ESH Hybrid (Option C) ----
-    print("\n[4/4] ESH Hybrid (Option C: alternating ESH + thermostat)")
-    # Tuning: L_esh=10, M_thermo=100, dt_esh=0.05, dt_thermo=0.03
-    # Force evals per cycle: L_esh + M_thermo = 110
-    # At 500k evals: ~4545 cycles (reasonable)
+    # ---- 4. ESH Hybrid (Option C, FLAT: samples every thermo step) ----
+    # Key fix: use ESHHybridFlatIntegrator so we collect ~1 sample per force eval.
+    # The ESH burst runs every 100 thermostat steps (amortized: +10% overhead).
+    print("\n[4/4] ESH Hybrid (Option C, flat: ESH burst every 100 thermo steps)")
 
-    def make_esh_hybrid(seed=42):
+    def make_esh_hybrid_dyn(seed=42):
         return ESHPlusThermostat(
             dim=2, kT=KT,
             Qs=[0.1, 0.7, 10.0],
@@ -274,33 +396,44 @@ def main():
             dt_esh=0.05, dt_thermo=0.03,
         )
 
-    def make_esh_hybrid_integrator(dyn, pot):
-        return ESHHybridIntegrator(dyn, pot, dt=0.03, kT=KT)
+    def make_esh_hybrid_flat_integrator(dyn, pot):
+        return ESHHybridFlatIntegrator(
+            dyn, pot, dt=0.03, kT=KT,
+            L_esh=10, thermo_per_esh=100,
+            dt_esh=0.05, dt_thermo=0.03,
+        )
 
     hybrid_result = run_benchmark_sampler(
-        "ESH_hybrid", make_esh_hybrid, make_esh_hybrid_integrator, pot_gmm,
+        "ESH_hybrid_flat", make_esh_hybrid_dyn, make_esh_hybrid_flat_integrator, pot_gmm,
         N_FORCE_EVALS, KT, SEEDS
     )
     all_results['esh_hybrid'] = hybrid_result
-    print(f"  ESH hybrid: mean KL={hybrid_result['kl_mean']:.4f} ± {hybrid_result['kl_std']:.4f}")
+    print(f"  ESH hybrid (flat): mean KL={hybrid_result['kl_mean']:.4f} ± {hybrid_result['kl_std']:.4f}")
 
-    # ---- Also try L_esh=5 variant ----
-    print("\n[4b] ESH Hybrid (L_esh=5, shorter ESH phase)")
+    # ---- 4b. ESH Hybrid with larger ESH bursts (L=50 every 200 steps) ----
+    print("\n[4b] ESH Hybrid (L=50 ESH burst every 200 thermo steps)")
 
-    def make_esh_hybrid_v2(seed=42):
+    def make_esh_hybrid_dyn_v2(seed=42):
         return ESHPlusThermostat(
             dim=2, kT=KT,
             Qs=[0.1, 0.7, 10.0],
-            L_esh=5, M_thermo=100,
+            L_esh=50, M_thermo=200,
+            dt_esh=0.05, dt_thermo=0.03,
+        )
+
+    def make_esh_hybrid_flat_v2_integrator(dyn, pot):
+        return ESHHybridFlatIntegrator(
+            dyn, pot, dt=0.03, kT=KT,
+            L_esh=50, thermo_per_esh=200,
             dt_esh=0.05, dt_thermo=0.03,
         )
 
     hybrid_v2_result = run_benchmark_sampler(
-        "ESH_hybrid_L5", make_esh_hybrid_v2, make_esh_hybrid_integrator, pot_gmm,
+        "ESH_hybrid_L50", make_esh_hybrid_dyn_v2, make_esh_hybrid_flat_v2_integrator, pot_gmm,
         N_FORCE_EVALS, KT, SEEDS
     )
-    all_results['esh_hybrid_L5'] = hybrid_v2_result
-    print(f"  ESH hybrid (L=5): mean KL={hybrid_v2_result['kl_mean']:.4f} ± {hybrid_v2_result['kl_std']:.4f}")
+    all_results['esh_hybrid_L50'] = hybrid_v2_result
+    print(f"  ESH hybrid (L=50): mean KL={hybrid_v2_result['kl_mean']:.4f} ± {hybrid_v2_result['kl_std']:.4f}")
 
     # ---- Summary ----
     print("\n" + "=" * 70)
@@ -309,34 +442,35 @@ def main():
     champion_kl = 0.054  # NHCTail at 1M evals (seed=42)
 
     rows = [
-        ("NHC(M=3)",          all_results['nhc_m3']),
-        ("NHCTail champion",  all_results['nhctail']),
-        ("ESH+refresh",       all_results['esh_refresh']),
-        ("ESH hybrid (L=10)", all_results['esh_hybrid']),
-        ("ESH hybrid (L=5)",  all_results['esh_hybrid_L5']),
+        ("NHC(M=3)",               all_results['nhc_m3']),
+        ("NHCTail champion",        all_results['nhctail']),
+        ("ESH+refresh",             all_results['esh_refresh']),
+        ("ESH hybrid (L=10,flat)",  all_results['esh_hybrid']),
+        ("ESH hybrid (L=50,flat)",  all_results['esh_hybrid_L50']),
     ]
 
-    print(f"  {'Sampler':<22} {'KL mean':>10} {'KL std':>10} {'KL min':>10}")
-    print("  " + "-" * 55)
+    print(f"  {'Sampler':<26} {'KL mean':>10} {'KL std':>10} {'KL min':>10} {'n_samples':>12}")
+    print("  " + "-" * 72)
     for label, res in rows:
         kl_m = res['kl_mean']
         kl_s = res['kl_std']
         kl_n = res['kl_min']
+        n_s = int(np.mean([s['n_samples'] for s in res['seeds']]))
         flag = " <-- BEATS CHAMPION" if kl_m < champion_kl else ""
-        print(f"  {label:<22} {kl_m:>10.4f} {kl_s:>10.4f} {kl_n:>10.4f}{flag}")
+        print(f"  {label:<26} {kl_m:>10.4f} {kl_s:>10.4f} {kl_n:>10.4f} {n_s:>12}{flag}")
 
     print(f"\n  Reference: NHCTail champion at 1M evals = {champion_kl}")
     print(f"  Note: above results at 500k evals (half the budget)")
 
-    # Determine primary metric
-    hybrid_kl = all_results['esh_hybrid']['kl_mean']
+    # Determine primary metric (use best hybrid variant)
+    hybrid_kl = min(all_results['esh_hybrid']['kl_mean'],
+                    all_results['esh_hybrid_L50']['kl_mean'])
     if hybrid_kl < champion_kl:
         verdict = f"MAJOR RESULT: ESH hybrid ({hybrid_kl:.4f}) beats NHCTail champion ({champion_kl})"
-    elif hybrid_kl < 0.294:  # NHC(M=3) baseline
-        nhc_kl = all_results['nhc_m3']['kl_mean']
-        verdict = f"PARTIAL RESULT: ESH hybrid ({hybrid_kl:.4f}) beats NHC baseline, but not champion"
+    elif hybrid_kl < all_results['nhc_m3']['kl_mean']:
+        verdict = f"PARTIAL RESULT: ESH hybrid ({hybrid_kl:.4f}) beats NHC baseline ({all_results['nhc_m3']['kl_mean']:.4f}), not champion"
     else:
-        verdict = f"NEGATIVE RESULT: ESH hybrid ({hybrid_kl:.4f}) does not improve over NHC"
+        verdict = f"NEGATIVE RESULT: ESH hybrid ({hybrid_kl:.4f}) does not improve over NHC ({all_results['nhc_m3']['kl_mean']:.4f})"
 
     print(f"\n  {verdict}")
 

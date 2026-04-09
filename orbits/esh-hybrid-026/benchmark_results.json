@@ -16,21 +16,21 @@
           "kl": 0.47623312100518744,
           "n_samples": 450001,
           "n_force_evals": 500000,
-          "wall_seconds": 26.110063076019287
+          "wall_seconds": 24.111449003219604
         },
         {
           "seed": 123,
           "kl": 0.4559866707895882,
           "n_samples": 450001,
           "n_force_evals": 500000,
-          "wall_seconds": 25.50252890586853
+          "wall_seconds": 16.90190625190735
         },
         {
           "seed": 7,
           "kl": 0.10524723209260672,
           "n_samples": 450001,
           "n_force_evals": 500000,
-          "wall_seconds": 25.140938997268677
+          "wall_seconds": 17.59113311767578
         }
       ],
       "kl_mean": 0.34582234129579414,
@@ -45,21 +45,21 @@
           "kl": 0.09964037399111847,
           "n_samples": 450001,
           "n_force_evals": 500000,
-          "wall_seconds": 28.97502303123474
+          "wall_seconds": 22.719386100769043
         },
         {
           "seed": 123,
           "kl": 0.11844376175939991,
           "n_samples": 450001,
           "n_force_evals": 500000,
-          "wall_seconds": 26.093598127365112
+          "wall_seconds": 25.518733024597168
         },
         {
           "seed": 7,
           "kl": 0.057610717445713444,
           "n_samples": 450001,
           "n_force_evals": 500000,
-          "wall_seconds": 21.199779748916626
+          "wall_seconds": 32.61100172996521
         }
       ],
       "kl_mean": 0.09189828439874394,
@@ -74,21 +74,21 @@
           "kl": 0.2811791103929223,
           "n_samples": 450001,
           "n_force_evals": 500000,
-          "wall_seconds": 12.606205940246582
+          "wall_seconds": 15.583022832870483
         },
         {
           "seed": 123,
           "kl": 0.25705769925617594,
           "n_samples": 450001,
           "n_force_evals": 500000,
-          "wall_seconds": 12.971155881881714
+          "wall_seconds": 15.284672975540161
         },
         {
           "seed": 7,
           "kl": 0.2560912757626359,
           "n_samples": 450001,
           "n_force_evals": 500000,
-          "wall_seconds": 13.093885898590088
+          "wall_seconds": 14.90561294555664
         }
       ],
       "kl_mean": 0.2647760284705781,
@@ -96,63 +96,63 @@
       "kl_min": 0.2560912757626359
     },
     "esh_hybrid": {
-      "name": "ESH_hybrid",
+      "name": "ESH_hybrid_flat",
       "seeds": [
         {
           "seed": 42,
-          "kl": 1.01467052065289,
-          "n_samples": 4092,
-          "n_force_evals": 500061,
-          "wall_seconds": 18.880640029907227
+          "kl": 0.5187415432107315,
+          "n_samples": 409091,
+          "n_force_evals": 500000,
+          "wall_seconds": 23.89608407020569
         },
         {
           "seed": 123,
-          "kl": 1.0682274327898567,
-          "n_samples": 4092,
-          "n_force_evals": 500061,
-          "wall_seconds": 18.33927321434021
+          "kl": 0.5040150638512378,
+          "n_samples": 409091,
+          "n_force_evals": 500000,
+          "wall_seconds": 28.99859619140625
         },
         {
           "seed": 7,
-          "kl": 1.2313093490666165,
-          "n_samples": 4092,
-          "n_force_evals": 500061,
-          "wall_seconds": 22.34092688560486
+          "kl": 0.8984197834764471,
+          "n_samples": 409091,
+          "n_force_evals": 500000,
+          "wall_seconds": 27.089848041534424
         }
       ],
-      "kl_mean": 1.104735767503121,
-      "kl_std": 0.09213301750465576,
-      "kl_min": 1.01467052065289
+      "kl_mean": 0.6403921301794722,
+      "kl_std": 0.18255212898975706,
+      "kl_min": 0.5040150638512378
     },
-    "esh_hybrid_L5": {
-      "name": "ESH_hybrid_L5",
+    "esh_hybrid_L50": {
+      "name": "ESH_hybrid_L50",
       "seeds": [
         {
           "seed": 42,
-          "kl": 1.866941029991558,
-          "n_samples": 4286,
-          "n_force_evals": 500011,
-          "wall_seconds": 26.09990406036377
+          "kl": 0.4348195372978647,
+          "n_samples": 360001,
+          "n_force_evals": 500000,
+          "wall_seconds": 20.035896062850952
         },
         {
           "seed": 123,
-          "kl": 1.8170325454968976,
-          "n_samples": 4286,
-          "n_force_evals": 500011,
-          "wall_seconds": 23.35378384590149
+          "kl": 0.47594310228452985,
+          "n_samples": 360001,
+          "n_force_evals": 500000,
+          "wall_seconds": 20.084394931793213
         },
         {
           "seed": 7,
-          "kl": 1.2674186084984542,
-          "n_samples": 4286,
-          "n_force_evals": 500011,
-          "wall_seconds": 20.028944969177246
+          "kl": 0.3565868875019535,
+          "n_samples": 360001,
+          "n_force_evals": 500000,
+          "wall_seconds": 18.68493103981018
         }
       ],
-      "kl_mean": 1.65046406132897,
-      "kl_std": 0.2716193149817585,
-      "kl_min": 1.2674186084984542
+      "kl_mean": 0.42244984236144933,
+      "kl_std": 0.04950578091779524,
+      "kl_min": 0.3565868875019535
     }
   },
-  "verdict": "NEGATIVE RESULT: ESH hybrid (1.1047) does not improve over NHC"
+  "verdict": "NEGATIVE RESULT: ESH hybrid (0.4224) does not improve over NHC (0.3458)"
 }

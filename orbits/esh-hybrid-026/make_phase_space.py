@@ -105,7 +105,8 @@ def main():
 
     # ---- Pure ESH trajectories from different initial conditions ----
     print("\n[1] Pure ESH trajectories (conserved H_ESH level sets)")
-    dt_esh = 0.05
+    # Use small dt to demonstrate H_ESH conservation (leapfrog drifts at large dt)
+    dt_esh = 0.005
     n_steps_esh = 2000
 
     # Multiple starting points at different H_ESH values
