@@ -265,11 +265,11 @@ def run_e1():
 
     d = 2
 
-    # NH-tanh sampler
-    print("Running NH-tanh...")
-    nh_samples, nh_time, _ = run_nh_tanh(
-        banana_grad, d, n_steps=50000, dt=0.01, Q=1.0, kT=1.0,
-        burn_in=5000, thin=4, seed=SEED
+    # NH-tanh with multi-scale Q for better mixing
+    print("Running NH-tanh (multi-scale Q)...")
+    nh_samples, nh_time = run_nh_multiscale(
+        banana_grad, d, n_steps=100000, dt=0.005, Qs=[0.1, 1.0, 10.0],
+        kT=1.0, burn_in=10000, thin=8, seed=SEED
     )
     print(f"  NH-tanh: {len(nh_samples)} samples in {nh_time:.2f}s")
 
@@ -289,30 +289,30 @@ def run_e1():
 
     # --- KL convergence curves ---
     print("Computing KL convergence curves...")
-    checkpoints = np.logspace(2, np.log10(50000), 20).astype(int)
-    kl_nh_curve = []
-    kl_sgld_curve = []
+    n_nh = 100000
+    n_sgld = 200000
+    checkpoints_nh = np.logspace(2.5, np.log10(n_nh), 15).astype(int)
+    checkpoints_sgld = np.logspace(2.5, np.log10(n_sgld), 15).astype(int)
 
-    # Re-run NH collecting all samples for convergence
-    nh_all, _, _ = run_nh_tanh(
-        banana_grad, d, n_steps=50000, dt=0.01, Q=1.0, kT=1.0,
-        burn_in=0, thin=1, seed=SEED
+    nh_all, _ = run_nh_multiscale(
+        banana_grad, d, n_steps=n_nh, dt=0.005, Qs=[0.1, 1.0, 10.0],
+        kT=1.0, burn_in=0, thin=1, seed=SEED
     )
     sgld_all, _ = run_sgld(
-        banana_grad, d, n_steps=200000, eps=0.002, burn_in=0, thin=1, seed=SEED
+        banana_grad, d, n_steps=n_sgld, eps=0.002, burn_in=0, thin=1, seed=SEED
     )
 
-    for cp in checkpoints:
-        idx_nh = min(cp, len(nh_all))
-        idx_sgld = min(cp * 4, len(sgld_all))  # SGLD needs more steps
-        if idx_nh > 100:
-            kl_nh_curve.append(compute_kl_2d(nh_all[:idx_nh], banana_log_prob))
-        else:
-            kl_nh_curve.append(np.nan)
-        if idx_sgld > 100:
-            kl_sgld_curve.append(compute_kl_2d(sgld_all[:idx_sgld], banana_log_prob))
-        else:
-            kl_sgld_curve.append(np.nan)
+    kl_nh_curve, fe_nh_curve = [], []
+    for cp in checkpoints_nh:
+        if cp > 200:
+            kl_nh_curve.append(compute_kl_2d(nh_all[:cp], banana_log_prob))
+            fe_nh_curve.append(cp * 4)  # 4 force evals per RK4 step (approx for Euler too)
+
+    kl_sgld_curve, fe_sgld_curve = [], []
+    for cp in checkpoints_sgld:
+        if cp > 200:
+            kl_sgld_curve.append(compute_kl_2d(sgld_all[:cp], banana_log_prob))
+            fe_sgld_curve.append(cp)  # 1 force eval per SGLD step
 
     # --- Plot ---
     fig, axes = plt.subplots(1, 4, figsize=(22, 5), constrained_layout=True)
@@ -331,7 +331,7 @@ def run_e1():
     # (b) NH-tanh samples
     axes[1].scatter(nh_samples[:, 0], nh_samples[:, 1], s=1, alpha=0.3, c=C_NH)
     axes[1].contour(X, Y, Z, levels=8, colors='gray', alpha=0.5, linewidths=0.5)
-    axes[1].set_title(f'(b) NH-tanh (KL={kl_nh:.3f})', fontweight='bold')
+    axes[1].set_title(f'(b) NH-tanh multi-Q (KL={kl_nh:.3f})', fontweight='bold')
     axes[1].set_xlabel('$\\theta_1$')
     axes[1].set_ylabel('$\\theta_2$')
     axes[1].set_xlim(-3, 5)
@@ -347,12 +347,10 @@ def run_e1():
     axes[2].set_ylim(-2, 12)
 
     # (d) KL convergence
-    # NH: 4 force evals per RK4 step
-    fe_nh = checkpoints * 4
-    # SGLD: 1 force eval per step
-    fe_sgld = checkpoints * 4
-    axes[3].plot(fe_nh, kl_nh_curve, 'o-', color=C_NH, label='NH-tanh', markersize=3)
-    axes[3].plot(fe_sgld, kl_sgld_curve, 's-', color=C_SGLD, label='SGLD', markersize=3)
+    axes[3].plot(fe_nh_curve, kl_nh_curve, 'o-', color=C_NH,
+                 label='NH-tanh multi-Q', markersize=3)
+    axes[3].plot(fe_sgld_curve, kl_sgld_curve, 's-', color=C_SGLD,
+                 label='SGLD', markersize=3)
     axes[3].axhline(0.01, color='gray', ls='--', label='KL=0.01 threshold')
     axes[3].set_xscale('log')
     axes[3].set_yscale('log')
@@ -454,31 +452,61 @@ def run_e2():
         V.backward()
         return theta.grad.detach()
 
-    # Use multi-scale sampler
+    # --- Find MAP estimate to initialize from (using Adam via manual param) ---
+    print("  Finding MAP estimate...")
     torch.manual_seed(SEED)
-    Qs = [0.1, 1.0, 10.0]
+    map_model = TinyBNN()
+    map_opt = torch.optim.Adam(map_model.parameters(), lr=0.005)
+    for epoch in range(2000):
+        pred = map_model(x_data)
+        # sigma_noise=0.1, so sigma^2=0.01
+        nll = 0.5 * ((pred.squeeze() - y_data)**2).sum() / 0.01
+        prior = 0.5 * sum((pp**2).sum() for pp in map_model.parameters())
+        loss = nll + prior
+        map_opt.zero_grad()
+        loss.backward()
+        map_opt.step()
+        if epoch % 500 == 0:
+            print(f"    MAP epoch {epoch}: loss = {loss.item():.2f}")
+    theta_map = map_model.get_flat_params().detach()
+
+    # --- NH-tanh with multi-scale Q ---
+    torch.manual_seed(SEED)
+    Qs = [1.0, 10.0, 100.0]  # Larger Q for high-d to slow xi dynamics
     N_therm = len(Qs)
-    q = torch.randn(d) * 0.01
-    p = torch.randn(d)
+    q = theta_map.detach().clone()
+    p = torch.randn(d) * 0.1  # small initial momentum
     xis = torch.zeros(N_therm)
     Qs_t = torch.tensor(Qs, dtype=torch.float32)
-    dt = 0.001  # smaller dt for high-d
-    n_steps = 30000
-    burn_in = 5000
-    thin = 25
+    dt = 0.0002  # very small dt for high-d stability
+    n_steps = 50000
+    burn_in = 10000
+    thin = 40
 
     nh_samples = []
     t0 = time.time()
     for step in range(n_steps):
         gv = bnn_grad_fn(q)
+        # Clip gradient for stability
+        gv = torch.clamp(gv, -100, 100)
         gs = torch.tanh(xis)
         total_g = gs.sum()
 
-        # Euler-Maruyama (simpler, more stable for high-d)
-        KE = (p**2).sum()
+        # Velocity Verlet with friction (splitting)
+        # Half-step momentum
+        p = p + 0.5 * dt * (-gv - total_g * p)
+        # Full-step position
         q = q + dt * p
-        p = p + dt * (-gv - total_g * p)
+        # Update xi (half step before, half after)
+        KE = (p**2).sum()
         xis = xis + dt * (1.0 / Qs_t) * (KE - d * 1.0)
+        # Recompute gradient at new position
+        gv = bnn_grad_fn(q)
+        gv = torch.clamp(gv, -100, 100)
+        gs = torch.tanh(xis)
+        total_g = gs.sum()
+        # Half-step momentum
+        p = p + 0.5 * dt * (-gv - total_g * p)
 
         if step >= burn_in and (step - burn_in) % thin == 0:
             nh_samples.append(q.detach().clone())
@@ -489,16 +517,17 @@ def run_e2():
     # --- SGLD ---
     print("Running SGLD...")
     torch.manual_seed(SEED)
-    theta = torch.randn(d) * 0.01
+    theta = theta_map.detach().clone()
     sgld_samples = []
-    eps = 1e-4
-    sgld_steps = 60000
+    eps = 1e-5  # smaller step for stability
+    sgld_steps = 50000
     sgld_burn = 10000
-    sgld_thin = 50
+    sgld_thin = 40
 
     t0 = time.time()
     for step in range(sgld_steps):
         gv = bnn_grad_fn(theta)
+        gv = torch.clamp(gv, -100, 100)
         theta = theta - eps * gv + np.sqrt(2 * eps) * torch.randn_like(theta)
 
         if step >= sgld_burn and (step - sgld_burn) % sgld_thin == 0:
@@ -691,19 +720,111 @@ def run_e3():
     for m, t, s in zip(methods, times, speedups):
         print(f"    {m}: {t:.4f}s ({s:.1f}x)")
 
-    # --- Plot ---
-    fig, ax = plt.subplots(1, 1, figsize=(8, 5), constrained_layout=True)
-    colors = [C_NH, C_SGLD, '#ff7f0e', '#d62728', '#9467bd']
-    bars = ax.bar(methods, times, color=colors, edgecolor='black', linewidth=0.5)
+    # --- Dimension scaling study ---
+    print("\n  Dimension scaling study (Analytical vs Hutch(1) vs Brute)...")
+    dims_to_test = [10, 50, 100, 500]
+    scaling_results = {dd: {} for dd in dims_to_test}
+    n_steps_scale = 200  # fewer steps for scaling study
 
-    # Annotate speedup
+    for dd in dims_to_test:
+        torch.manual_seed(SEED)
+        K_dd = 5
+        means_dd = torch.zeros(K_dd, dd)
+        means_dd[:, :2] = means[:K_dd, :2] if K_dd <= K else means[:, :2]
+        weights_dd = torch.ones(K_dd) / K_dd
+
+        def gmm_grad_dd(x, m=means_dd, w=weights_dd):
+            _, g = gmm_potential_and_grad(x, m, w)
+            return g
+
+        q_dd = torch.randn(dd)
+        p_dd = torch.randn(dd)
+        xi_dd = torch.zeros(1)
+
+        # Analytical
+        q_, p_, xi_ = q_dd.clone(), p_dd.clone(), xi_dd.clone()
+        t0 = time.time()
+        for _ in range(n_steps_scale):
+            q_, p_, xi_, _ = nh_tanh_rk4_step(q_, p_, xi_, gmm_grad_dd, dt, Q, 1.0, dd)
+        scaling_results[dd]['analytical'] = time.time() - t0
+
+        # Hutchinson(1)
+        q_, p_, xi_ = q_dd.clone(), p_dd.clone(), xi_dd.clone()
+        t0 = time.time()
+        for _ in range(n_steps_scale):
+            q_, p_, xi_, _ = nh_tanh_rk4_step(q_, p_, xi_, gmm_grad_dd, dt, Q, 1.0, dd)
+            v = torch.randn(dd)
+            eps_fd = 1e-4
+            g_xi = torch.tanh(xi_)
+            f_plus = -gmm_grad_dd(q_) - g_xi * (p_ + eps_fd * v)
+            f_minus = -gmm_grad_dd(q_) - g_xi * (p_ - eps_fd * v)
+            trace_h = (v * (f_plus - f_minus) / (2 * eps_fd)).sum()
+        scaling_results[dd]['hutch1'] = time.time() - t0
+
+        # Brute force (skip for d>=100 -- too slow)
+        if dd <= 100:
+            q_, p_, xi_ = q_dd.clone(), p_dd.clone(), xi_dd.clone()
+            t0 = time.time()
+            for _ in range(n_steps_scale):
+                q_, p_, xi_, _ = nh_tanh_rk4_step(q_, p_, xi_, gmm_grad_dd, dt, Q, 1.0, dd)
+                p_req = p_.detach().requires_grad_(True)
+                g_xi = torch.tanh(xi_)
+                f_p = -gmm_grad_dd(q_) - g_xi * p_req
+                jac = torch.zeros(dd, dd)
+                for i in range(dd):
+                    if p_req.grad is not None:
+                        p_req.grad.zero_()
+                    f_p[i].backward(retain_graph=True)
+                    jac[i] = p_req.grad
+                trace_bf = jac.diagonal().sum()
+            scaling_results[dd]['brute'] = time.time() - t0
+        else:
+            scaling_results[dd]['brute'] = np.nan
+
+        ratio_h = scaling_results[dd]['hutch1'] / scaling_results[dd]['analytical']
+        print(f"    d={dd}: analytical={scaling_results[dd]['analytical']:.3f}s, "
+              f"hutch1={scaling_results[dd]['hutch1']:.3f}s ({ratio_h:.1f}x), "
+              f"brute={scaling_results[dd].get('brute', 'N/A')}")
+
+    # --- Plot: 2-panel figure ---
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5), constrained_layout=True)
+
+    # Panel (a): Bar chart at d=10
+    colors_bar = [C_NH, C_SGLD, '#ff7f0e', '#d62728', '#9467bd']
+    bars = axes[0].bar(methods, times, color=colors_bar, edgecolor='black', linewidth=0.5)
     for bar, s in zip(bars, speedups):
-        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02*max(times),
-                f'{s:.1f}x', ha='center', va='bottom', fontsize=12, fontweight='bold')
+        axes[0].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02*max(times),
+                     f'{s:.1f}x', ha='center', va='bottom', fontsize=11, fontweight='bold')
+    axes[0].set_ylabel('Wall-clock time (s)')
+    axes[0].set_title('(a) Divergence cost at d=10', fontweight='bold')
+    axes[0].set_ylim(0, max(times) * 1.25)
 
-    ax.set_ylabel('Wall-clock time (s)')
-    ax.set_title('Divergence computation: 10D GMM, 1000 RK4 steps', fontweight='bold')
-    ax.set_ylim(0, max(times) * 1.2)
+    # Panel (b): Scaling with dimension
+    dims_arr = np.array(dims_to_test)
+    t_ana = [scaling_results[dd]['analytical'] for dd in dims_to_test]
+    t_h1 = [scaling_results[dd]['hutch1'] for dd in dims_to_test]
+    t_bf = [scaling_results[dd]['brute'] for dd in dims_to_test]
+    speedup_h1 = [h/a for h, a in zip(t_h1, t_ana)]
+
+    axes[1].plot(dims_arr, speedup_h1, 'o-', color=C_SGLD, label='Hutch(1) / Analytical',
+                 markersize=6, linewidth=2)
+    # Add brute force speedup where available
+    speedup_bf = []
+    dims_bf = []
+    for dd in dims_to_test:
+        if not np.isnan(scaling_results[dd]['brute']):
+            speedup_bf.append(scaling_results[dd]['brute'] / scaling_results[dd]['analytical'])
+            dims_bf.append(dd)
+    if dims_bf:
+        axes[1].plot(dims_bf, speedup_bf, 's--', color=C_REF, label='Brute / Analytical',
+                     markersize=6, linewidth=2)
+
+    axes[1].axhline(1.0, color='gray', ls=':', alpha=0.5)
+    axes[1].set_xlabel('Dimension d')
+    axes[1].set_ylabel('Slowdown ratio vs analytical')
+    axes[1].set_title('(b) Scaling with dimension', fontweight='bold')
+    axes[1].legend(frameon=False)
+    axes[1].set_xscale('log')
 
     fig.savefig(os.path.join(FIGDIR, 'e3_speedup.png'), bbox_inches='tight')
     plt.close(fig)
