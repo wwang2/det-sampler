@@ -135,7 +135,7 @@ function renderTimeline(entries) {
     <div class="entry">
       <span class="at">${esc(e.at || '')}</span>
       <span class="author">${esc(e.author || '')}</span>
-      <div class="text">${esc(e.text || '')}</div>
+      <div class="text">${renderMarkdown(e.text || '')}</div>
     </div>
   `).join('');
   return `<div class="timeline">${items}</div>`;
