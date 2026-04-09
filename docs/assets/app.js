@@ -10,7 +10,7 @@ const app = document.getElementById('app');
     const res = await fetch('./data.json', { cache: 'no-store' });
     data = await res.json();
   } catch (e) {
-    app.innerHTML = `<p class="empty">No data.json found. Run <code>/viz-rebuild</code>.</p>`;
+    app.innerHTML = `<p class="empty">No data.json found. Run <code>/publish</code>.</p>`;
     return;
   }
   document.title = data.campaign?.title || 'Campaign';
@@ -131,14 +131,26 @@ function renderMarkdown(text) {
 }
 
 function renderTimeline(entries) {
-  const items = entries.map(e => `
-    <div class="entry">
-      <span class="at">${esc(e.at || '')}</span>
-      <span class="author">${esc(e.author || '')}</span>
-      <div class="text">${renderMarkdown(e.text || '')}</div>
-    </div>
-  `).join('');
-  return `<div class="timeline">${items}</div>`;
+  const items = entries.map(e => {
+    // Format date nicely
+    const raw = e.at || '';
+    const date = raw.length >= 10 ? raw.slice(0, 10) : raw;
+    // Detect entry type from content
+    const body = e.text || '';
+    const isDebate = body.includes('🗳️ Debate') || body.includes('debate-agent');
+    const isMilestone = body.includes('## Round') || body.includes('## Milestone') || body.includes('Leaderboard');
+    const isOrbitComplete = body.includes('complete') && body.includes('orbit/');
+    const tag = isDebate ? 'debate' : isMilestone ? 'milestone' : isOrbitComplete ? 'result' : 'update';
+    return `
+      <div class="tl-entry" data-tag="${tag}">
+        <div class="tl-header">
+          <span class="tl-date">${esc(date)}</span>
+          <span class="tl-tag tl-tag-${tag}">${tag}</span>
+        </div>
+        <div class="tl-body">${renderMarkdown(body)}</div>
+      </div>`;
+  }).join('');
+  return `<div class="timeline-log">${items}</div>`;
 }
 
 function renderOrbit(data, o) {
