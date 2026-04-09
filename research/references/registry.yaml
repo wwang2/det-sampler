@@ -1,0 +1,26 @@
+- key: legoll2007
+  title: "Non-ergodicity of the Nose-Hoover thermostatted harmonic oscillator"
+  authors: "Frederic Legoll, Mitchell Luskin, Richard Moeckel"
+  year: 2007
+  url: "https://arxiv.org/abs/math/0703059"
+  type: paper
+  finding: "Rigorous proof that the N=1 Nose-Hoover thermostat fails to be ergodic on the 1D harmonic oscillator via KAM theorem."
+  cited_by: [orbit/kam-failure-map-053]
+
+- key: tapias2016
+  title: "Ergodicity of one-dimensional oscillators with a signum thermostat"
+  authors: "Diego Tapias, Alessandro Bravetti, David P. Sanders"
+  year: 2016
+  url: "https://arxiv.org/abs/1602.03909"
+  type: paper
+  finding: "Introduces the logistic thermostat as an alternative N=1 scheme motivated by ergodicity."
+  cited_by: [orbit/kam-failure-map-053]
+
+- key: hoover1985
+  title: "Canonical dynamics: Equilibrium phase-space distributions"
+  authors: "William G. Hoover"
+  year: 1985
+  url: "https://doi.org/10.1103/PhysRevA.31.1695"
+  type: paper
+  finding: "Original formulation of the Nose-Hoover thermostat; notes non-ergodic behavior on the 1D harmonic oscillator."
+  cited_by: [orbit/kam-failure-map-053]

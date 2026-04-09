@@ -46,13 +46,58 @@
   "seeds": [
     42,
     123,
-    999
+    999,
+    777,
+    2024,
+    31415,
+    271828,
+    61803,
+    1414,
+    1618
   ],
   "n_steps": 1000000,
   "dt": 0.005,
-  "ergodic_fraction_logosc": 0.63,
-  "ergodic_fraction_tanh": 0.6275,
-  "ratio_tanh_over_logosc": 0.9960317460317459,
-  "mean_var_ratio_logosc_overall": 0.9824074982546207,
-  "mean_var_ratio_tanh_overall": 0.9900847551459878
+  "integrator": "symmetric Trotter splitting (G-B-O-A-O-B-G) for Nose-Hoover N=1",
+  "threshold": 0.05,
+  "logosc": {
+    "mean_first_frac": 0.68,
+    "majority_vote_frac": 0.4725,
+    "per_seed_frac": [
+      0.5875,
+      0.5475,
+      0.535,
+      0.55,
+      0.54,
+      0.5225,
+      0.5375,
+      0.52,
+      0.55,
+      0.55
+    ],
+    "restricted_critical_mean": 0.7,
+    "restricted_critical_majority": 0.475,
+    "restricted_wle2_mean": 0.59,
+    "restricted_wle2_majority": 0.33
+  },
+  "tanh": {
+    "mean_first_frac": 0.705,
+    "majority_vote_frac": 0.43,
+    "per_seed_frac": [
+      0.5375,
+      0.515,
+      0.5075,
+      0.5075,
+      0.4975,
+      0.5225,
+      0.53,
+      0.52,
+      0.4975,
+      0.5125
+    ],
+    "restricted_critical_mean": 0.7,
+    "restricted_critical_majority": 0.275,
+    "restricted_wle2_mean": 0.6133333333333333,
+    "restricted_wle2_majority": 0.26666666666666666
+  },
+  "metric_tanh_majority_vote": 0.43
 }
