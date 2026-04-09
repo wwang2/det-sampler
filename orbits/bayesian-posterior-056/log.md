@@ -1,6 +1,6 @@
 ---
 strategy: nh-cnf-bayesian-posterior
-status: in-progress
+status: complete
 eval_version: eval-v1
 metric: 0.1708
 issue: 56
