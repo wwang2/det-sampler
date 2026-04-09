@@ -131,6 +131,7 @@ def main():
     ax.set_xticklabels(short_names * len(show_Qs), fontsize=10)
     ax.set_yscale('log')
     ax.set_ylabel(r"$\tau_\mathrm{int}$ (20 seeds)")
+    ax.axhline(5.0, ls='--', color='gray', lw=0.8, label='Hamiltonian floor')
     ax.set_title(r"(c) $\tau_\mathrm{int}$ at thermostat-active $Q$", fontweight='bold')
     ax.grid(True, which='both', alpha=0.3)
 

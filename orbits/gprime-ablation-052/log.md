@@ -37,9 +37,11 @@ Median tau_int at each method's best Q (20 seeds, 200k force evals, N=5 parallel
 | log-osc           | 2     | changes sign | 30       | 15.5           | [10.0, 261.6] |
 | clipped-log-osc   | 2     | >= 0         | 30       | 15.5           | [10.0, 261.6] |
 | tanh-scaled       | 2     | >= 0, smooth | 30       | 55.1           | [10.9, 202.2] |
-| tanh-ref          | 1     | >= 0, smooth | 30       | 5.7            | [5.3, 9.3]    |
+| tanh-ref          | 1     | >= 0, smooth | 10       | 317            | [112, 502]    |
 
-*Q_c=30 chosen as the thermostat-active best; Q_c>=100 gives lower tau but represents the Hamiltonian limit (thermostat effectively off, non-ergodic).*
+*Q_c=30 chosen as the thermostat-active best for log-osc, clipped-log-osc, and tanh-scaled; Q_c>=100 gives lower tau but represents the Hamiltonian limit (thermostat effectively off, non-ergodic).*
+
+*\*tanh-ref reaches the Hamiltonian floor already at Q_c=30 (tau=5.7, IQR=[5.3, 9.3]); its thermostat-active best is Q_c=10.*
 
 Further, at Q_c >= 100 all four methods collapse to tau_int ~ 5.1-5.2 — a
 **Hamiltonian-dynamics floor** from the autocorrelation estimator on a nearly-periodic
@@ -77,15 +79,21 @@ At Q=10 (a regime where the thermostat is clearly active), the ordering is:
 
 At Q=30:
 
-- tanh-ref: tau = 5.7
+- tanh-ref (g'(0)=1): tau = 5.7 **(Hamiltonian-floor regime -- not a thermostat-active result)**
 - log-osc: tau = 15.5
 - clipped-log-osc: tau = 15.5
 - tanh-scaled: tau = 55.1
 
-The single variable that tracks performance here is **not g' sign and not g'(0) directly**.
-Rather, tanh-ref has a *lower* g'(0) than the other three but beats them all, and
-tanh-scaled (which doubles the coupling of tanh-ref) is significantly *worse* than
-tanh-ref. If anything, **smaller g'(0) is better** in this regime for this target.
+At Q=30, tanh-ref's tau=5.7 sits at the Hamiltonian floor (~5.0), so it is effectively
+thermostat-off and not a meaningful active result. The meaningful active comparison is
+at Q=10, where tanh-ref gives tau=317 vs log-osc's 1151 -- a ~3.6x gap, not the 536x
+reported in orbit #47.
+
+The single variable that tracks performance in the thermostat-active regime is **not g'
+sign and not g'(0) directly**. Rather, tanh-ref has a *lower* g'(0) than the other three
+but beats them at Q=10, and tanh-scaled (which doubles the coupling of tanh-ref) is
+significantly *worse* than tanh-ref. If anything, **smaller g'(0) is better** in this
+regime for this target.
 
 ## Approach
 
@@ -192,7 +200,7 @@ clipped-log-osc.
 To verify that the tau_int estimator works on a non-trivial target and that the
 "no g' sign effect" conclusion is not an estimator artifact, we ran all 4 friction
 methods on a 1D symmetric double-well potential V(x) = (x^2 - 1)^2 at Q_c=10,
-20 seeds, 200k steps.
+20 seeds, 200k steps, dt = 0.005 (same step size as the main harmonic sweep).
 
 | Method          | median tau_int | IQR            |
 |-----------------|:--------------:|----------------|
