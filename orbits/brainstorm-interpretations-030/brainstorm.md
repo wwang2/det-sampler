@@ -447,7 +447,7 @@ or PRL and the auto-tuning paper to JCTC.
   formulation.
 - [Martyna, Klein, Tuckerman (1992), JCP](https://doi.org/10.1063/1.463940) --
   Nose-Hoover chains.
-- [Legoll, Luskin, Moeckel (2007), Nonlinearity](https://doi.org/10.1088/0951-7715/20/7/003)
+- [Legoll, Luskin, Moeckel (2007), Nonlinearity](https://doi.org/10.1088/0951-7715/22/7/011)
   -- non-ergodicity of Nose-Hoover on harmonic oscillator (F3 cousin).
 - [Ottobre & Pavliotis (2011), Nonlinearity](https://doi.org/10.1088/0951-7715/24/5/013)
   -- ergodicity of GLE with power-law kernels.
