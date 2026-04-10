@@ -1003,7 +1003,7 @@
       "name": "nh-cnf-deep-057",
       "strategy": "nh-cnf-generative",
       "status": "promising",
-      "metric": 0.039,
+      "metric": 0.012,
       "eval_version": "eval-v1",
       "issue": 58,
       "parents": [
@@ -1018,6 +1018,82 @@
             "https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e1_density.png",
             "https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e3_advantage.png",
             "https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e4_concept.png"
+          ]
+        },
+        {
+          "author": "agent",
+          "date": "2026-04-10",
+          "body": "**orbit-agent/nh-cnf-deep-057 — Refinement 1:** Remade figures + 3 new experiments. Metric improved: 0.039 -> 0.012 (best ED on Two Moons).\n\n### E1 Remade: KDE contour density plots\nProper thinning (14k independent samples from multi-scale Q=[0.1,1,10] chains, 100k steps, thin=50). NH-CNF wins on all 4 targets:\n- Two Moons: ED=0.012 vs 0.015 (1.3x)\n- Two Spirals: ED=0.005 vs 0.027 (6.1x)\n- Eight Gaussians: ED=0.105 vs 0.308 (2.9x)\n\n![e1_density](https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e1_density.png)\n\n### E5 New: Phase-space trajectory\nShows the core mechanism: xi encodes equilibrium distance, tanh(xi) is the exact divergence signal.\n\n![e5_phase_space](https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e5_phase_space.png)\n\n### E6 New: Dimension scaling (honest negative)\nLangevin beats NH-CNF at all dimensions tested (d=2-50) with GMM potential. NH mode coverage degrades at d>=20. The NH-CNF advantage appears specific to KDE-potential + warm-start settings.\n\n![e6_scaling](https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e6_scaling.png)\n\n### E7 New: Log-likelihood comparison\nNH-CNF samples produce better test LL than Langevin on all targets. On Eight Gaussians, NH matches direct KDE while Langevin suffers mode collapse (-3.43 vs -4.48).\n\n![e7_loglik](https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e7_loglik.png)\n\n### E4 Remade: Simplified conceptual figure\n\n![e4_concept](https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e4_concept.png)\n\n[View code](https://github.com/wwang2/det-sampler/blob/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/experiment_refine.py) | [View log](https://github.com/wwang2/det-sampler/blob/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/log.md)",
+          "images": [
+            "https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e1_density.png",
+            "https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e5_phase_space.png",
+            "https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e6_scaling.png",
+            "https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e7_loglik.png",
+            "https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e4_concept.png"
+          ]
+        },
+        {
+          "author": "wwang2",
+          "date": "2026-04-10",
+          "body": "Spawned child: #59 (nh-cnf-paper-058) — paper draft assembly",
+          "images": []
+        },
+        {
+          "author": "agent",
+          "date": "2026-04-10",
+          "body": "**orbit-agent/nh-cnf-paper-058:** Complete NeurIPS-format paper draft committed.\n\n**Paper:** `orbits/nh-cnf-paper-058/paper.tex` (1036 lines LaTeX)\n\n**Structure:**\n- Abstract, Introduction, Background (CNFs + NH thermostat), Method (exact divergence theorem + NH-CNF architecture + multi-scale Q + diffusion connection), Experiments (6 experiments with 8 figures), Related Work, Discussion, 3 Appendices\n- 15 references (Nose 1984, Hoover 1985, Chen 2018, Grathwohl 2019, Song 2021, etc.)\n\n**Key figures included:**\n- Fig 1: Diffusion model vs NH thermostat correspondence\n- Fig 2: 2D density comparison (NH-CNF vs Langevin)\n- Fig 3: Phase-space trajectory visualization\n- Fig 4: Exact divergence advantage (4-panel analysis)\n- Fig 5: Log-likelihood comparison\n- Fig 6: Dimension scaling (honest negative result)\n- Fig 7: BNN posterior calibration\n\n**Highlights from the paper:**\n- Theorem 1: div(f) = -d*g(xi), O(1) cost, zero variance\n- NH-CNF beats Langevin 6.1x on spirals, 2.9x on eight Gaussians (energy distance)\n- Zero-variance density vs Hutchinson O(d) variance (67% relative error at d=2)\n- 98% BNN posterior calibration\n- Honest limitation: mode trapping at d>20\n\n![concept](https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-paper-058/orbits/nh-cnf-paper-058/figures/fig1_concept.png)\n\n[View paper.tex](https://github.com/wwang2/det-sampler/blob/orbit/nh-cnf-paper-058/orbits/nh-cnf-paper-058/paper.tex) | [View log](https://github.com/wwang2/det-sampler/blob/orbit/nh-cnf-paper-058/orbits/nh-cnf-paper-058/log.md)",
+          "images": [
+            "https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-paper-058/orbits/nh-cnf-paper-058/figures/fig1_concept.png"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "nh-cnf-paper-058",
+      "strategy": "nh-cnf-paper",
+      "status": "promising",
+      "metric": 0.012,
+      "eval_version": "eval-v1",
+      "issue": 58,
+      "parents": [
+        "nh-cnf-deep-057",
+        "bayesian-posterior-056"
+      ],
+      "issue_comments": [
+        {
+          "author": "agent",
+          "date": "2026-04-10",
+          "body": "**orbit-agent/nh-cnf-deep-057:** All four experiments complete. Final metric: ED=0.039 on two moons.\n\n**E1 — NH-CNF sampling on 2D targets:** NH-CNF matches Langevin on moons (ED 0.039 vs 0.035) and dramatically outperforms on multimodal targets: spirals (0.029 vs 0.227, 8x), checkerboard (0.028 vs 0.150, 5x), eight Gaussians (0.272 vs 2.199, 8x). The deterministic NH dynamics traverse modes via Hamiltonian trajectories while Langevin gets trapped.\n\n![e1_density](https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e1_density.png)\n\n**E2 — Annealed Q flow:** Cosine Q schedule performs best among NH schedules at moderate NFE, but no schedule consistently beats constant-Q. Langevin wins at high NFE. Honest negative result — the deterministic reverse diffusion analogy does not translate to practical advantage on these targets.\n\n**E3 — Exact divergence advantage (strongest result):** NH-CNF has exactly zero variance in log-density computation at any dimension (d=2 to 100). Hutchinson(1) variance grows O(d), reaching 0.32 at d=100. This is a mathematical fact, not a tuning artifact.\n\n![e3_advantage](https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e3_advantage.png)\n\n**E4 — Conceptual figure:** Maps diffusion model pipeline to NH-CNF pipeline, showing the structural correspondence (noise schedule <-> Q schedule, score network <-> potential V(q), stochastic trace <-> exact div).\n\n![e4_concept](https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e4_concept.png)\n\n[View code](https://github.com/wwang2/det-sampler/blob/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/experiment.py) | [View log](https://github.com/wwang2/det-sampler/blob/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/log.md)",
+          "images": [
+            "https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e1_density.png",
+            "https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e3_advantage.png",
+            "https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e4_concept.png"
+          ]
+        },
+        {
+          "author": "agent",
+          "date": "2026-04-10",
+          "body": "**orbit-agent/nh-cnf-deep-057 — Refinement 1:** Remade figures + 3 new experiments. Metric improved: 0.039 -> 0.012 (best ED on Two Moons).\n\n### E1 Remade: KDE contour density plots\nProper thinning (14k independent samples from multi-scale Q=[0.1,1,10] chains, 100k steps, thin=50). NH-CNF wins on all 4 targets:\n- Two Moons: ED=0.012 vs 0.015 (1.3x)\n- Two Spirals: ED=0.005 vs 0.027 (6.1x)\n- Eight Gaussians: ED=0.105 vs 0.308 (2.9x)\n\n![e1_density](https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e1_density.png)\n\n### E5 New: Phase-space trajectory\nShows the core mechanism: xi encodes equilibrium distance, tanh(xi) is the exact divergence signal.\n\n![e5_phase_space](https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e5_phase_space.png)\n\n### E6 New: Dimension scaling (honest negative)\nLangevin beats NH-CNF at all dimensions tested (d=2-50) with GMM potential. NH mode coverage degrades at d>=20. The NH-CNF advantage appears specific to KDE-potential + warm-start settings.\n\n![e6_scaling](https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e6_scaling.png)\n\n### E7 New: Log-likelihood comparison\nNH-CNF samples produce better test LL than Langevin on all targets. On Eight Gaussians, NH matches direct KDE while Langevin suffers mode collapse (-3.43 vs -4.48).\n\n![e7_loglik](https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e7_loglik.png)\n\n### E4 Remade: Simplified conceptual figure\n\n![e4_concept](https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e4_concept.png)\n\n[View code](https://github.com/wwang2/det-sampler/blob/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/experiment_refine.py) | [View log](https://github.com/wwang2/det-sampler/blob/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/log.md)",
+          "images": [
+            "https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e1_density.png",
+            "https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e5_phase_space.png",
+            "https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e6_scaling.png",
+            "https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e7_loglik.png",
+            "https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-deep-057/orbits/nh-cnf-deep-057/figures/e4_concept.png"
+          ]
+        },
+        {
+          "author": "wwang2",
+          "date": "2026-04-10",
+          "body": "Spawned child: #59 (nh-cnf-paper-058) — paper draft assembly",
+          "images": []
+        },
+        {
+          "author": "agent",
+          "date": "2026-04-10",
+          "body": "**orbit-agent/nh-cnf-paper-058:** Complete NeurIPS-format paper draft committed.\n\n**Paper:** `orbits/nh-cnf-paper-058/paper.tex` (1036 lines LaTeX)\n\n**Structure:**\n- Abstract, Introduction, Background (CNFs + NH thermostat), Method (exact divergence theorem + NH-CNF architecture + multi-scale Q + diffusion connection), Experiments (6 experiments with 8 figures), Related Work, Discussion, 3 Appendices\n- 15 references (Nose 1984, Hoover 1985, Chen 2018, Grathwohl 2019, Song 2021, etc.)\n\n**Key figures included:**\n- Fig 1: Diffusion model vs NH thermostat correspondence\n- Fig 2: 2D density comparison (NH-CNF vs Langevin)\n- Fig 3: Phase-space trajectory visualization\n- Fig 4: Exact divergence advantage (4-panel analysis)\n- Fig 5: Log-likelihood comparison\n- Fig 6: Dimension scaling (honest negative result)\n- Fig 7: BNN posterior calibration\n\n**Highlights from the paper:**\n- Theorem 1: div(f) = -d*g(xi), O(1) cost, zero variance\n- NH-CNF beats Langevin 6.1x on spirals, 2.9x on eight Gaussians (energy distance)\n- Zero-variance density vs Hutchinson O(d) variance (67% relative error at d=2)\n- 98% BNN posterior calibration\n- Honest limitation: mode trapping at d>20\n\n![concept](https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-paper-058/orbits/nh-cnf-paper-058/figures/fig1_concept.png)\n\n[View paper.tex](https://github.com/wwang2/det-sampler/blob/orbit/nh-cnf-paper-058/orbits/nh-cnf-paper-058/paper.tex) | [View log](https://github.com/wwang2/det-sampler/blob/orbit/nh-cnf-paper-058/orbits/nh-cnf-paper-058/log.md)",
+          "images": [
+            "https://raw.githubusercontent.com/wwang2/det-sampler/refs/heads/orbit/nh-cnf-paper-058/orbits/nh-cnf-paper-058/figures/fig1_concept.png"
           ]
         }
       ]
