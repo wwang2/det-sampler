@@ -89,7 +89,7 @@ def nh_tanh_rk4_step(q, p, xi, grad_V_fn, dt, Q=1.0, kT=1.0, d=None):
 # Multi-scale Q NH sampler
 # =============================================================================
 
-def run_nh_multiscale(grad_V_fn, data, n_steps=2000000, dt=0.005,
+def run_nh_multiscale(grad_V_fn, data, n_steps=100000, dt=0.005,
                       Q_values=[0.1, 1.0, 10.0], kT=1.0,
                       burn_frac=0.2, thin=100, seed=42):
     """Run NH-tanh with multiple Q values, warm-started from data."""
@@ -125,8 +125,8 @@ def run_nh_multiscale(grad_V_fn, data, n_steps=2000000, dt=0.005,
 # Langevin dynamics (ULA) baseline
 # =============================================================================
 
-def run_langevin(grad_V_fn, d, n_steps=2000000, eps=0.005, kT=1.0,
-                 burn_frac=0.2, thin=100, seed=42):
+def run_langevin(grad_V_fn, d, n_steps=100000, eps=0.005, kT=1.0,
+                 burn_frac=0.2, thin=50, seed=42):
     """Unadjusted Langevin Algorithm with burn-in and thinning."""
     torch.manual_seed(seed)
     x = torch.randn(d) * 0.5
@@ -309,14 +309,14 @@ def run_e1():
         'Eight Gaussians': (make_eight_gaussians, 0.05),
     }
 
-    # Parameters — MUCH longer runs
+    # Parameters — same step count as refine 1, but with proper KDE viz bandwidth
     n_train = 1000
-    n_steps = 500000    # 500k steps per chain (9 chains total ~ 4.5M steps)
+    n_steps = 100000    # 100k steps per chain
     dt_nh = 0.005
     eps_lang = 0.005
     kT = 1.0
     burn_frac = 0.2
-    thin = 100          # thin every 100 for independence
+    thin = 50            # thin every 50 for independent samples
     bw_kde_potential = 0.35  # bandwidth for the NH potential (not visualization)
 
     fig, axes = plt.subplots(4, 3, figsize=(15, 20), constrained_layout=True)
@@ -368,10 +368,10 @@ def run_e1():
 
         # --- Column 2: Langevin samples ---
         # Run multiple Langevin chains for fairness
-        print(f"  Running Langevin ({n_steps} steps, 9 chains)...")
+        print(f"  Running Langevin ({n_steps} steps, 3 chains)...")
         t0 = time.time()
         lang_all = []
-        for chain_idx in range(9):
+        for chain_idx in range(3):
             chain_seed = SEED + chain_idx * 77
             ls = run_langevin(
                 kde_pot.grad_potential, d=2, n_steps=n_steps, eps=eps_lang,
@@ -1078,7 +1078,7 @@ def run_e6():
     sigma = 0.5
     n_train = 500
     n_gt = 5000
-    base_steps = 500000
+    base_steps = 100000
     dt = 0.005
     kT = 1.0
 
