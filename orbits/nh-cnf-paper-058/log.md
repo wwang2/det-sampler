@@ -34,7 +34,7 @@ Complete NeurIPS-format paper draft presenting the Nose-Hoover thermostat as a c
 
 The paper (`paper.tex`, 1036 lines) contains:
 
-1. **Abstract** (~200 words): Problem (Hutchinson variance), observation (NH exact divergence), method (NH-CNF), results (3-6x on 2D, zero variance, 98% BNN calibration), honest limitation (d>20 trapping).
+1. **Abstract** (~200 words): Problem (Hutchinson variance), observation (NH exact divergence), method (NH-CNF), results (up to 6x on 2D multimodal, zero variance, 98% BNN calibration), honest limitation (d>20 trapping).
 
 2. **Introduction** (1 page): CNF density bottleneck, NH thermostat observation, contribution list, concept figure.
 
@@ -101,3 +101,24 @@ This paper applies a known mathematical property (NH exact divergence) to a spec
 - Welling & Teh (2011). SGLD. ICML.
 - Lakshminarayanan et al. (2017). Deep Ensembles. NeurIPS.
 - Leimkuhler & Matthews (2013). Stochastic numerical methods for molecular sampling.
+
+---
+
+## Refinement 1: Updated figures and corrected numbers
+
+Copied updated figures from nh-cnf-deep-057 refine 2:
+- fig1_concept.png (from e4_concept.png)
+- fig2_density.png (from e1_density.png) -- KDE contour plots with proper thinning
+- fig3_phase.png (from e5_phase_space.png) -- background density contours added
+- fig4_divergence.png (from e3_advantage.png) -- 3-panel layout (loss noise, trajectory error, dimension scaling)
+- fig5_loglik.png (from e7_loglik.png)
+- fig6_scaling.png (from e6_scaling.png) -- 2-panel (a)/(b) layout
+- fig4_schematic.png (from bayesian-posterior-056/e3_schematic.png)
+
+Paper text updates:
+- Abstract: "3--6x" changed to "up to 6x" with honest framing about topology dependence
+- Section 4.1: Added note about sample count difference (NH-CNF 14400 vs ULA 1600); added specific ratio breakdown by target
+- Section 4.2: Figure caption updated from 4-panel to 3-panel description matching actual figure
+- Section 4.3: Removed stale "5000 steps" claim; added background contour description
+- Section 4.5: Updated figure caption to (a)/(b) panel labels; rewrote diagnosis with figure references; added honest note that Langevin wins at all dimensions on GMM potential
+- Contributions list: updated to match abstract

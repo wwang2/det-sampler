@@ -57,8 +57,9 @@ a scalar thermostat variable and $g$ is the coupling function. This gives $O(1)$
 cost and \emph{exactly zero variance} for log-density tracking. We introduce
 NH-CNF, which augments the state with momentum and a thermostat variable, evolves
 the extended system under Nos\'{e}--Hoover dynamics, and accumulates log-densities
-exactly. On multimodal 2D targets, NH-CNF achieves 3--6$\times$ better sample
-quality than Langevin dynamics. Its zero-variance density evaluation contrasts
+exactly. On multimodal 2D targets, NH-CNF achieves up to 6$\times$ better energy
+distance than Langevin dynamics, with the strongest gains on targets with complex
+topology (spirals, well-separated modes) and modest gains on simpler targets. Its zero-variance density evaluation contrasts
 sharply with Hutchinson's estimator, whose variance grows linearly with dimension.
 On Bayesian neural network posteriors, NH-CNF produces 98\% calibrated uncertainty
 estimates. We also report an honest limitation: deterministic NH dynamics suffer
@@ -108,8 +109,9 @@ Our contributions are:
     thermostat coupling function. The proof is elementary --- three lines of
     calculus --- but the consequence is significant: density evaluation is free
     (Section~\ref{sec:exact_div}).
-  \item \textbf{Experimental validation.} NH-CNF achieves 3--6$\times$ better
-    energy distance than Langevin dynamics on multimodal 2D targets, zero-variance
+  \item \textbf{Experimental validation.} NH-CNF achieves up to 6$\times$ better
+    energy distance than Langevin dynamics on multimodal 2D targets (with the
+    largest gains on complex topology), zero-variance
     log-likelihoods, and 98\% calibrated Bayesian neural network posteriors
     (Section~\ref{sec:experiments}).
   \item \textbf{Honest limitations.} We document the failure mode:
@@ -400,6 +402,9 @@ per $Q$ value (9 chains total), 100k steps per chain, 20\% burn-in, and thinning
 every 50th sample (${\sim}$14k independent samples). The baseline is the
 unadjusted Langevin algorithm (ULA) with step size $\epsilon = 0.005$ and 8000
 steps. Quality is measured by energy distance (ED) to 10k ground-truth samples.
+Note that NH-CNF produces more samples ($N{=}14{,}400$) than ULA ($N{=}1{,}600$)
+due to its multi-chain, long-run design; the comparison reflects the
+practical output of each method under reasonable computational budgets.
 
 \paragraph{Results.}
 Table~\ref{tab:e1} reports the energy distances. NH-CNF achieves lower ED on all
@@ -425,12 +430,14 @@ shows KDE contour plots of the generated samples against the ground truth.
   \end{tabular}
 \end{table}
 
-The advantage is most pronounced on targets with well-separated modes. The
-deterministic NH dynamics traverse between modes via Hamiltonian trajectories ---
-the momentum $p$ carries the particle over energy barriers that Langevin's
-random walk struggles to cross. On nearly connected targets (two moons,
-checkerboard), the advantage is smaller because Langevin's local exploration is
-sufficient.
+NH-CNF shows the strongest advantage on targets with complex topology
+(two spirals: $6{\times}$ better ED) and well-separated modes (eight Gaussians:
+$2.9{\times}$). On simpler targets (two moons, checkerboard), the advantage is
+modest ($1.1$--$1.3{\times}$). The deterministic NH dynamics traverse between
+modes via Hamiltonian trajectories --- the momentum $p$ carries the particle
+over energy barriers that Langevin's random walk struggles to cross. On nearly
+connected targets, Langevin's local exploration is sufficient and the gap
+narrows.
 
 \begin{figure}[t]
   \centering
@@ -518,12 +525,13 @@ accumulated error over trajectory length.
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{figures/fig4_divergence.png}
-  \caption{\textbf{Exact divergence advantage.} (a)~Wall-clock cost vs.\ dimension:
-    analytical is flat at $O(1)$; Hutchinson grows slowly. (b)~Variance vs.\
-    dimension: Hutchinson variance grows linearly; analytical is zero.
-    (c)~Per-sample error distribution of Hutchinson estimates. (d)~Accumulated
-    log-density error over trajectory length: Hutchinson noise compounds as
-    $O(\sqrt{T})$; analytical error is purely from ODE discretization.}
+  \caption{\textbf{Exact divergence advantage.} (a)~Loss noise across evaluations:
+    NH-CNF (exact) produces identical values each time (variance $= 0$), while
+    Hutchinson($n_v{=}1$) and Hutchinson($n_v{=}5$) fluctuate.
+    (b)~Log-density error vs.\ trajectory length $T$: Hutchinson noise accumulates
+    as $O(\sqrt{T})$, eventually dominating ODE integrator error (the ``Hutchinson
+    horizon''). (c)~Per-sample density variance vs.\ dimension $d$: NH-CNF is
+    exactly zero at all $d$; Hutchinson variance grows with dimension.}
   \label{fig:divergence}
 \end{figure}
 
@@ -531,18 +539,20 @@ accumulated error over trajectory length.
 \label{sec:e5}
 
 To build intuition for \emph{how} the NH-CNF works, we visualize the full
-$(q, p, \xi)$ trajectory on the two-moons target over 5000 integration steps
+$(q, p, \xi)$ trajectory on the two-moons target
 (Figure~\ref{fig:phase}).
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{figures/fig3_phase.png}
-  \caption{\textbf{Phase-space trajectory on two moons.} (a)~Configuration space
-    $(q_1, q_2)$ colored by time, showing exploration of both moons.
-    (b)~Phase portrait $(q_1, p_1)$ revealing Hamiltonian oscillations modulated
-    by thermostat damping. (c)~Thermostat variable $\xi(t)$ fluctuating around
-    zero. (d)~Friction $g(\xi) = \tanh(\xi)$, which is simultaneously the
-    instantaneous per-dimension divergence $\divergence(f)/d$.}
+  \caption{\textbf{Phase-space trajectory on two moons.} The background contours
+    show the target two-moons density. (a)~Configuration space $(q_1, q_2)$
+    colored by time, showing systematic exploration of both moons within the
+    integration window. (b)~Phase portrait $(q_1, p_1)$ revealing Hamiltonian
+    oscillations modulated by thermostat damping. (c)~Thermostat variable $\xi(t)$
+    fluctuating around zero --- the hallmark of thermal equilibrium. (d)~Friction
+    $g(\xi) = \tanh(\xi)$, which is simultaneously the instantaneous per-dimension
+    divergence $\divergence(f)/d$: the density-tracking signal comes for free.}
   \label{fig:phase}
 \end{figure}
 
@@ -647,9 +657,13 @@ coverage is measured as the number of modes with $\geq 5\%$ of samples within
 2 standard deviations of the mode center.
 
 \paragraph{Results.}
-Table~\ref{tab:e6} reports the results. NH-CNF maintains full mode coverage through
-$d = 10$ but drops to 1/5 modes at $d = 20$ and 0/5 at $d = 50$. Langevin
-maintains full coverage through $d = 20$ and also fails at $d = 50$.
+Table~\ref{tab:e6} reports the results. NH-CNF maintains full mode coverage
+through $d = 10$ but drops sharply to 1/5 modes at $d = 20$ and 0/5 at
+$d = 50$. Langevin maintains full coverage through $d = 20$ and also fails at
+$d = 50$. Notably, Langevin achieves lower energy distance at \emph{all}
+dimensions tested with the GMM potential --- the NH-CNF advantage seen in
+Section~\ref{sec:e1} is specific to the 2D KDE-potential setting with
+warm-starting.
 
 \begin{table}[t]
   \centering
@@ -673,18 +687,23 @@ maintains full coverage through $d = 20$ and also fails at $d = 50$.
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{figures/fig6_scaling.png}
-  \caption{\textbf{Dimension scaling.} (Left) Energy distance vs.\ dimension.
-    (Right) Mode coverage. NH-CNF's deterministic dynamics get trapped at $d
-    \geq 20$, while Langevin maintains coverage via stochastic exploration.}
+  \caption{\textbf{Dimension scaling.} (a)~Energy distance vs.\ dimension:
+    NH-CNF degrades at $d \geq 20$ while Langevin remains stable.
+    (b)~Mode coverage vs.\ dimension: NH-CNF visits all 5 modes at $d \leq 10$
+    but collapses to a single mode cluster at $d = 20$, while Langevin maintains
+    full coverage until $d = 50$ where both methods fail.}
   \label{fig:scaling}
 \end{figure}
 
 \paragraph{Diagnosis.}
-The failure at high dimensions reflects a fundamental property of deterministic
-Hamiltonian-like flows. In the language of KAM theory, the NH dynamics in high
-dimensions can become trapped on invariant tori that prevent exploration of all
-modes. Stochastic methods (Langevin, SGLD) avoid this by continuously injecting
-noise that breaks the tori. This is not a tuning problem --- it is a structural
+Figure~\ref{fig:scaling} reveals both the strength and limitation of NH-CNF. At
+$d = 2$, NH-CNF visits all 5 modes. At $d = 20$, it collapses to a single mode
+cluster, while Langevin maintains full coverage via stochastic exploration. The
+energy distance (panel~a) confirms: NH-CNF degrades at $d \geq 20$ while
+Langevin remains stable. This is the well-known KAM trapping phenomenon:
+deterministic trajectories in high dimension get trapped near invariant
+structures. Stochastic methods avoid this by continuously injecting noise that
+breaks the invariant tori. This is not a tuning problem --- it is a structural
 limitation of autonomous deterministic flows with a scalar thermostat variable.
 
 \paragraph{Mitigation strategies (future work).}
