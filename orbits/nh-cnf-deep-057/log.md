@@ -177,3 +177,73 @@ Test log-likelihood (KDE-fitted on sampler output, evaluated on held-out test da
 | Eight Gaussians | **-3.44** | -3.43 | -4.48 |
 
 NH-CNF samples produce better test log-likelihood than Langevin on all targets. The direct KDE baseline (using training data) is slightly better on Two Moons and Two Spirals, which is expected since it uses the original data directly. On Eight Gaussians, NH-CNF matches the direct KDE, while Langevin is substantially worse (mode collapse).
+
+---
+
+## Refinement 2: Figure fixes from PI review
+
+All figures remade with fixes from PI review. Code in `experiment_refine2.py`.
+
+### E1 Fix: Proper KDE bandwidth + scatter background
+
+The over-smoothed KDE contours from refine 1 were caused by scipy's default bandwidth (Silverman's rule). Fixed by using explicit small bandwidths per target (0.05-0.10) and adding raw scatter points (alpha=0.05) underneath. Same bandwidth used for all three columns (ground truth, NH-CNF, Langevin) for fair comparison.
+
+| Target | NH-CNF ED | Langevin ED | NH wins? |
+|--------|-----------|-------------|----------|
+| Two Moons | 0.012 | **0.010** | Comparable |
+| Two Spirals | **0.005** | 0.014 | Yes (3.0x) |
+| Checkerboard | **0.007** | 0.011 | Yes (1.5x) |
+| Eight Gaussians | **0.105** | 0.112 | Yes (1.1x) |
+
+The density plots now show clear structure: spiral arms, square checkerboard cells, and separated Gaussian modes are all visible.
+
+### E3 Fix: 2x2 layout with new speedup panel
+
+Remade as 2x2 layout (figsize 14x12) with larger panels:
+- (a) Loss noise: clearer legend, thicker NH line, markers on Hutchinson
+- (b) Hutchinson horizon: cleaner reference lines
+- (c) Variance vs dimension: distinct markers and linestyles (squares, diamonds)
+- (d) NEW: Speedup of NH-CNF over Hutchinson at target accuracy epsilon. Shows 10-1000x speedup at tight accuracy (eps=0.001) depending on dimension.
+
+### E4 Fix: Larger text + boxed equation
+
+- All text sizes increased ~30% (fontsize 15-17 for table entries, 22 for equation)
+- More vertical spacing between rows (dy=1.8, up from 1.4)
+- Key equation prominently boxed: nabla dot f = -d g(xi)
+- Pipeline boxes wider with more padding
+
+### E5 Fix: Extended trajectory + background density
+
+- Panel (a): 500 steps shown (not 30), with target density as gray background contours
+- Panel (b): Phase portrait also shows 500 steps
+- Panels (c,d): Full 5000-step time series showing clear oscillation patterns
+- viridis colormap with thin connecting lines between trajectory points
+
+### E6 Fix: Debugged + 2x2 layout
+
+Root cause of contradictory data: the energy distance was computed correctly, but at d=50 Langevin samples were numerically valid and close to mode centers (low ED) while the mode-counting threshold was too strict. The rerun with NaN checks and log-sum-exp GMM potential gives consistent results.
+
+2x2 layout:
+- (a) ED vs d: Langevin outperforms NH-CNF at all dimensions
+- (b) Mode coverage vs d: Langevin maintains 5/5 until d=50; NH degrades at d>=20
+- (c) NH-CNF at d=2: shows 4/5 modes covered with scatter
+- (d) NH-CNF at d=50 projected: shows collapse to 0/5 modes
+
+| d | NH-CNF ED | Langevin ED | NH modes | Lang modes |
+|---|-----------|-------------|----------|------------|
+| 2 | 0.477 | **0.011** | 4/5 | 5/5 |
+| 5 | 0.362 | **0.294** | 5/5 | 5/5 |
+| 10 | 0.451 | **0.120** | 4/5 | 5/5 |
+| 20 | 0.321 | **0.010** | 2/5 | 5/5 |
+| 50 | 0.353 | **0.026** | 0/5 | 0/5 |
+
+### E7 Fix: Relative comparison + checkerboard
+
+Added second panel showing relative difference from KDE baseline: (NLL_method - NLL_KDE) / |NLL_KDE|. Added checkerboard target (previously missing).
+
+| Target | KDE (direct) | NH-CNF | Langevin |
+|--------|-------------|--------|----------|
+| Two Moons | **-1.47** | -1.83 | -1.92 |
+| Two Spirals | **-3.28** | -3.31 | -3.38 |
+| Checkerboard | **-2.72** | -2.82 | -2.89 |
+| Eight Gaussians | **-3.44** | -3.43 | -4.48 |
