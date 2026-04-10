@@ -9,6 +9,12 @@ parents:
   - bayesian-posterior-056
 ---
 
+<!-- Refine 3 note: E1 metric improved from blurry KDE to proper potentials.
+     Eight Gaussians ED went from 0.105 to 0.185 (worse with exact potential
+     due to honest mode-hopping failure). Checkerboard from 0.007 to 0.001
+     (better). Two Moons from 0.012 to 0.001 (better). Overall metric
+     unchanged at 0.012 as it tracks the evaluator KL, not E1 energy distance. -->
+
 # nh-cnf-deep-057: NH-CNF as generative model + annealed NH flow
 
 ## Glossary
@@ -247,3 +253,57 @@ Added second panel showing relative difference from KDE baseline: (NLL_method - 
 | Two Spirals | **-3.28** | -3.31 | -3.38 |
 | Checkerboard | **-2.72** | -2.82 | -2.89 |
 | Eight Gaussians | **-3.44** | -3.43 | -4.48 |
+
+---
+
+## Refinement 3: Root cause fix -- proper potentials for E1
+
+### Diagnosis
+
+The PI identified the root cause of blurry E1 samples: the KDE potential with bandwidth=0.35 is a blurry approximation of the true density. The NH sampler correctly samples from exp(-V_KDE), but V_KDE itself is blurry. No amount of chain length or tuning can fix this -- the sampler is faithfully reproducing the wrong target.
+
+### Fix
+
+Replace the blurry KDE potential with proper potentials for each target:
+
+- **Eight Gaussians**: Exact analytical potential V(x) = -log (1/8) sum_k N(x; mu_k, sigma^2 I), using log-sum-exp for numerical stability. This is the correct potential with zero approximation error.
+- **Checkerboard, Two Moons, Two Spirals**: KDE with small bandwidth (bw=0.1, down from 0.35). The key speed optimization: precompute grad_V on a fine 500x500 grid, then use bilinear interpolation during sampling. This converts O(N_data) per KDE eval to O(1) grid lookup.
+
+We also tried:
+- **Sigmoid checkerboard potential** (sharpness=20): Failed badly (ED=20.8). The steep gradients at square boundaries cause numerical instability.
+- **MLP energy model** (denoising score matching): Failed because the MLP extrapolates poorly -- regions far from training data get low energy (high probability) instead of high energy (repulsive), causing samples to diverge.
+
+### E1 Results (proper potentials)
+
+Both methods use the SAME potential, SAME total gradient evaluations (200k steps x 9 chains = 1.8M), and tuned hyperparameters (Q and eps selected by short preliminary runs).
+
+| Target | NH-CNF ED | Langevin ED | Winner |
+|--------|-----------|-------------|--------|
+| Eight Gaussians | 0.185 | **0.074** | Langevin (2.5x) |
+| Checkerboard | **0.001** | 0.003 | NH-CNF (2.7x) |
+| Two Moons | 0.001 | **0.001** | Comparable |
+| Two Spirals | 0.014 | **0.006** | Langevin (2.5x) |
+
+### E1 Potential diagnostic
+
+New figure `e1_potential.png` shows the log-probability landscape for each potential, confirming they are well-calibrated before sampling:
+- Eight Gaussians: 8 sharp Gaussian modes visible
+- Checkerboard: clear alternating squares from KDE
+- Two Moons: crescent shapes clearly resolved
+- Two Spirals: spiral arms visible in the potential
+
+### Honest assessment
+
+With proper (non-blurry) potentials and fair comparison:
+- **NH-CNF wins on checkerboard** (2.7x better ED). The deterministic Hamiltonian dynamics traverse between cells efficiently, while Langevin's random walk is less efficient at exploring the periodic structure.
+- **Langevin wins on Eight Gaussians** (2.5x better ED). The exact GMM potential has deep, well-separated modes. Deterministic NH dynamics get trapped in a subset of modes -- without stochastic kicks, escaping requires the trajectory to have exactly the right kinetic energy. Langevin's noise provides the random kicks needed for mode hopping.
+- **Comparable on Two Moons**. Both methods sample this smooth, connected distribution well.
+- **Langevin wins on Two Spirals** (2.5x better ED). Similar reasoning to Eight Gaussians -- the spiral arms have non-trivial topology that deterministic trajectories don't explore as efficiently.
+
+This corrects the overly optimistic E1 results from refine 1-2 (which showed NH winning on all targets) -- those results were an artifact of the blurry KDE potential, where NH's warm-starting from data gave it an unfair advantage over Langevin's random initialization.
+
+### What changed from refine 2
+
+- **Refine 2 showed NH winning on all 4 targets** because the KDE bw=0.35 potential was so blurry that both methods were sampling from the wrong distribution, and NH's warm-starting gave it an advantage.
+- **Refine 3 with proper potentials** shows a more nuanced picture: NH wins on checkerboard (periodic structure), loses on multimodal targets (Eight Gaussians, Two Spirals), and ties on smooth targets (Two Moons).
+- The **core NH-CNF contribution** (E3: exact divergence for zero-variance log-density tracking) remains unchanged and is the strongest result from this orbit.
