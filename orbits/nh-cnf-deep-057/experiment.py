@@ -347,7 +347,7 @@ def run_e1():
     # Parameters — tuned for speed on CPU
     n_train = 500
     n_samples = 1000
-    n_steps_nh = 4000
+    n_steps_nh = 8000   # more steps for NH to get decorrelated samples
     n_steps_lang = 8000
     dt_nh = 0.01
     eps_lang = 0.005
@@ -375,13 +375,14 @@ def run_e1():
         ax.set_ylabel('$x_2$')
         ax.set_aspect('equal')
 
-        # Column 1: NH-CNF samples
-        print("  Running NH-CNF...")
-        torch.manual_seed(SEED)
-        nh_samples, nh_time, _ = run_nh_single_chain(
-            kde.grad_potential, d=2, n_steps=n_steps_nh, dt=dt_nh,
+        # Column 1: NH-CNF samples (warm-started from data points)
+        print("  Running NH-CNF (warm-start from data)...")
+        t0_nh = time.time()
+        nh_samples = run_nh_warm_start(
+            kde.grad_potential, data, n_steps=n_steps_nh, dt=dt_nh,
             Q=Q_nh, kT=kT, burn_in=burn_in_nh, seed=SEED
         )
+        nh_time = time.time() - t0_nh
         ed_nh = energy_distance(data, nh_samples)
         print(f"  NH-CNF: {len(nh_samples)} samples, ED={ed_nh:.4f}, time={nh_time:.2f}s")
 
@@ -448,6 +449,43 @@ def run_nh_single_chain(grad_V_fn, d, n_steps=10000, dt=0.01, Q=1.0, kT=1.0,
     wall_time = time.time() - t0
     samples = np.array(samples)
     return samples, wall_time, log_density_changes
+
+
+def run_nh_warm_start(grad_V_fn, data, n_steps=4000, dt=0.01, Q=1.0, kT=1.0,
+                      burn_in=1000, seed=42):
+    """Run NH-tanh from multiple chains warm-started at data points.
+
+    Each chain starts at a random data point with fresh momentum.
+    This avoids the cold-start problem where chains initialized far
+    from the target take forever to find the support.
+    """
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    n_data = len(data)
+    # Use fewer longer chains for better mixing
+    n_chains = 10
+    idx = np.random.choice(n_data, n_chains, replace=False)
+    steps_per_chain = n_steps // n_chains
+    chain_burn = min(burn_in, steps_per_chain // 5)
+    # Heavy thinning to decorrelate samples
+    thin = max(1, (steps_per_chain - chain_burn) // 60)
+
+    all_samples = []
+    for c in range(n_chains):
+        q = torch.tensor(data[idx[c]], dtype=torch.float32)
+        p = torch.randn(2) * np.sqrt(kT)  # thermal momentum
+        xi = torch.zeros(1)
+        d = 2
+
+        for step in range(steps_per_chain):
+            q, p, xi, _ = nh_tanh_rk4_step(q, p, xi, grad_V_fn, dt, Q, kT, d)
+            if step >= chain_burn and (step - chain_burn) % thin == 0:
+                all_samples.append(q.detach().clone().numpy())
+
+    result = np.array(all_samples)
+    if result.ndim == 1:
+        result = result.reshape(-1, 2)
+    return result
 
 
 # =============================================================================
