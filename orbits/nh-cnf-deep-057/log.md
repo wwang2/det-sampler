@@ -3,7 +3,7 @@ strategy: nh-cnf-generative
 type: experiment
 status: complete
 eval_version: eval-v1
-metric: 0.039
+metric: 0.012
 issue: 58
 parents:
   - bayesian-posterior-056
@@ -112,3 +112,68 @@ The exact divergence property of NH thermostats is well known in molecular dynam
 - Nose (1984). A unified formulation of the constant temperature molecular dynamics methods.
 - Hoover (1985). Canonical dynamics: Equilibrium phase-space distributions.
 - Song & Ermon (2019). Generative Modeling by Estimating Gradients of the Data Distribution. NeurIPS.
+
+---
+
+## Refinement 1: Remade figures + new experiments
+
+### E1 Remade: KDE contour density plots with proper thinning
+
+The original E1 showed trajectory-like scatter plots. The remade version uses:
+- Multi-scale Q = [0.1, 1.0, 10.0] with 3 chains per Q value (9 chains total)
+- 100k steps per chain, 20% burn-in, thinning every 50th sample -> ~14k independent samples
+- KDE contour plots (scipy.stats.gaussian_kde) with light scatter underneath
+- 10k ground truth samples for comparison
+
+| Target | NH-CNF ED | Langevin ED | NH wins? |
+|--------|-----------|-------------|----------|
+| Two Moons | **0.012** | 0.015 | Yes (1.3x) |
+| Two Spirals | **0.005** | 0.027 | Yes (6.1x) |
+| Checkerboard | **0.007** | 0.008 | Yes (1.1x) |
+| Eight Gaussians | **0.105** | 0.308 | Yes (2.9x) |
+
+The KDE contour plots now clearly show density structure comparable to ground truth. NH-CNF produces proper density coverage, not trajectory artifacts. The spirals and eight Gaussians show the clearest advantage: NH deterministic dynamics traverse between modes while Langevin's single chain gets trapped.
+
+### E4 Remade: Simplified conceptual figure
+
+Two clean panels:
+- (a) Correspondence table: Diffusion Model <-> NH Thermostat mapping
+- (b) Computational pipeline: FFJORD (stochastic trace) vs NH-CNF (exact divergence)
+
+### E5 New: Phase-space trajectory visualization
+
+The "wow" figure showing what makes NH unique. Target: two moons, 5000 steps.
+- (a) Configuration space q1-q2 colored by time -- shows exploration of both moons
+- (b) Phase portrait q1-p1 -- shows Hamiltonian oscillation with thermostat damping
+- (c) xi(t) time series -- thermostat variable fluctuating around zero
+- (d) g(xi) = tanh(xi) -- the friction signal, which IS the exact divergence div/d
+
+This illustrates the core mechanism: xi encodes a scalar summary of "how far from equilibrium" the system is, and feeds back as friction. This is the "cheap score" that replaces a learned score network.
+
+### E6 New: Dimension scaling study (honest negative result)
+
+Gaussian mixture (5 modes, ring layout) in d = 2, 5, 10, 20, 50. Using exact GMM potential (not KDE).
+
+| d | NH-CNF ED | Langevin ED | NH modes | Lang modes |
+|---|-----------|-------------|----------|------------|
+| 2 | 0.215 | **0.012** | 5/5 | 5/5 |
+| 5 | 0.447 | **0.323** | 5/5 | 5/5 |
+| 10 | 0.291 | **0.071** | 5/5 | 5/5 |
+| 20 | 0.275 | **0.048** | 1/5 | 5/5 |
+| 50 | 0.241 | **0.018** | 0/5 | 0/5 |
+
+**Honest assessment**: Langevin outperforms NH-CNF on energy distance at all dimensions tested with the GMM potential. The deterministic NH dynamics with fixed step size and Q values do not scale as well as Langevin's stochastic exploration in higher dimensions. At d >= 20, NH mode coverage degrades severely (1/5 modes at d=20, 0/5 at d=50), while Langevin maintains coverage until d=50 where both fail.
+
+This suggests the NH-CNF advantage is specific to the 2D KDE-potential setting where warm-starting from data and multi-scale Q provide good initialization. In higher dimensions with known potentials, Langevin's noise-driven exploration is more robust. The NH advantage may require learned or adaptive Q schedules to extend to high-d.
+
+### E7 New: Log-likelihood comparison
+
+Test log-likelihood (KDE-fitted on sampler output, evaluated on held-out test data):
+
+| Target | KDE (direct) | NH-CNF samples | Langevin samples |
+|--------|-------------|----------------|------------------|
+| Two Moons | **-1.47** | -1.83 | -1.92 |
+| Two Spirals | **-3.28** | -3.31 | -3.38 |
+| Eight Gaussians | **-3.44** | -3.43 | -4.48 |
+
+NH-CNF samples produce better test log-likelihood than Langevin on all targets. The direct KDE baseline (using training data) is slightly better on Two Moons and Two Spirals, which is expected since it uses the original data directly. On Eight Gaussians, NH-CNF matches the direct KDE, while Langevin is substantially worse (mode collapse).
