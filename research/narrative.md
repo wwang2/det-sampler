@@ -54,6 +54,21 @@ Across 200 independent trajectories at `t=25`:
 
 **The selling point is not variance reduction via correlation cancellation — it is variance reduction via a bounded-variance thermodynamic estimator.** The equipartition theorem pins `⟨|p|²⟩ = d·kT`, which bounds the fluctuations of `σ_bath` even as `t → ∞`. Hutchinson has no such bound.
 
+### Non-equilibrium verification (orbits 065 + 067)
+
+**Orbit 065 (tasaki-quench):** Temperature quench protocol on 2D double-well.
+- Jarzynski ⟨exp(−Σ)⟩ = 0.965 (3.5% of 1.0) for T₀=1→T₁=2; 1.042 (4.2%) for T₀=0.8→T₁=1.5
+- **10× variance ratio under non-equilibrium:** Σ std = 1.05 vs Hutchinson std = 10.7
+- D_KL formula needs ξ correction (non-canonical ξ distribution); Jarzynski identity is the target-free verification
+- 1D harmonic: Jarzynski = 0.916 (8% off) — non-ergodicity confirmed (expected for plain NH)
+
+**Orbit 066 (symmetry-protection):** Crooks DFT on σ_bath − σ_exact = test on wrong variable. MI(σ_bath ; σ_hutch) = -0.041 nats — **independence confirmed** at all time points.
+
+**Orbit 067 (corrected-dft):** Crooks DFT on σ_bath alone under quench:
+- σ_tot satisfies Evans-Searles FT: slope = 1.059 (CI [0.940, 1.148]) — total entropy production accounting is correct
+- σ_bath alone does NOT satisfy simple Crooks DFT: slope = -0.957 — it is one component of total σ, not the whole thing
+- **Verdict: the “symmetry-protected” framing (from brainstorm panel) is FALSIFIED for σ_bath alone.** Paper 2 must stay with “empirically bounded via equipartition” as the explanation for O(1) variance.
+
 ### Evolution of the Paper 2 story arc
 
 1. **orbit/nh-cnf-deep-057** — first framing: NH as a CNF that gives "exact divergence" (true, but tautologically true under frozen momentum).
@@ -80,11 +95,13 @@ Across 200 independent trajectories at `t=25`:
 
 **Our differentiator must be the specific bounded-variance property**, not variance reduction in general. Hutch++ still has O(√t) variance growth (improved constants, same scaling). σ_bath has O(1) bounded variance (equipartition-pinned, not probabilistic). This is a qualitative distinction, not a constant-factor improvement — Paper 2 needs to land this point on page 1.
 
+**Fluctuation theorem angle (tested and rejected):** The brainstorm panel hypothesized that σ_bath’s bounded variance is fluctuation-theorem-protected. Orbit 067 falsified this: σ_tot satisfies Evans-Searles DFT (slope ≈ 1.0) but σ_bath alone does not (slope ≈ -0.96). The bounded variance is physically real but its theoretical explanation is the equipartition-pinned momentum shell (⁠⟨|p|²⟩ = d·kT⁠), not a symmetry. This is still a valid differentiator vs Liu et al. — their Hutch++ is algorithmic while our bound is physical — but it is less theoretically impressive than a fluctuation-theorem guarantee would have been.
+
 ### Open questions (Paper 2)
-- Does bath-as-drop-in actually accelerate FFJORD training wall-clock on a standard benchmark (POWER/GAS/HEPMASS), or is the variance reduction absorbed by FFJORD's other bottlenecks?
+- Does bath-as-drop-in actually accelerate FFJORD training wall-clock on a standard benchmark (POWER/GAS/HEPMASS), or is the variance reduction absorbed by FFJORD’s other bottlenecks?
+- Can the σ_tot DFT result (orbit 067) be turned into a practical variance-reduction technique, even though σ_bath alone is not FT-protected?
 - Does the bounded-variance property survive if you use a chain-Nosé-Hoover (M≥2) — does the per-stage housekeeping correction preserve the O(1) bound? (Orbit 065 Phase 0 is supposed to derive this.)
 - Can the Tasaki identity be turned into a non-equilibrium benchmark that Langevin provably cannot match at d=10? (Orbit 065 primary result.)
-- Is there an analogous bounded-variance estimator for the **score function** (not just the trace) — i.e. can thermostat methods give O(1) stochastic-gradient noise reduction for score-matching training?
 
 ---
 
