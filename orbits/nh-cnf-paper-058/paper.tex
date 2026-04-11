@@ -42,6 +42,7 @@
 for Continuous Normalizing Flows\\
 via Thermostat Dynamics}
 
+% [TODO: fill author info]
 \author{
   Wujie Wang\thanks{Correspondence to: \texttt{wujie@placeholder.edu}}\\
   \textit{Affiliation placeholder}
@@ -150,6 +151,9 @@ divergence integral to an estimator.
 
 \begin{figure}[t]
   \centering
+  % [TODO] Fig1 image shows old diffusion-table content; regenerate to match
+  % caption "Two paths to the divergence integral". Placeholder image preserved
+  % for layout.
   \includegraphics[width=\textwidth]{figures/fig1_concept.png}
   \caption{\textbf{Two paths to the divergence integral.}
     (a)~FFJORD's pipeline: a Rademacher probe $v$ yields a stochastic trace
@@ -396,7 +400,7 @@ stringent self-consistency check.
 
 We draw $N = 2400$ trajectories per seed from the pre-quench invariant measure
 (60 parent configurations $\times$ 40 decorrelated branches). Integration uses
-RK4 with $\dd t = 0.005$, $Q = 1.0$.
+fourth-order Runge-Kutta (RK4) with $\dd t = 0.005$, $Q = 1.0$.
 
 \begin{table}[t]
   \centering
@@ -602,20 +606,20 @@ so the accumulated integral performs a random walk.
 
 \paragraph{Phase-space visualization.}
 Figure~\ref{fig:phase} shows a single NH trajectory on the 2D double-well,
-illustrating the physical origin of $\sbath$. Panel~(d) shows the friction
-$g(\xi(t)) = \tanh(\xi(t))$ and its relation to the kinetic energy. The
-product $\tanh(\xi)\,|p|^2$, integrated over time, is the $\sbath$ estimator.
+illustrating the physical origin of $\sbath$. Panel~(d) shows the bounded
+friction $g(\xi(t)) = \tanh(\xi(t))$. The product $\tanh(\xi)\,|p|^2$,
+integrated over time, is the $\sbath$ estimator.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{figures/fig3_phase.png}
   \caption{\textbf{Phase-space trajectory on the 2D double-well.}
-    (a)~Configuration space $(q_1, q_2)$ colored by time: the trajectory
-    explores both wells. (b)~Phase portrait $(q_1, p_1)$. (c)~Thermostat
-    variable $\xi(t)$ fluctuating around zero. (d)~Friction
-    $g(\xi) = \tanh(\xi)$ and kinetic energy. The product
-    $\tanh(\xi(t))\,|p(t)|^2$ integrated over time is $\sbath$---the
-    bounded-variance estimator of the divergence integral.}
+    (a)~Configuration space $(q_1, q_2)$ colored by time.
+    (b)~Phase portrait $(q_1, p_1)$. (c)~Thermostat variable $\xi(t)$
+    fluctuating around zero. (d)~Bounded friction
+    $g(\xi) = \tanh(\xi)$. The product $\tanh(\xi(t))\,|p(t)|^2$
+    integrated over time is $\sbath$---the bounded-variance estimator of
+    the divergence integral.}
   \label{fig:phase}
 \end{figure}
 
@@ -636,9 +640,10 @@ Section~\ref{sec:noneq}.
     $\langle \stot \rangle$ vs.\ post-quench time, converging above the
     (q,p)-only KL target (dashed red). Jarzynski $= 0.965$.
     (b)~Phase~2 ($T_0{=}0.8 \to T_1{=}1.5$): per-seed Jarzynski values
-    (bar chart). Mean $= 1.042$ (within $4.2\%$ of 1.0).
-    \textbf{Key:} std($\stot$) $= 1.05$ vs.\ std($\shutch$) $= 10.7$
-    ($10\times$ variance ratio).
+    (bar chart). Mean $= 1.042$ (within $4.2\%$ of 1.0). The $10\times$
+    variance ratio (std($\stot$) $= 1.05$ vs.\ std($\shutch$) $= 10.7$)
+    is reported numerically in Table~\ref{tab:phase2} of
+    Section~\ref{sec:phase2} rather than visualized in this panel.
     (c)~Phase~3 (1D harmonic): Jarzynski $= 0.916$ ($8\%$ violation),
     confirming non-ergodicity on harmonic potentials.}
   \label{fig:quench}

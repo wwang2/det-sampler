@@ -147,3 +147,54 @@ This paper applies known thermodynamic identities (equipartition, Jarzynski equa
 - Onken et al. (2021). OT-Flow. AAAI.
 - Ding et al. (2014). SGNHT. NeurIPS.
 - Leimkuhler & Matthews (2013). Rational stochastic numerical methods. AMRX.
+
+## Cleanup pass 2026-04-11
+
+Applied the completion reviewer's NEEDS-CLEANUP fixes on commit 4f8ba50.
+Only paper.tex and this log.md were touched; no figures, no scripts, no new scope.
+
+### Blocking fixes applied
+
+- **B1 (fig1_concept)** — Added LaTeX comment above `\includegraphics` line:
+  `[TODO] Fig1 image shows old diffusion-table content; regenerate to match
+  caption "Two paths to the divergence integral". Placeholder image preserved
+  for layout.` No orbit-local script generates fig1_concept (only `run.sh`
+  exists in orbits/nh-cnf-paper-058/), so option-2 (regenerate) was not
+  available. Image left in place for layout.
+- **B2 (fig3_phase caption/panel-(d) mismatch)** — Caption edit (option 1).
+  Removed the "kinetic energy" claim and the "trajectory explores both wells"
+  phrase. Panel (a) now reads "Configuration space $(q_1, q_2)$ colored by
+  time." Panel (d) now reads "Bounded friction $g(\xi) = \tanh(\xi)$". The
+  body paragraph above the figure was aligned to match.
+- **B3 (author placeholder)** — Added `% [TODO: fill author info]` comment
+  above the `\author{...}` block. Placeholder name/affiliation preserved.
+
+### Cleanup fixes applied
+
+- **C1 (RK4 first use)** — Expanded first occurrence at line ~399 to
+  "fourth-order Runge-Kutta (RK4)". Second occurrence in a later figure
+  caption left as "RK4".
+- **C2 (Sigma vs sigma_tot)** — No-op. grep shows zero occurrences of
+  `\Sigma` or "Σ" in paper.tex; the abstract and body both already use
+  `\stot` = `\sigma_{\mathrm{tot}}`. Drift had already been resolved in
+  the rewrite commit. Verified with
+  `grep -cE 'Sigma|Σ' orbits/nh-cnf-paper-058/paper.tex` -> 0.
+- **C3 (fig_tasaki_quench panel (b) 10x claim)** — Caption edit. Panel (b)
+  description now explicitly says the $10\times$ variance ratio
+  (std($\stot$) $= 1.05$ vs.\ std($\shutch$) $= 10.7$) is reported
+  numerically in Table~\ref{tab:phase2} of Section~\ref{sec:phase2} rather
+  than visualized in the panel. Caption no longer over-promises.
+
+### Out of scope (not touched)
+
+- End-to-end FFJORD training experiment (Fig new-2 from audit.md) — future
+  work, already acknowledged in Discussion section. No [TODO] added.
+
+### Remaining human TODOs (marked in paper.tex)
+
+1. **Author info** — replace `Wujie Wang\thanks{...}` / `Affiliation
+   placeholder` at lines 46-48 (see `% [TODO: fill author info]` comment).
+2. **Regenerate fig1_concept.png** — current image still shows the old
+   diffusion-model analogy; the caption now describes "Two paths to the
+   divergence integral" (Rademacher vs. bath-heat). See
+   `% [TODO] Fig1 image ...` comment above `\includegraphics` at line ~154.
