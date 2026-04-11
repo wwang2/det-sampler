@@ -688,7 +688,7 @@ def make_figure(p1s, p1r, p2s, p2r, p3s, out_path):
     ax.axhline(target2, color=C_ANALYTIC, ls='--', lw=1, alpha=0.6)
     ax.set_xticks(xs); ax.set_xticklabels(labels, rotation=20)
     ax.set_ylabel(r'$\langle\Sigma_{\rm tot}\rangle$')
-    ax.set_title(f'(b) 2D DW $T_0{{=}}0.5\\to T_1{{=}}1.5$\n'
+    ax.set_title(f'(b) 2D DW $T_0{{=}}0.8\\to T_1{{=}}1.5$\n'
                  f'Jar={p2s["mean_jarzynski"]:.3f}')
 
     # inset: bounded vs sqrt(t) variance

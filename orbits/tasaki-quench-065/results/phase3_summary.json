@@ -1,0 +1,35 @@
+{
+  "per_seed": [
+    {
+      "mean_Sigma": 0.2735711617081172,
+      "std_Sigma": 0.6890138069510604,
+      "sem_Sigma": 0.01624021117420845,
+      "jarzynski": 0.9213190239970573,
+      "jarzynski_log": 0.08194891400081626,
+      "n_traj": 1800,
+      "analytic_qp_KL": 0.1931471805599453,
+      "wall_time": 34.5014910697937
+    },
+    {
+      "mean_Sigma": 0.2882021290383568,
+      "std_Sigma": 0.7265689666541728,
+      "sem_Sigma": 0.01712539477736227,
+      "jarzynski": 0.912353516833881,
+      "jarzynski_log": 0.09172773590884602,
+      "n_traj": 1800,
+      "analytic_qp_KL": 0.1931471805599453,
+      "wall_time": 34.089842319488525
+    },
+    {
+      "mean_Sigma": 0.268723005494578,
+      "std_Sigma": 0.6513595969724587,
+      "sem_Sigma": 0.015352692933672071,
+      "jarzynski": 0.9142628272026114,
+      "jarzynski_log": 0.08963719175015533,
+      "n_traj": 1800,
+      "analytic_qp_KL": 0.1931471805599453,
+      "wall_time": 34.77905583381653
+    }
+  ],
+  "note": "1D harmonic NH-tanh is non-ergodic. Jarzynski<1 confirms initial ensemble is not the true invariant measure."
+}
