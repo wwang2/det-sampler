@@ -267,3 +267,7 @@ Hamiltonian floor and the other not), or some other uncontrolled variable drives
 - `figures/ablation.png` — (a) g and g', (b) tau_int vs Q_c medians with IQR bands,
   (c) box plot of tau_int at each method's best Q_c.
 - `run.sh` — reproducer.
+
+## Status
+
+This orbit completed 3 cleanup passes. As of 2026-04-11 orchestrator milestone, it is graduation-ready for Paper 1 (g'>=0 design criterion, target JCTC). No residual readability flags.
