@@ -76,8 +76,12 @@ def replot_training_stability():
 
     # --- (b) grad noise vs d ---
     DIMS_a = np.array(DIMS)
+    # Track NH exact values so we can annotate its (nearly invisible) line.
+    nh_exact_rel = None
     for m in METHOD_ORDER:
         rel = np.array([grad_data[m][str(d)]['rel_noise'] for d in DIMS])
+        if m == 'NH exact':
+            nh_exact_rel = rel.copy()
         ax_b.plot(DIMS_a, np.maximum(rel, 1e-16), '-o', color=COLORS[m],
                   lw=2, ms=6, label=m)
     ax_b.set_xscale('log')
@@ -86,7 +90,27 @@ def replot_training_stability():
     ax_b.set_ylabel(r'$\|\mathrm{std}(\nabla_\theta L)\| \,/\, \|\mathrm{mean}(\nabla_\theta L)\|$')
     ax_b.set_title('(b) Gradient noise-to-signal vs dimension')
     ax_b.grid(True, alpha=0.3, which='both')
-    ax_b.legend(loc='lower right', framealpha=0.95)
+    ax_b.legend(loc='center right', framealpha=0.95)
+
+    # NH exact sits at the floating-point noise floor (~1e-15), which is
+    # nearly invisible against the Hutchinson curves an order of ten-to-the
+    # -thirteen above it. Force the y-axis down to 1e-17 so there is room
+    # for an explicit annotation pointing at the NH exact line.
+    ax_b.set_ylim(1e-17, ax_b.get_ylim()[1])
+    if nh_exact_rel is not None:
+        # Use the last NH exact point (highest dimension) as the anchor — it
+        # is farthest from the crowded legend and the Hutchinson curves.
+        x_anchor = DIMS_a[-1]
+        y_anchor = max(float(nh_exact_rel[-1]), 1e-16)
+        ax_b.annotate(
+            r'NH exact $\approx 10^{-15}$' + '\n(machine precision,\nnearly invisible)',
+            xy=(x_anchor, y_anchor),
+            xytext=(0.60, 0.18), textcoords='axes fraction',
+            ha='left', va='center', fontsize=10, color=COLORS['NH exact'],
+            bbox=dict(boxstyle='round,pad=0.3', facecolor='white',
+                      edgecolor=COLORS['NH exact'], alpha=0.95),
+            arrowprops=dict(arrowstyle='->', color=COLORS['NH exact'], lw=1.3),
+        )
 
     # With constrained_layout=True, matplotlib reserves top space for the
     # suptitle automatically as long as it sits within y<=1.0. Placing it at
@@ -120,7 +144,7 @@ def replot_variance_scaling():
         ('bimod', 'Bimodal',              True),   # data-variance dominated
     ]
 
-    fig, axes = plt.subplots(1, 3, figsize=(13, 4.2), sharey=True,
+    fig, axes = plt.subplots(1, 3, figsize=(13, 4.4), sharey=True,
                              constrained_layout=True)
 
     for ax, (key, label, dominated) in zip(axes, TARGETS):
@@ -155,7 +179,14 @@ def replot_variance_scaling():
                           facecolor='white', edgecolor='#888', alpha=0.9),
             )
     axes[0].set_ylabel('std[ log p(x) ]  across ODE trajectories')
-    axes[-1].legend(loc='lower right', frameon=True, framealpha=0.95)
+    # Put the shared legend on the anisotropic (middle) panel in the upper
+    # left — that panel has no "data variance dominated" annotation and its
+    # traces go from low-left up to the right, so the upper-left corner is
+    # the one empty region. This keeps the legend inside the plot area,
+    # preventing any collision with the x-axis tick labels that happens
+    # when fig.legend is pushed below the panels.
+    axes[1].legend(loc='upper left', frameon=True, framealpha=0.95,
+                   fontsize=10)
     # constrained_layout reserves space for the in-layout suptitle.
     fig.suptitle('E3.1  NH-CNF exact divergence vs Hutchinson — variance scaling',
                  fontsize=14)
@@ -168,6 +199,93 @@ def replot_variance_scaling():
     print('saved', out_png)
 
 
+# =============================================================================
+# fig_walltime.png  (cleanup item 3: add a speedup-ratio panel so the
+# "2.3x at d=1000" advantage is visible directly, not buried in a log plot)
+# =============================================================================
+def replot_walltime():
+    with open(os.path.join(RESDIR, 'e3_walltime.json')) as f:
+        res = json.load(f)
+
+    DIMS = sorted(int(k) for k in res['exact'].keys())
+    ds = np.array(DIMS)
+    te = np.array([res['exact'][str(d)]  for d in DIMS]) * 1e3  # ms
+    t1 = np.array([res['hutch1'][str(d)] for d in DIMS]) * 1e3
+    t5 = np.array([res['hutch5'][str(d)] for d in DIMS]) * 1e3
+
+    # Speedup ratios — how much faster is NH exact than Hutchinson(k)?
+    sp1 = t1 / te
+    sp5 = t5 / te
+
+    fig, (ax_a, ax_b) = plt.subplots(1, 2, figsize=(12.5, 4.8),
+                                     constrained_layout=True)
+
+    # --- (a) absolute wall clock ---
+    ax_a.plot(ds, te, '-o', color='#1f77b4', lw=2, ms=6,
+              label='NH-CNF (exact div)')
+    ax_a.plot(ds, t1, '-s', color='#ff7f0e', lw=2, ms=6,
+              label='FFJORD-style Hutchinson(1)')
+    ax_a.plot(ds, t5, '-^', color='#9467bd', lw=2, ms=6,
+              label='FFJORD-style Hutchinson(5)')
+    ax_a.set_xscale('log')
+    ax_a.set_yscale('log')
+    ax_a.set_xlabel('dimension $d$')
+    ax_a.set_ylabel('wall-clock per step (ms)  [batch=256]')
+    ax_a.set_title('(a) Per-step cost')
+    ax_a.grid(True, alpha=0.3, which='both')
+    ax_a.legend(loc='upper left', frameon=True, framealpha=0.95)
+
+    # --- (b) speedup ratio: Hutchinson / NH exact ---
+    ax_b.plot(ds, sp1, '-s', color='#ff7f0e', lw=2, ms=6,
+              label='Hutchinson(1) / NH exact')
+    ax_b.plot(ds, sp5, '-^', color='#9467bd', lw=2, ms=6,
+              label='Hutchinson(5) / NH exact')
+    ax_b.axhline(1.0, color='#888', lw=1.0, ls='--')
+    ax_b.set_xscale('log')
+    ax_b.set_xlabel('dimension $d$')
+    ax_b.set_ylabel('speedup  (Hutchinson / NH exact)')
+    ax_b.set_title('(b) NH exact is strictly cheaper than any Hutchinson($k$)')
+    ax_b.grid(True, alpha=0.3, which='both')
+    ax_b.legend(loc='upper left', frameon=True, framealpha=0.95)
+
+    # Headline numbers: speedup at the largest dimension. Place them on the
+    # right side of the panel, away from the legend (upper-left) and the
+    # y-axis. Extend the y-axis upper limit so there is headroom.
+    d_last = ds[-1]
+    ymin, ymax = ax_b.get_ylim()
+    ax_b.set_ylim(0, max(ymax, sp5.max() * 1.20))
+    ax_b.annotate(
+        f'{sp5[-1]:.1f}x speedup at $d={d_last}$',
+        xy=(d_last, sp5[-1]),
+        xytext=(0.55, 0.92), textcoords='axes fraction',
+        fontsize=11, color='#9467bd', ha='left', va='top',
+        bbox=dict(boxstyle='round,pad=0.25', facecolor='white',
+                  edgecolor='#9467bd', alpha=0.9),
+        arrowprops=dict(arrowstyle='->', color='#9467bd', lw=1.2),
+    )
+    ax_b.annotate(
+        f'{sp1[-1]:.1f}x speedup at $d={d_last}$',
+        xy=(d_last, sp1[-1]),
+        xytext=(0.55, 0.55), textcoords='axes fraction',
+        fontsize=11, color='#ff7f0e', ha='left', va='top',
+        bbox=dict(boxstyle='round,pad=0.25', facecolor='white',
+                  edgecolor='#ff7f0e', alpha=0.9),
+        arrowprops=dict(arrowstyle='->', color='#ff7f0e', lw=1.2),
+    )
+
+    fig.suptitle(
+        'E3.4  Wall-clock: NH-CNF (exact divergence) vs Hutchinson trace',
+        fontsize=14,
+    )
+    out_png = os.path.join(FIGDIR, 'fig_walltime.png')
+    out_pdf = os.path.join(FIGDIR, 'fig_walltime.pdf')
+    fig.savefig(out_png, bbox_inches='tight')
+    fig.savefig(out_pdf, bbox_inches='tight')
+    plt.close(fig)
+    print('saved', out_png, f'(speedup@d={d_last}: h1={sp1[-1]:.2f}x, h5={sp5[-1]:.2f}x)')
+
+
 if __name__ == '__main__':
     replot_training_stability()
     replot_variance_scaling()
+    replot_walltime()

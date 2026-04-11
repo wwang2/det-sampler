@@ -5,7 +5,7 @@
   url: "https://arxiv.org/abs/1810.01367"
   type: paper
   finding: "Introduced continuous normalizing flows with Hutchinson trace estimator for scalable density estimation"
-  cited_by: [orbit/nh-cnf-deep-057]
+  cited_by: [orbit/nh-cnf-deep-057, orbit/nh-cnf-thorough-062]
 
 - key: chen2018
   title: "Neural Ordinary Differential Equations"
@@ -30,9 +30,10 @@
   authors: "William G. Hoover"
   year: 1985
   url: "https://doi.org/10.1103/PhysRevA.31.1695"
+  doi: "10.1103/PhysRevA.31.1695"
   type: paper
-  finding: "Simplified Nose thermostat to Nose-Hoover form with single thermostat variable"
-  cited_by: [orbit/nh-cnf-deep-057]
+  finding: "Original Nose-Hoover thermostat with phase-space contraction rate -d*xi; the exact divergence formula used in this orbit"
+  cited_by: [orbit/nh-cnf-deep-057, orbit/nh-cnf-thorough-062]
 
 - key: song2019
   title: "Generative Modeling by Estimating Gradients of the Data Distribution"
@@ -51,3 +52,23 @@
   type: paper
   finding: "Generalized Langevin equation thermostats with colored noise for optimal sampling"
   cited_by: [orbit/nh-cnf-deep-057]
+
+- key: tuckerman2010
+  title: "Statistical Mechanics: Theory and Molecular Simulation"
+  authors: "Mark E. Tuckerman"
+  year: 2010
+  url: "https://global.oup.com/academic/product/statistical-mechanics-9780198525264"
+  isbn: "978-0-19-852526-4"
+  type: book
+  finding: "Textbook derivation of phase-space contraction for non-Hamiltonian dynamics; chapter on Nose-Hoover chains and the compressibility integral"
+  cited_by: [orbit/nh-cnf-thorough-062]
+
+- key: hutchinson1989
+  title: "A stochastic estimator of the trace of the influence matrix for Laplacian smoothing splines"
+  authors: "Michael F. Hutchinson"
+  year: 1989
+  url: "https://doi.org/10.1080/03610918908812806"
+  doi: "10.1080/03610918908812806"
+  type: paper
+  finding: "Original stochastic trace estimator; the tr(A) = E[v^T A v] identity that FFJORD uses to avoid explicit Jacobian evaluation"
+  cited_by: [orbit/nh-cnf-thorough-062]
