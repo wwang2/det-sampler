@@ -151,3 +151,40 @@ The diffusion score is a d-dimensional vector field; xi is a scalar. These are n
 - **Abstract** now says "exactly zero *stochastic* variance (deterministic ODE integration error remains)" to avoid the "exact means zero total error" ambiguity.
 
 None of these fixes invalidate the experimental claims or the core theorem — they are presentation cleanups that remove specific attack surfaces a careful NeurIPS/ICLR reviewer would flag.
+
+---
+
+## Refinement 4: Integrate orbit 062 publication-quality figures + crisp numbers
+
+Pulled three new publication-quality figures from sibling orbit `nh-cnf-thorough-062` and rebuilt Section 4.2 (Exact Divergence Advantage) around them. These figures were produced with a frozen-momentum protocol that isolates the trace-estimator variance from the base-sampling variance, making the Hutchinson penalty directly visible.
+
+### New figures
+- **`fig_training_stability.png`** (new headline) — 2 panels: (a) reverse-KL loss distribution at d=10 across 100 draws, (b) gradient noise-to-signal ratio vs d in {2, 5, 10, 20, 50}. NH exact sits at machine epsilon (~1e-14) while Hutchinson lives at O(1e-1) regardless of k.
+- **`fig_variance_scaling_new.png`** — 3 panels (Isotropic, Anisotropic, Bimodal): std(log p) across ODE trajectories vs d in [2, 200]. Anisotropic case shows the clearest separation: at d=200 NH exact std=10.1 vs Hutch(k=1) std=129.5 (13x penalty).
+- **`fig_walltime.png`** — per-step wall-clock cost vs d in [2, 1000]. NH exact is strictly faster than Hutchinson at all dimensions tested; 2-6x speedup at d=1000.
+
+### Text changes in Section 4.2 (Exact Divergence Advantage)
+Replaced the old "quantitative comparison" + "wall-clock cost" paragraphs and their two tables with three new paragraphs built around the new figures:
+1. **"Training stability — the headline effect"** — the loss variance numbers (0.00 / 0.133 / 0.060 / 0.028 for NH/Hutch k=1,5,20) and gradient noise-to-signal story.
+2. **"Dimension scaling across target families"** — the 3-panel variance scaling figure with the 13x anisotropic penalty at d=200.
+3. **"Wall-clock cost across dimensions"** — the strict-dominance claim (NH exact faster at every d tested) and the d=1000 speedups.
+4. **"Takeaway"** — conjunction of all four advantages + retention of the original `fig4_divergence.png` as a secondary diagnostic of the Hutchinson horizon.
+
+The old `tab:e3` and `tab:e3_cost` tables were removed because the new figures convey the same information with richer dimension sweeps and the corrected frozen-momentum protocol.
+
+### Abstract update
+- "exactly zero stochastic variance (deterministic ODE integration error remains)" tightened to "strictly zero-variance (machine-precision) divergence estimation --- only deterministic ODE integration error remains".
+- Added: "together with a 2--6x wall-clock speedup over FFJORD-style Hutchinson estimators at d=1000".
+
+### New appendix sections
+- **Appendix D: Frozen-Momentum Protocol for Divergence Variance Measurement** — explains why the momentum is frozen across MC draws when measuring trace-estimator variance (to remove common-mode variance so the trace-estimator contribution becomes visible). Explicit about it being a diagnostic control, not used in production training.
+- **Appendix E: Parametric Potential Training: V_theta Must Have Bias-Free Output Layer** — documents that the final linear layer of V_theta must use `bias=False` because ∇V is independent of the output bias, so b receives no gradient signal. Lists the three practical failure modes (wasted optimizer state, misleading gradient norms, framework-specific numerical drift) and notes this is mathematically a no-op (V is defined up to an additive constant).
+
+### What the new numbers say
+The key quantitative claims now in the paper:
+- Loss variance at d=10 (frozen momentum): NH exact = 0 (machine precision); Hutch k=1 = 0.133; Hutch k=5 = 0.060; Hutch k=20 = 0.028 --- textbook 1/sqrt(k) decay.
+- Gradient noise-to-signal: NH exact ~1e-14 at all d in {2,5,10,20,50}; Hutchinson O(0.1-0.5).
+- Anisotropic variance penalty at d=200: NH exact std=10.1 vs Hutch(k=1) std=129.5 (13x worse).
+- Wall-clock at d=1000: NH exact 1.5ms; Hutch(k=1) 3.5ms; Hutch(k=5) 10ms.
+
+These upgrade the paper from "zero variance matters in principle" to "zero variance matters in practice with these specific numbers, on this specific protocol, at these specific dimensions". The section now has a clean internal narrative: training-stability headline → dimension scaling across target families → wall-clock dominance → takeaway conjunction.

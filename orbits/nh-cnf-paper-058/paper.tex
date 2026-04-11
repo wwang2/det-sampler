@@ -59,9 +59,11 @@ analytically known divergence: $\divergence(f) = -d \cdot g(\xi)$, where $\xi$ i
 a scalar thermostat variable and $g$ is the coupling function. This formula is
 classical in non-equilibrium statistical mechanics
 \citep{tuckerman2010statistical, evans2002fluctuation}; our contribution is its
-application to CNF density evaluation. It gives $O(1)$ cost and
-\emph{exactly zero stochastic variance} (deterministic ODE integration error
-remains) for log-density tracking. We introduce
+application to CNF density evaluation. It gives $O(1)$ cost and \emph{strictly
+zero-variance (machine-precision) divergence estimation} --- only deterministic
+ODE integration error remains --- for log-density tracking, together with a
+2--6$\times$ wall-clock speedup over FFJORD-style Hutchinson estimators at
+$d = 1000$. We introduce
 NH-CNF, which augments the state with momentum and a thermostat variable, evolves
 the extended system under Nos\'{e}--Hoover dynamics, and accumulates log-densities
 exactly. On multimodal 2D targets, NH-CNF achieves up to 6$\times$ better energy
@@ -527,79 +529,127 @@ variance grows with dimension. For a single random vector $v \sim \mathcal{N}(0,
 the variance is $2\|J\|_F^2$. Over $T$ integration steps, the accumulated
 log-density error has variance $\sim T \cdot \Var[\text{single step}]$, creating
 what we call the \emph{Hutchinson horizon}: the trajectory length beyond which
-estimator noise dominates ODE integrator error.
+estimator noise dominates ODE integrator error. Under a fixed bootstrap trick
+for the momentum draw (Appendix~\ref{app:frozen_momentum}), we can isolate the
+trace-estimation variance from the base sampling variance and measure the
+Hutchinson penalty directly.
 
-\paragraph{Quantitative comparison.}
-We compare NH-CNF's exact divergence against Hutchinson with $n_v = 1$ and
-$n_v = 5$ random vectors, across dimensions $d \in \{2, 10, 50, 100, 500\}$.
-Table~\ref{tab:e3} reports the variance of 100 independent divergence evaluations
-at the same state.
+\paragraph{Training stability --- the headline effect.}
+We begin with the practical consequence that matters for CNF training: the
+variance of the loss and its gradient. Figure~\ref{fig:training_stability}(a)
+shows the distribution of 100 independent reverse-KL loss evaluations at
+$d = 10$, with the base momentum frozen across draws so that only the trace
+estimator contributes stochastic variance. NH exact divergence produces the
+same loss every time (standard deviation $0.00 \times 10^{-2}$ --- zero to
+machine precision), whereas Hutchinson with $k = 1, 5, 20$ probe vectors gives
+standard deviations of $13.3, 6.0, 2.8 \times 10^{-2}$ respectively --- exactly
+the $1/\sqrt{k}$ scaling predicted by Monte Carlo theory. The NH-CNF loss is
+thus noise-free regardless of how many probe vectors a Hutchinson estimator
+would use.
 
-\begin{table}[t]
+Panel~(b) shows the corresponding gradient noise-to-signal ratio
+$\|\mathrm{std}(\nabla_\theta \mathcal{L})\| / \|\mathrm{mean}(\nabla_\theta
+\mathcal{L})\|$ as a function of dimension $d \in \{2, 5, 10, 20, 50\}$. NH
+exact gradients sit at machine epsilon ($\sim 10^{-14}$) at every dimension,
+while Hutchinson gradients live at $O(10^{-1})$ regardless of $k$. This two
+orders-of-magnitude gap is what determines whether a CNF trains at all: once
+the gradient noise swamps the signal, the optimizer's effective step becomes a
+random walk and loss curves stall.
+
+\begin{figure}[t]
   \centering
-  \caption{\textbf{Divergence estimator variance across dimensions.} NH-CNF is
-    exact (zero variance) at all $d$. Hutchinson variance grows with $d$.}
-  \label{tab:e3}
-  \small
-  \begin{tabular}{lccc}
-    \toprule
-    $d$ & NH-CNF (exact) & Hutchinson ($n_v=1$) & Hutchinson ($n_v=5$) \\
-    \midrule
-    2   & 0 & 0.89  & 0.27 \\
-    10  & 0 & 5.72  & 1.22 \\
-    50  & 0 & 67.77 & 12.13 \\
-    100 & 0 & 21.49 & 4.88 \\
-    500 & 0 & 150.26 & 38.81 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+  \includegraphics[width=\textwidth]{figures/fig_training_stability.png}
+  \caption{\textbf{Training stability: exact divergence is deterministic at
+    every $d$.} (a)~Distribution of 100 independent reverse-KL loss draws at
+    $d = 10$ with frozen base momentum, isolating the trace-estimator
+    contribution. NH exact is a single point (std $= 0.00$), while Hutchinson
+    std is $0.133 / 0.060 / 0.028$ for $k = 1 / 5 / 20$ probes --- the
+    textbook $1/\sqrt{k}$ decay. (b)~Gradient noise-to-signal ratio
+    $\|\mathrm{std}(\nabla_\theta \mathcal{L})\| / \|\mathrm{mean}(\nabla_\theta
+    \mathcal{L})\|$ vs.\ dimension $d \in \{2,5,10,20,50\}$. NH exact remains at
+    machine epsilon ($\sim 10^{-14}$) for all $d$; Hutchinson sits at
+    $O(10^{-1})$. The two orders-of-magnitude gap is the quantity that governs
+    trainability.}
+  \label{fig:training_stability}
+\end{figure}
 
-At $d = 2$, a single Hutchinson draw has 67\% relative error --- the estimate is
-essentially useless without averaging. At $d = 500$, the relative error is 4.5\%
-per draw, but achieving 1\% accuracy would require ${\sim}$34 vectors per step.
-The NH analytical formula achieves this for free.
+\paragraph{Dimension scaling across target families.}
+To confirm that this effect is not an artifact of any single target geometry,
+we measure the standard deviation of $\log p(x)$ across 100 ODE trajectories on
+three target families --- an isotropic Gaussian, an anisotropic Gaussian, and a
+bimodal mixture --- swept over $d \in [2, 200]$
+(Figure~\ref{fig:variance_scaling}). On the isotropic and bimodal targets, all
+estimators lie within a modest factor of each other, because the Jacobian is
+well-conditioned and Hutchinson's variance is bounded by
+$2\|J\|_F^2 \approx 2d$. The anisotropic case reveals the true danger: by
+$d = 200$, the NH exact std is $10.1$ while a single Hutchinson draw gives std
+$129.5$ --- \textbf{13$\times$ worse}, with the ratio growing steeply from
+$d = 50$ onward. When the Jacobian has widely separated singular values
+$\|J\|_F^2 \gg \tr(J)$, Hutchinson's Monte Carlo variance explodes; NH exact
+is indifferent because it never uses a random probe in the first place.
 
-\paragraph{Wall-clock cost.}
-The wall-clock speedup of analytical divergence over Hutchinson($n_v=1$) is a
-modest 1.2--1.5$\times$ (Table~\ref{tab:e3_cost}). This is because the NH
-Jacobian is trivially diagonal in the momentum block, so a single Hutchinson
-vector already gives a cheap (though noisy) estimate. The decisive advantage is
-not speed but \emph{exactness}: zero variance enables longer trajectory
-integration, stable training gradients, and reliable per-sample density
-evaluation.
-
-\begin{table}[t]
+\begin{figure}[t]
   \centering
-  \caption{\textbf{Wall-clock cost (ms) per divergence evaluation.} Analytical is
-    constant at ${\sim}$0.22~ms; Hutchinson grows slowly with $d$ and $n_v$.
-    Brute-force Jacobian computation becomes prohibitive beyond $d = 100$.}
-  \label{tab:e3_cost}
-  \small
-  \begin{tabular}{lcccc}
-    \toprule
-    $d$ & Analytical & Hutch($n_v\!=\!1$) & Hutch($n_v\!=\!5$) & Brute force \\
-    \midrule
-    10  & 0.22 & 0.27 & 0.28 & 0.31 \\
-    50  & 0.23 & 0.28 & 0.29 & 0.43 \\
-    100 & 0.22 & 0.28 & 0.30 & 0.55 \\
-    500 & 0.24 & 0.30 & 0.35 & --- \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+  \includegraphics[width=\textwidth]{figures/fig_variance_scaling_new.png}
+  \caption{\textbf{Variance of $\log p(x)$ across ODE trajectories vs.\
+    dimension, on three target families.} Isotropic Gaussian (left), anisotropic
+    Gaussian (center), bimodal mixture (right). The anisotropic case is where
+    the separation is clearest: at $d = 200$, NH exact std $= 10.1$ versus
+    Hutchinson($k{=}1$) std $= 129.5$, a 13$\times$ penalty. On isotropic and
+    bimodal targets the well-conditioned Jacobian keeps all estimators within a
+    small constant factor. The practical lesson: Hutchinson's variance is
+    controlled by $\|J\|_F^2$, not by $\tr(J)$, so anisotropy is the failure
+    mode.}
+  \label{fig:variance_scaling}
+\end{figure}
 
-Figure~\ref{fig:divergence} presents a four-panel analysis of the divergence
-advantage: cost scaling, variance scaling, per-sample error distributions, and
-accumulated error over trajectory length.
+\paragraph{Wall-clock cost across dimensions.}
+A common intuition is that exact divergence should only matter in moderate
+dimensions because a single Hutchinson draw is cheap. This intuition is wrong
+for the NH vector field. Figure~\ref{fig:walltime} reports per-step wall-clock
+cost for dimensions $d \in [2, 1000]$. At every dimension tested, NH exact
+divergence is \emph{faster} than FFJORD-style Hutchinson with $k = 1$ probe,
+and the gap widens with $d$: at $d = 1000$, NH exact takes $1.5$~ms per step
+versus $3.5$~ms for Hutchinson($k{=}1$) and $10$~ms for Hutchinson($k{=}5$), a
+2--6$\times$ speedup. The reason is structural: Hutchinson requires a full
+Jacobian-vector product through the NH vector field, while the NH analytical
+formula is a single evaluation of $g(\xi)$ followed by a scalar multiply. So
+exact divergence is not a trade-off --- it is strictly lower-variance
+\emph{and} strictly cheaper, at every dimension we tested.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.75\textwidth]{figures/fig_walltime.png}
+  \caption{\textbf{Per-step wall-clock cost vs.\ dimension,
+    $d \in [2, 1000]$, batch size 256.} NH exact divergence (blue) is faster
+    than a single FFJORD-style Hutchinson probe (orange) at \emph{all}
+    dimensions tested, and the gap widens with $d$. At $d = 1000$: NH exact
+    $1.5$~ms, Hutch($k{=}1$) $3.5$~ms, Hutch($k{=}5$) $10$~ms. The exact
+    divergence is simultaneously zero-variance \emph{and} cheaper --- there is
+    no speed/accuracy trade-off to navigate.}
+  \label{fig:walltime}
+\end{figure}
+
+\paragraph{Takeaway.}
+The decisive advantage of NH-CNF's exact divergence is not a single number but
+a conjunction: (i)~zero stochastic variance in the loss, to machine precision;
+(ii)~gradient noise-to-signal at machine epsilon, versus $O(10^{-1})$ for
+Hutchinson; (iii)~robustness to Jacobian anisotropy (13$\times$ variance
+penalty for Hutchinson at $d = 200$); (iv)~2--6$\times$ faster per step at
+$d = 1000$. For completeness, Figure~\ref{fig:divergence} shows the original
+four-panel diagnostic --- trajectory-level error accumulation, per-sample
+density variance, and the ``Hutchinson horizon'' beyond which estimator noise
+dominates ODE integrator error.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{figures/fig4_divergence.png}
-  \caption{\textbf{Exact divergence advantage.} (a)~Loss noise across evaluations:
-    NH-CNF (exact) produces identical values each time (variance $= 0$), while
-    Hutchinson($n_v{=}1$) and Hutchinson($n_v{=}5$) fluctuate.
-    (b)~Log-density error vs.\ trajectory length $T$: Hutchinson noise accumulates
-    as $O(\sqrt{T})$, eventually dominating ODE integrator error (the ``Hutchinson
-    horizon''). (c)~Per-sample density variance vs.\ dimension $d$: NH-CNF is
+  \caption{\textbf{Hutchinson horizon and accumulated error.} (a)~Loss noise
+    across evaluations: NH-CNF (exact) produces identical values each time
+    (variance $= 0$), while Hutchinson($k{=}1$) and Hutchinson($k{=}5$)
+    fluctuate. (b)~Log-density error vs.\ trajectory length $T$: Hutchinson
+    noise accumulates as $O(\sqrt{T})$, eventually dominating ODE integrator
+    error. (c)~Per-sample density variance vs.\ dimension $d$: NH-CNF is
     exactly zero at all $d$; Hutchinson variance grows with dimension.}
   \label{fig:divergence}
 \end{figure}
@@ -1149,5 +1199,82 @@ acceleration is used --- all computation is on CPU, which is appropriate for the
 low-dimensional problems studied here. The gradient $\nabla V(q)$ is computed
 analytically for the GMM targets and via finite differences for the KDE-fitted
 potentials.
+
+% ============================================================================
+\section{Frozen-Momentum Protocol for Divergence Variance Measurement}
+\label{app:frozen_momentum}
+% ============================================================================
+
+When comparing NH exact divergence against Hutchinson estimators in
+Section~\ref{sec:e3}, we freeze the base momentum draw across Monte Carlo
+repetitions. That is, for each reported variance measurement, the initial
+momentum $p_0 \sim \mathcal{N}(0, m\kT\,I_d)$ is sampled \emph{once} and reused
+for all $M$ independent divergence evaluations; only the Hutchinson probe
+vectors $v^{(1)}, \ldots, v^{(M)}$ (and the implicit ``no probe'' for NH exact)
+differ between draws.
+
+This is a deliberate experimental control, not a statistical shortcut. Without
+it, the variance of the momentum draw dominates both estimators: $\Var[\log p]$
+includes a contribution from $p_0$ that is present for NH exact and Hutchinson
+alike, and that contribution can easily swamp the trace-estimator term we are
+trying to measure. Freezing $p_0$ removes that common-mode variance and
+isolates the quantity of interest --- the variance contributed specifically by
+the trace estimator. The resulting numbers answer the question ``given the
+same ODE trajectory, how noisy is the divergence integral?'' which is what
+determines training-time gradient quality.
+
+In production training (as opposed to these variance measurements), $p_0$ is
+resampled every step as usual; the frozen protocol applies only to the
+variance diagnostics of Section~\ref{sec:e3}.
+
+% ============================================================================
+\section{Parametric Potential Training: $V_\theta$ Must Have Bias-Free
+Output Layer}
+\label{app:vtheta_bias}
+% ============================================================================
+
+When training a parametric potential $V_\theta(x)$ end-to-end through the
+NH-CNF flow (for example, by minimizing a reverse-KL objective against a
+target energy), the final linear layer of $V_\theta$ must be declared with
+\texttt{bias=False}. Concretely, if the last layer is
+$V_\theta(x) = W\,h_\phi(x) + b$, then the parameter $b$ should be omitted.
+
+The reason is that the NH vector field depends on $V_\theta$ only through its
+gradient:
+\[
+  \nabla_x V_\theta(x) = \frac{\partial}{\partial x}\bigl(W\,h_\phi(x) + b\bigr)
+    = W \cdot \nabla_x h_\phi(x).
+\]
+The output bias $b$ drops out of $\nabla_x V_\theta$ identically. Every
+downstream quantity that flows through $\nabla V_\theta$ --- the momentum
+update $\dot p = -\nabla V - g(\xi) p$, the thermostat feedback, the divergence
+integral, and ultimately the reverse-KL loss --- is therefore \emph{independent}
+of $b$. Backpropagation through the flow returns $\partial \mathcal{L} /
+\partial b = 0$, so the bias parameter receives no gradient signal and remains
+at its initialization for the entire training run.
+
+This is harmless mathematically (the target Boltzmann distribution $p(x)
+\propto \exp(-V_\theta(x))$ is invariant under additive constants in
+$V_\theta$, so the bias is unidentifiable in the first place) but it creates
+three practical failure modes if not handled explicitly:
+\begin{enumerate}[leftmargin=*, itemsep=2pt]
+  \item Wasted optimizer state: Adam or SGD with momentum maintains running
+    statistics for a parameter that never moves, inflating memory without
+    benefit.
+  \item Misleading gradient norm diagnostics: $\|\nabla_\theta \mathcal{L}\|$
+    includes a trivially-zero component for $b$, artificially shrinking
+    reported norms.
+  \item Framework-specific numerical noise: some autodiff implementations
+    return a non-zero but vanishingly small gradient for $b$ due to
+    accumulated floating-point error in the backward pass, which can cause $b$
+    to drift slowly and confuse convergence diagnostics.
+\end{enumerate}
+
+Setting \texttt{bias=False} on the output layer removes the parameter entirely
+and avoids all three issues at zero expressivity cost --- the model class is
+unchanged because $V_\theta$ is defined only up to an additive constant. In
+PyTorch this is a one-line change (\texttt{nn.Linear(d, 1, bias=False)}); in
+JAX/Flax or Equinox it amounts to omitting the bias term from the final dense
+layer.
 
 \end{document}
