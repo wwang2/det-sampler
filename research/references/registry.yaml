@@ -1,0 +1,19 @@
+- key: neal_2001
+  title: "Annealed Importance Sampling"
+  authors: "Radford M. Neal"
+  year: 2001
+  url: "https://arxiv.org/abs/physics/9803008"
+  doi: "10.1023/A:1008923215028"
+  type: paper
+  finding: "Introduces AIS — the gold standard sequential method for estimating normalizing constants by annealing between distributions"
+  cited_by: [orbit/logZ-estimation-060]
+
+- key: chen_2018
+  title: "Neural Ordinary Differential Equations"
+  authors: "Ricky T. Q. Chen, Yulia Rubanova, Jesse Bettencourt, David Duvenaud"
+  year: 2018
+  url: "https://arxiv.org/abs/1806.07366"
+  doi: "10.48550/arXiv.1806.07366"
+  type: paper
+  finding: "Formalizes continuous normalizing flows (CNF) with exact density tracking via the divergence integral (instantaneous change of variables)"
+  cited_by: [orbit/logZ-estimation-060]

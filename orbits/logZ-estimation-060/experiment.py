@@ -469,7 +469,7 @@ def experiment_e2():
         # = int exp(beta*log_p_gmm(q)) dq (since p_GMM is normalized, this is int p^beta dq)
         log_w = beta * log_p_gmm - log_p_ref
         log_Z_is[j] = logsumexp(log_w) - np.log(n_is)
-        print(f"  beta={beta:.1f}: log Z(IS, 200k) = {log_Z_is[j]:.4f}")
+        print(f"  beta={beta:.1f}: log Z(IS, 100k) = {log_Z_is[j]:.4f}")
 
     # Analytical for well-separated modes
     K = 5
@@ -521,7 +521,7 @@ def experiment_e2():
     fig, axes = plt.subplots(1, 2, figsize=(13, 5), constrained_layout=True)
 
     ax = axes[0]
-    ax.plot(betas_test, log_Z_is, 'o-', color=C_IS, lw=2, markersize=7, label='IS (200k)', zorder=3)
+    ax.plot(betas_test, log_Z_is, 'o-', color=C_IS, lw=2, markersize=7, label='IS (100k)', zorder=3)
     mask_ti = ~np.isnan(log_Z_ti)
     ax.plot(betas_test[mask_ti], log_Z_ti[mask_ti], 's--', color=C_TI, lw=2, markersize=7, label='TI (NH)')
     ax.plot(betas_test, log_Z_analytical, '^:', color=C_TRUE, lw=1.5, markersize=6,

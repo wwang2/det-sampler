@@ -41,18 +41,26 @@ True log Z = 0 (the GMM is normalized).
 
 ## Results
 
-### E1: 2D GMM comparison (10 independent runs)
+### E1: 2D GMM comparison (10 independent runs, v2 parameters)
+
+All results below use v2 parameters: AIS with 5 chains, 11 betas, 1000 equilibration
+steps; TI with 11 windows, 500 burn-in, 1000 samples; IS with 100k samples.
 
 | Method | Mean log Z | Std | |Bias| |
 |--------|-----------|-----|-------|
 | IS (100k) | -0.004 | 0.006 | 0.004 |
-| NH-CNF AIS | -0.14 | 0.56 | 0.14 |
-| TI (NH) | -2.65 | 2.86 | 2.65 |
+| NH-CNF AIS (5 chains, 11 betas, 1000 equil) | -0.14 | 0.56 | 0.14 |
+| TI (NH, 11 windows, 500 burn + 1000 samples) | -2.65 | 2.86 | 2.65 |
 
 In 2D, IS dominates because the Gaussian reference (sigma_ref=5) provides excellent
-coverage of all GMM modes. The AIS approach works but is noisier (5 chains, 11 betas,
-1000 equil steps). TI severely under-equilibrates -- the NH sampler needs far more steps
-to achieve stationarity at each beta window.
+coverage of all GMM modes. The AIS approach works but is noisier. TI severely
+under-equilibrates -- the NH sampler needs far more steps to achieve stationarity at
+each beta window.
+
+Note: the NH-CNF's div_integral is computed at each RK4 step but is NOT used in the
+AIS weight calculation -- the weights come from direct potential evaluation at each
+temperature transition. This is the core reason exact density tracking provides no
+practical advantage for this application.
 
 ![E1 results](figures/e1_logZ.png)
 
@@ -127,7 +135,8 @@ This orbit applies well-known techniques (AIS, TI, IS) to evaluate whether the N
 
 ## References
 
-- [Neal (2001)](https://arxiv.org/abs/physics/9803008) — Annealed Importance Sampling
-- [Chen et al. (2018)](https://arxiv.org/abs/1806.07366) — Neural ODE / CNF density tracking
-- [Arbel et al. (2021)](https://arxiv.org/abs/2102.07501) — Annealed Flow Transport Monte Carlo
+- [Neal (2001)](https://arxiv.org/abs/physics/9803008) — Annealed Importance Sampling. DOI: [10.1023/A:1008923215028](https://doi.org/10.1023/A:1008923215028)
+- [Chen et al. (2018)](https://arxiv.org/abs/1806.07366) — Neural Ordinary Differential Equations / CNF density tracking. DOI: [10.48550/arXiv.1806.07366](https://doi.org/10.48550/arXiv.1806.07366)
+- [Arbel et al. (2021)](https://arxiv.org/abs/2102.07501) — Annealed Flow Transport Monte Carlo. DOI: [10.48550/arXiv.2102.07501](https://doi.org/10.48550/arXiv.2102.07501)
+- [Kirkwood (1935)](https://doi.org/10.1063/1.1749657) — Statistical mechanics of fluid mixtures (Thermodynamic Integration origin). DOI: [10.1063/1.1749657](https://doi.org/10.1063/1.1749657)
 - Parent orbit: nh-cnf-deep-057 (NH-tanh RK4 integrator)

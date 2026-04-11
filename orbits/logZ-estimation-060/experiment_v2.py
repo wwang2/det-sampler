@@ -295,6 +295,21 @@ def experiment_e1():
     ax.set_title('(a) log Z estimates (2D GMM)', fontweight='bold')
     ax.legend(fontsize=9, frameon=False)
 
+    # Zoomed inset: IS and AIS only (TI variance compresses them near zero)
+    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+    ax_inset = inset_axes(ax, width="40%", height="40%", loc='lower left',
+                          bbox_to_anchor=(0.05, 0.05, 1, 1), bbox_transform=ax.transAxes)
+    ax_inset.plot(run_ids, results['ais'], 'o-', color=C_NHCNF, ms=3, lw=1)
+    ax_inset.plot(run_ids, results['is'], '^-', color=C_IS, ms=3, lw=1)
+    ax_inset.axhline(0, color=C_TRUE, ls='--', lw=1)
+    ais_arr = np.array(results['ais'])
+    is_arr = np.array(results['is'])
+    y_lo = min(ais_arr.min(), is_arr.min()) - 0.1
+    y_hi = max(ais_arr.max(), is_arr.max()) + 0.1
+    ax_inset.set_ylim(y_lo, y_hi)
+    ax_inset.set_title('AIS & IS zoom', fontsize=8)
+    ax_inset.tick_params(labelsize=7)
+
     ax = axes[1]
     errors = {
         'NH-CNF\nAIS': np.abs(np.array(results['ais'])),
@@ -416,7 +431,7 @@ def experiment_e3():
     ax.set_yscale('log')
     ax.legend(fontsize=10, frameon=False)
 
-    # (c) Mean estimate
+    # (c) Mean estimate (clipped y-axis; IS at d=20 drops to ~-100)
     ax = axes[2]
     for method, color, label in [('ais', C_NHCNF, 'AIS'),
                                   ('ti', C_TI, 'TI'),
@@ -429,6 +444,21 @@ def experiment_e3():
     ax.set_xlabel('Dimension d')
     ax.set_ylabel('log Z estimate')
     ax.set_title('(c) Mean estimate vs dimension', fontweight='bold')
+    # Clip y-axis so True line is visible; annotate IS off-scale
+    ais_means = [np.mean(all_results[d]['ais']) for d in dims]
+    ti_means = [np.mean(all_results[d]['ti']) for d in dims]
+    is_means = [np.mean(all_results[d]['is']) for d in dims]
+    y_lo = min(min(ais_means), min(ti_means)) * 1.3
+    y_hi = max(max(ais_means), max(ti_means)) * 0.3 if max(max(ais_means), max(ti_means)) > 0 else 5
+    y_hi = max(y_hi, 5)
+    ax.set_ylim(y_lo, y_hi)
+    # Annotate IS values that fall off-scale
+    for di, d_val in enumerate(dims):
+        if is_means[di] < y_lo:
+            ax.annotate(f'IS: {is_means[di]:.0f}', xy=(d_val, y_lo),
+                        fontsize=8, color=C_IS, ha='center', va='bottom',
+                        fontweight='bold')
+            ax.plot(d_val, y_lo, 'v', color=C_IS, ms=10, clip_on=False)
     ax.legend(fontsize=9, frameon=False)
 
     fig.savefig(os.path.join(FIGDIR, 'e3_scaling.png'))
