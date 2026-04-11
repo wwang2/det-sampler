@@ -1,0 +1,53 @@
+- key: grathwohl2019
+  title: "FFJORD: Free-Form Continuous Dynamics for Scalable Reversible Generative Models"
+  authors: "Will Grathwohl, Ricky T. Q. Chen, Jesse Bettencourt, Ilya Sutskever, David Duvenaud"
+  year: 2019
+  url: "https://arxiv.org/abs/1810.01367"
+  type: paper
+  finding: "Introduced continuous normalizing flows with Hutchinson trace estimator for scalable density estimation"
+  cited_by: [orbit/nh-cnf-deep-057]
+
+- key: chen2018
+  title: "Neural Ordinary Differential Equations"
+  authors: "Ricky T. Q. Chen, Yulia Rubanova, Jesse Bettencourt, David Duvenaud"
+  year: 2018
+  url: "https://arxiv.org/abs/1806.07366"
+  type: paper
+  finding: "Foundation for CNF-based generative models via adjoint ODE solvers"
+  cited_by: [orbit/nh-cnf-deep-057]
+
+- key: nose1984
+  title: "A unified formulation of the constant temperature molecular dynamics methods"
+  authors: "Shuichi Nose"
+  year: 1984
+  url: "https://doi.org/10.1063/1.447334"
+  type: paper
+  finding: "Original Nose thermostat formulation with extended phase space"
+  cited_by: [orbit/nh-cnf-deep-057]
+
+- key: hoover1985
+  title: "Canonical dynamics: Equilibrium phase-space distributions"
+  authors: "William G. Hoover"
+  year: 1985
+  url: "https://doi.org/10.1103/PhysRevA.31.1695"
+  type: paper
+  finding: "Simplified Nose thermostat to Nose-Hoover form with single thermostat variable"
+  cited_by: [orbit/nh-cnf-deep-057]
+
+- key: song2019
+  title: "Generative Modeling by Estimating Gradients of the Data Distribution"
+  authors: "Yang Song, Stefano Ermon"
+  year: 2019
+  url: "https://arxiv.org/abs/1907.05600"
+  type: paper
+  finding: "Score-based generative modeling via Langevin dynamics"
+  cited_by: [orbit/nh-cnf-deep-057]
+
+- key: ceriotti2010
+  title: "Colored-Noise Thermostats a la Carte"
+  authors: "Michele Ceriotti, Giovanni Bussi, Michele Parrinello"
+  year: 2010
+  url: "https://doi.org/10.1021/ct900563s"
+  type: paper
+  finding: "Generalized Langevin equation thermostats with colored noise for optimal sampling"
+  cited_by: [orbit/nh-cnf-deep-057]

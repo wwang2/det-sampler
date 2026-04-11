@@ -8,7 +8,7 @@ itself is blurry -- so samples will always be blurry regardless of chain length.
 
 Fix strategy:
 - Eight Gaussians: EXACT analytical potential (log-sum-exp GMM)
-- Checkerboard: analytical sigmoid potential, grid-interpolated for speed
+- Checkerboard: KDE(bw=0.1) + GridPotential, grid-interpolated for speed
 - Two Moons, Two Spirals: KDE with SMALL bandwidth (0.1), grid-interpolated
 
 The grid interpolation precomputes grad_V on a fine 2D grid and uses bilinear

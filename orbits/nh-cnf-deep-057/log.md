@@ -3,7 +3,7 @@ strategy: nh-cnf-generative
 type: experiment
 status: complete
 eval_version: eval-v1
-metric: 0.012
+metric: 0.050
 issue: 58
 parents:
   - bayesian-posterior-056
@@ -41,20 +41,18 @@ We tested this in four experiments:
 
 ## Results
 
-### E1: NH-CNF density estimation
+### E1: NH-CNF density estimation (final, Refinement 3)
 
-NH-CNF (warm-started from data, 10 chains, 8000 total steps) vs ULA (8000 steps, eps=0.005):
+Both methods use the SAME potential, SAME total gradient evaluations (200k steps x 9 chains = 1.8M), and tuned hyperparameters (Q and eps selected by short preliminary runs). Eight Gaussians uses exact analytical potential; others use KDE(bw=0.1) + GridPotential.
 
-| Target | NH-CNF ED | Langevin ED | NH wins? |
-|--------|-----------|-------------|----------|
-| Two Moons | 0.039 | 0.035 | Comparable |
-| Two Spirals | **0.029** | 0.227 | Yes (8x) |
-| Checkerboard | **0.028** | 0.150 | Yes (5x) |
-| Eight Gaussians | **0.272** | 2.199 | Yes (8x) |
+| Target | NH-CNF ED | Langevin ED | Winner |
+|--------|-----------|-------------|--------|
+| Eight Gaussians | 0.185 | **0.074** | Langevin (2.5x) |
+| Checkerboard | **0.001** | 0.003 | NH-CNF (2.7x) |
+| Two Moons | 0.001 | **0.001** | Comparable |
+| Two Spirals | 0.014 | **0.006** | Langevin (2.5x) |
 
-The NH-CNF excels on multimodal targets where Langevin gets trapped in a subset of modes. The deterministic NH dynamics traverse between modes via Hamiltonian trajectories, while Langevin relies on noise to escape local minima -- which is slow for well-separated modes.
-
-**Caveat**: The NH-CNF samples visually show trajectory structure (connected lines) due to deterministic dynamics. The energy distance metric properly captures coverage quality despite this visual artifact. With warm-starting from data points, the sampler explores the target support efficiently.
+**Mean NH-CNF ED: 0.050.** NH-CNF wins on checkerboard (periodic structure amenable to deterministic Hamiltonian traversal), loses on multimodal targets (Eight Gaussians, Two Spirals) where stochastic kicks aid mode hopping, and ties on smooth targets (Two Moons).
 
 ### E2: Annealed NH flow
 
@@ -83,6 +81,27 @@ Created a schematic mapping:
 - Reverse denoising (score network) <-> NH with small Q (strong coupling)  
 - Noise schedule beta(t) <-> Q schedule Q(t)
 - FFJORD pipeline (ODE -> Hutchinson trace -> stochastic log p) vs NH-CNF pipeline (ODE -> exact div -> deterministic log p)
+
+
+### Prior E1 iterations (superseded)
+
+The following E1 results used blurry KDE potentials (bw=0.35) and are superseded by the Refinement 3 results above. Kept for provenance.
+
+<details>
+<summary>Original E1 (blurry KDE, artifact-contaminated)</summary>
+
+NH-CNF (warm-started from data, 10 chains, 8000 total steps) vs ULA (8000 steps, eps=0.005):
+
+| Target | NH-CNF ED | Langevin ED | NH wins? |
+|--------|-----------|-------------|----------|
+| Two Moons | 0.039 | 0.035 | Comparable |
+| Two Spirals | **0.029** | 0.227 | Yes (8x) |
+| Checkerboard | **0.028** | 0.150 | Yes (5x) |
+| Eight Gaussians | **0.272** | 2.199 | Yes (8x) |
+
+**Caveat**: These results were inflated by blurry KDE potential giving NH an unfair advantage via warm-starting.
+
+</details>
 
 ## What I Learned
 
@@ -113,11 +132,12 @@ The exact divergence property of NH thermostats is well known in molecular dynam
 
 ## References
 
-- Grathwohl et al. (2019). FFJORD: Free-Form Continuous Dynamics for Scalable Reversible Generative Models. ICLR.
-- Chen et al. (2018). Neural Ordinary Differential Equations. NeurIPS.
-- Nose (1984). A unified formulation of the constant temperature molecular dynamics methods.
-- Hoover (1985). Canonical dynamics: Equilibrium phase-space distributions.
-- Song & Ermon (2019). Generative Modeling by Estimating Gradients of the Data Distribution. NeurIPS.
+- [Grathwohl et al. (2019)](https://arxiv.org/abs/1810.01367). FFJORD: Free-Form Continuous Dynamics for Scalable Reversible Generative Models. ICLR.
+- [Chen et al. (2018)](https://arxiv.org/abs/1806.07366). Neural Ordinary Differential Equations. NeurIPS.
+- [Nose (1984)](https://doi.org/10.1063/1.447334). A unified formulation of the constant temperature molecular dynamics methods. J. Chem. Phys.
+- [Hoover (1985)](https://doi.org/10.1103/PhysRevA.31.1695). Canonical dynamics: Equilibrium phase-space distributions. Phys. Rev. A.
+- [Song & Ermon (2019)](https://arxiv.org/abs/1907.05600). Generative Modeling by Estimating Gradients of the Data Distribution. NeurIPS.
+- [Ceriotti, Bussi & Parrinello (2010)](https://doi.org/10.1021/ct900563s). Colored-Noise Thermostats a la Carte. J. Chem. Theory Comput.
 
 ---
 
@@ -149,7 +169,7 @@ Two clean panels:
 ### E5 New: Phase-space trajectory visualization
 
 The "wow" figure showing what makes NH unique. Target: two moons, 5000 steps.
-- (a) Configuration space q1-q2 colored by time -- shows exploration of both moons
+- (a) Configuration space q1-q2 colored by time -- shows full 5000-step trajectory exploring both moon basins
 - (b) Phase portrait q1-p1 -- shows Hamiltonian oscillation with thermostat damping
 - (c) xi(t) time series -- thermostat variable fluctuating around zero
 - (d) g(xi) = tanh(xi) -- the friction signal, which IS the exact divergence div/d
@@ -220,7 +240,7 @@ Remade as 2x2 layout (figsize 14x12) with larger panels:
 
 ### E5 Fix: Extended trajectory + background density
 
-- Panel (a): 500 steps shown (not 30), with target density as gray background contours
+- Panel (a): Full 5000 steps shown, with target density as gray background contours
 - Panel (b): Phase portrait also shows 500 steps
 - Panels (c,d): Full 5000-step time series showing clear oscillation patterns
 - viridis colormap with thin connecting lines between trajectory points
@@ -232,8 +252,8 @@ Root cause of contradictory data: the energy distance was computed correctly, bu
 2x2 layout:
 - (a) ED vs d: Langevin outperforms NH-CNF at all dimensions
 - (b) Mode coverage vs d: Langevin maintains 5/5 until d=50; NH degrades at d>=20
-- (c) NH-CNF at d=2: shows 4/5 modes covered with scatter
-- (d) NH-CNF at d=50 projected: shows collapse to 0/5 modes
+- (c) Samples at d=2: NH-CNF and Langevin scatter overlay, showing mode coverage comparison
+- (d) Samples at d=50 projected: NH-CNF and Langevin scatter overlay, showing collapse at high dimension
 
 | d | NH-CNF ED | Langevin ED | NH modes | Lang modes |
 |---|-----------|-------------|----------|------------|
