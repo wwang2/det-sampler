@@ -17,3 +17,23 @@
   type: paper
   finding: "Formalizes continuous normalizing flows (CNF) with exact density tracking via the divergence integral (instantaneous change of variables)"
   cited_by: [orbit/logZ-estimation-060]
+
+- key: arbel_2021
+  title: "Annealed Flow Transport Monte Carlo"
+  authors: "Michael Arbel, Alexander G. D. G. Matthews, Arnaud Doucet"
+  year: 2021
+  url: "https://arxiv.org/abs/2102.07501"
+  doi: "10.48550/arXiv.2102.07501"
+  type: paper
+  finding: "Combines normalizing flows with AIS — flows transport samples between annealing distributions to sharpen importance weights"
+  cited_by: [orbit/logZ-estimation-060]
+
+- key: kirkwood_1935
+  title: "Statistical Mechanics of Fluid Mixtures"
+  authors: "John G. Kirkwood"
+  year: 1935
+  url: "https://doi.org/10.1063/1.1749657"
+  doi: "10.1063/1.1749657"
+  type: paper
+  finding: "Origin of Thermodynamic Integration — free energy differences computed by integrating <dH/dlambda> along a coupling parameter path"
+  cited_by: [orbit/logZ-estimation-060]
