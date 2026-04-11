@@ -44,7 +44,7 @@ NH-CNF correctly identifies relative free energies of three wells in a 2D potent
 
 ### E3: Harmonic variance scaling
 
-For harmonic potentials with increasing k_B/k_A ratio (1 to 10), Langevin FEP has **10x lower variance** than NH-CNF FEP at k_B/k_A = 10. The ratio gets worse as perturbation increases. This is the opposite of the original hypothesis.
+For harmonic potentials with increasing k_B/k_A ratio (1 to 10), Langevin FEP has **10x lower variance** than NH-CNF FEP at k_B/k_A = 10. The ratio gets worse as perturbation increases. This is the opposite of the original hypothesis. The non-monotone bias spike at k_B/k_A ~ 2-3 for NH-CNF likely reflects a resonance between the thermostat frequency and the harmonic frequency at the perturbed stiffness. This is consistent with the omega*Q=1 resonance identified in orbit #32.
 
 ![E1 results](figures/e1_fep.png)
 ![E2 landscape](figures/e2_landscape.png)
@@ -58,7 +58,7 @@ Three experiments comparing NH-CNF (deterministic, with exact density tracking) 
 2. **E2**: Free energy landscape reconstruction from a single NH-CNF trajectory
 3. **E3**: Variance scaling on harmonic oscillators with increasing perturbation size
 
-The NH-tanh RK4 integrator was inherited from parent orbit nh-cnf-deep-057. Each RK4 step costs 4 force evaluations. Langevin uses 1 force evaluation per step. All comparisons are at fixed total NFE budget.
+All experiments use SEED=42 with per-run offsets (seed + run_index * 137). The NH-tanh RK4 integrator was inherited from parent orbit nh-cnf-deep-057. Each RK4 step costs 4 force evaluations. Langevin uses 1 force evaluation per step. All comparisons are at fixed total NFE budget.
 
 ## What Happened
 
@@ -108,7 +108,8 @@ This is a null result with useful clarifying value. The finding is unsurprising 
 
 ## References
 
-- Zwanzig, R. (1954). "High-Temperature Equation of State by a Perturbation Method" - Original FEP formula
-- Bennett, C.H. (1976). "Efficient estimation of free energy differences from Monte Carlo data" - Bridge sampling
+- [Zwanzig, R. (1954). "High-Temperature Equation of State by a Perturbation Method"](https://doi.org/10.1063/1.1740409) - Original FEP formula
+- [Bennett, C.H. (1976). "Efficient estimation of free energy differences from Monte Carlo data"](https://doi.org/10.1016/0021-9991(76)90078-4) - Bridge sampling
 - Chen, R.T.Q. et al. (2018). "Neural Ordinary Differential Equations" - CNF density tracking
-- Shirts, M.R. & Chodera, J.D. (2008). "Statistically optimal analysis of samples from multiple equilibrium states" - MBAR / variance analysis
+- [Shirts, M.R. & Chodera, J.D. (2008). "Statistically optimal analysis of samples from multiple equilibrium states"](https://doi.org/10.1063/1.2978177) - MBAR / variance analysis
+- [Jarzynski, C. (1997). "Nonequilibrium Equality for Free Energy Differences"](https://doi.org/10.1103/PhysRevLett.78.2690) - Jarzynski equality

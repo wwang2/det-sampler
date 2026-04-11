@@ -347,9 +347,9 @@ def experiment_e1():
     # (c) Double-well potential with states marked
     ax = axes[2]
     x = np.linspace(-2.5, 2.5, 500)
-    ax.plot(x, V_doublewell(x), 'k-', lw=2, label=r'$V(x) = (x^2-1)^2 + 0.3x$')
-    ax.plot(x, V_A(x, k_restraint), '--', color=C_NHCNF, lw=1.5, alpha=0.7, label=r'$V_A$ (restrained)')
-    ax.plot(x, V_B(x, k_restraint), '--', color=C_TI, lw=1.5, alpha=0.7, label=r'$V_B$ (restrained)')
+    ax.plot(x, V_doublewell(x), 'k-', lw=2, label=r'$V(x)$')
+    ax.plot(x, V_A(x, k_restraint), '--', color=C_NHCNF, lw=1.5, alpha=0.7, label=r'$V_A$')
+    ax.plot(x, V_B(x, k_restraint), '--', color=C_TI, lw=1.5, alpha=0.7, label=r'$V_B$')
 
     # Mark minima
     ax.axvline(-1, color=C_NHCNF, ls=':', alpha=0.5)
@@ -361,7 +361,8 @@ def experiment_e1():
     ax.set_xlabel('x')
     ax.set_ylabel('V(x)')
     ax.set_title('(c) Asymmetric Double-Well', fontweight='bold')
-    ax.legend(frameon=False, fontsize=10)
+    ax.legend(frameon=False, fontsize=9, loc='upper left',
+              bbox_to_anchor=(0.0, 1.0), borderaxespad=0.5)
     ax.grid(True, alpha=0.3)
 
     # Add true DeltaF annotation
@@ -527,13 +528,26 @@ def experiment_e2():
     ax.set_title('(a) Three-Well Potential', fontweight='bold')
     ax.set_aspect('equal')
 
-    # (b) NH-CNF samples colored by well assignment
+    # (b) NH-CNF samples colored by nearest well
     ax = axes[1]
     ax.contour(X, Y, V_grid, levels=levels, colors='gray', linewidths=0.3, alpha=0.3)
-    ax.scatter(samples_2d[:, 0], samples_2d[:, 1], s=1, alpha=0.3, c='steelblue')
+
+    # Assign each sample to the nearest well center
+    well_centers_arr = np.array([(1.0, 0.0), (-0.5, 0.866), (-0.5, -0.866)])
+    well_colors = ['#e41a1c', '#377eb8', '#4daf4a']  # red, blue, green
+    well_labels = ['Well 1 (Right)', 'Well 2 (Upper-Left)', 'Well 3 (Lower-Left)']
+    dists = np.array([np.sqrt((samples_2d[:, 0] - cx)**2 + (samples_2d[:, 1] - cy)**2)
+                       for cx, cy in well_centers_arr])  # shape (3, N)
+    assignments = np.argmin(dists, axis=0)
+
+    for wi in range(3):
+        mask_w = assignments == wi
+        ax.scatter(samples_2d[mask_w, 0], samples_2d[mask_w, 1],
+                   s=1, alpha=0.3, c=well_colors[wi], label=well_labels[wi])
+    ax.legend(frameon=False, fontsize=9, markerscale=5, loc='lower right')
     ax.set_xlabel('x')
     ax.set_ylabel('y')
-    ax.set_title('(b) NH-CNF Samples', fontweight='bold')
+    ax.set_title('(b) NH-CNF Samples by Well', fontweight='bold')
     ax.set_aspect('equal')
     ax.set_xlim(-2.5, 2.5)
     ax.set_ylim(-2.5, 2.5)
