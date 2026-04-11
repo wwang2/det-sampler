@@ -105,23 +105,29 @@ which *directly* probes the estimator noise with frozen inits.
 
 ## E3.1 Variance scaling of log p(x)
 
-Running at time of writing (see `results/log_e3_variance.txt` / `.json`
-if present). Fixed in this refinement: the bimodal target's `grad_V`
-previously detached from the autograd graph, which broke Hutchinson
-(the estimator needs `dp = -grad_V(q) - g * p` differentiable wrt `q`);
-replaced the autograd-based `grad_V` with the closed-form
-`grad_V(x)[0] = x[0] - tanh(x[0])`, `grad_V(x)[k>=1] = x[k]`.
+`fig_variance_scaling.png`: across-trajectory std of log p(x) vs
+dimension, for 3 target families and 4 methods. Fixed in this
+refinement: the bimodal target's `grad_V` previously detached from
+the autograd graph, which broke Hutchinson (the estimator needs
+`dp = -grad_V(q) - g * p` differentiable wrt `q`). Replaced with the
+closed-form `grad_V(x)[0] = x[0] - tanh(x[0])`, `grad_V(x)[k>=1] = x[k]`.
 
-The iso/aniso branches already ran cleanly in the parent before the crash:
+Key findings (d=200):
 
-- Isotropic Gaussian, d=2..200: NH-exact std = Hutch(k) std to within
-  seed noise (log-p variance grows as sqrt(d) for all methods — this is
-  the data variance, not the estimator variance, so all methods agree).
-- **Anisotropic Gaussian** (kappas log-spaced [1, 100]): NH exact std at
-  d=200 is ~10, Hutch(1) std is ~130 (**13x worse**), Hutch(5) is ~60,
-  Hutch(20) is ~30. This is the cleanest demonstration of the estimator
-  variance penalty.
-- Bimodal: expected to track isotropic (only one direction of structure).
+| target     | NH exact | Hutch(1) | Hutch(5) | Hutch(20) |
+|------------|----------|----------|----------|-----------|
+| iso        | 17.4     | 18.1     | 17.7     | 17.5      |
+| **aniso**  | **10.1** | **129.5**| **59.1** | **30.6**  |
+| bimod      | 17.4     | 18.1     | 17.7     | 17.5      |
+
+**The anisotropic case is the clean story**: at d=200, Hutch(1) is
+**~13x worse** than NH exact, and even Hutch(20) is **~3x worse**.
+The iso and bimod cases are dominated by *data* variance (the log-p
+of a random N(0,I) sample has std ~ sqrt(d) regardless of method),
+so all four methods agree to within seed noise. Only the anisotropic
+Gaussian, where the potential has structure the Hutchinson estimator
+has to learn, separates the methods — and there exact wins by an
+order of magnitude.
 
 ## E3.4 Wall-clock crossover
 
