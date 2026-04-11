@@ -1088,6 +1088,8 @@ def run_e6():
     modes_lang_list = []
     nh_samples_d2 = None
     nh_samples_d50 = None
+    lang_samples_d2 = None
+    lang_samples_d50 = None
 
     for d in dims:
         print(f"\n  d = {d}")
@@ -1168,6 +1170,11 @@ def run_e6():
         lang_samples = np.array(lang_samples_list) if lang_samples_list else np.zeros((1, d))
         print(f"    Langevin: {len(lang_samples)} samples")
 
+        if d == 2:
+            lang_samples_d2 = lang_samples.copy()
+        if d == 50:
+            lang_samples_d50 = lang_samples.copy()
+
         # Metrics
         np.random.seed(SEED)
         ed_nh = energy_distance(gt_data, nh_samples) if len(nh_samples) > 10 else 999.0
@@ -1215,36 +1222,42 @@ def run_e6():
     ax.set_ylim(-0.5, n_modes + 0.5)
     ax.set_yticks(range(n_modes + 1))
 
-    # (c) NH-CNF samples at d=2 (2D scatter)
+    # (c) NH-CNF + Langevin samples at d=2 (2D scatter overlay)
     ax = axes[1, 0]
     gt_2d, centers_2d = make_gaussian_ring(n_gt, 2, n_modes, radius, sigma, seed=SEED)
     if nh_samples_d2 is not None and len(nh_samples_d2) > 10:
         ax.scatter(gt_2d[:, 0], gt_2d[:, 1], s=1, alpha=0.1, c='gray',
                    rasterized=True, label='Ground truth')
+        if lang_samples_d2 is not None and len(lang_samples_d2) > 10:
+            ax.scatter(lang_samples_d2[:, 0], lang_samples_d2[:, 1], s=3, alpha=0.3,
+                       c=C_LANG, rasterized=True, label='Langevin')
         ax.scatter(nh_samples_d2[:, 0], nh_samples_d2[:, 1], s=3, alpha=0.3,
                    c=C_NH, rasterized=True, label='NH-CNF')
         # Mark mode centers
         ax.scatter(centers_2d[:, 0], centers_2d[:, 1], s=100, c='red',
                    marker='x', lw=2, zorder=5, label='Mode centers')
-    ax.set_title(f'(c) NH-CNF at $d=2$\nED={ed_nh_list[0]:.3f}, modes={modes_nh_list[0]}/{n_modes}',
+    ax.set_title(f'(c) Samples at $d=2$\nNH ED={ed_nh_list[0]:.3f}, Lang ED={ed_lang_list[0]:.3f}',
                  fontweight='bold')
     ax.set_xlabel('$x_1$')
     ax.set_ylabel('$x_2$')
     ax.legend(frameon=False, fontsize=10, markerscale=2)
     ax.set_aspect('equal')
 
-    # (d) NH-CNF samples at d=50, projected to first 2 dims
+    # (d) NH-CNF + Langevin samples at d=50, projected to first 2 dims
     ax = axes[1, 1]
     gt_50d, centers_50d = make_gaussian_ring(n_gt, 50, n_modes, radius, sigma, seed=SEED)
     if nh_samples_d50 is not None and len(nh_samples_d50) > 10:
         ax.scatter(gt_50d[:, 0], gt_50d[:, 1], s=1, alpha=0.1, c='gray',
                    rasterized=True, label='Ground truth (proj.)')
+        if lang_samples_d50 is not None and len(lang_samples_d50) > 10:
+            ax.scatter(lang_samples_d50[:, 0], lang_samples_d50[:, 1], s=3, alpha=0.3,
+                       c=C_LANG, rasterized=True, label='Langevin (proj.)')
         ax.scatter(nh_samples_d50[:, 0], nh_samples_d50[:, 1], s=3, alpha=0.3,
                    c=C_NH, rasterized=True, label='NH-CNF (proj.)')
         ax.scatter(centers_50d[:, 0], centers_50d[:, 1], s=100, c='red',
                    marker='x', lw=2, zorder=5, label='Mode centers')
     d50_idx = dims.index(50)
-    ax.set_title(f'(d) NH-CNF at $d=50$ (first 2 dims)\nED={ed_nh_list[d50_idx]:.3f}, modes={modes_nh_list[d50_idx]}/{n_modes}',
+    ax.set_title(f'(d) Samples at $d=50$ (first 2 dims)\nNH ED={ed_nh_list[d50_idx]:.3f}, Lang ED={ed_lang_list[d50_idx]:.3f}',
                  fontweight='bold')
     ax.set_xlabel('$x_1$')
     ax.set_ylabel('$x_2$')
