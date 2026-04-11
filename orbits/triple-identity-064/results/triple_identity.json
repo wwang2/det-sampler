@@ -1,0 +1,17 @@
+{
+  "T_final": 25.0,
+  "n_steps": 5000,
+  "dt": 0.005,
+  "max_abs_exact_minus_lyap": 4.065804641673054e-05,
+  "max_abs_exact_minus_bath": 2.7028605208207344,
+  "max_abs_exact_minus_hutch": 5.062509289026025,
+  "std_exact_minus_bath": 0.7912902387219765,
+  "std_exact_minus_hutch": 1.0965685689893314,
+  "rel_err_exact_lyap_final": 2.07596610149267e-06,
+  "rel_err_exact_bath_final": 0.13990533103093675,
+  "rel_err_exact_hutch_final": 0.8930122411957588,
+  "sigma_exact_final": -5.135940158697852,
+  "sigma_lyap_final": -5.135950820735521,
+  "sigma_bath_final": -4.417394750640147,
+  "sigma_hutch_final": -0.5494827269317814
+}
