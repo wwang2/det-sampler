@@ -1,0 +1,19 @@
+
+=== NH exact ===
+  seed 0: final train loss=3.490 test rev-KL=3.366 t_iter=10.4ms total=1.8s
+  seed 1: final train loss=2.699 test rev-KL=3.079 t_iter=10.0ms total=1.2s
+  seed 2: final train loss=3.476 test rev-KL=2.932 t_iter=10.4ms total=1.3s
+  seed 3: final train loss=2.759 test rev-KL=3.577 t_iter=9.8ms total=1.2s
+
+=== Hutch(1) ===
+  seed 0: final train loss=3.343 test rev-KL=3.371 t_iter=11.7ms total=1.4s
+  seed 1: final train loss=2.372 test rev-KL=3.034 t_iter=11.7ms total=1.4s
+  seed 2: final train loss=3.435 test rev-KL=2.883 t_iter=11.4ms total=1.4s
+  seed 3: final train loss=2.954 test rev-KL=3.629 t_iter=11.5ms total=1.4s
+
+=== Hutch(5) ===
+  seed 0: final train loss=3.556 test rev-KL=3.371 t_iter=15.3ms total=1.9s
+  seed 1: final train loss=2.642 test rev-KL=3.034 t_iter=15.4ms total=1.9s
+  seed 2: final train loss=3.507 test rev-KL=2.883 t_iter=15.2ms total=1.8s
+  seed 3: final train loss=2.717 test rev-KL=3.629 t_iter=15.2ms total=1.8s
+saved fig_training_dynamics

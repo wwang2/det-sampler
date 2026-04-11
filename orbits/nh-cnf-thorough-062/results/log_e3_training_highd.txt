@@ -1,0 +1,29 @@
+panel (a) — loss variance at d=10
+  (a) NH exact   loss std = 0.000e+00  mean = 2.289
+  (a) Hutch(1)   loss std = 1.329e-01  mean = 2.313
+  (a) Hutch(5)   loss std = 6.022e-02  mean = 2.304
+  (a) Hutch(20)  loss std = 2.849e-02  mean = 2.311
+panel (b) — grad noise vs dimension
+  (b) d=  2 NH exact   rel-noise=0.000e+00  ||mean||=8.954e-02
+  (b) d=  2 Hutch(1)   rel-noise=4.244e-01  ||mean||=8.621e-02
+  (b) d=  2 Hutch(5)   rel-noise=1.715e-01  ||mean||=8.501e-02
+  (b) d=  2 Hutch(20)  rel-noise=7.688e-02  ||mean||=8.626e-02
+  (b) d=  5 NH exact   rel-noise=0.000e+00  ||mean||=1.133e-01
+  (b) d=  5 Hutch(1)   rel-noise=4.046e-01  ||mean||=1.092e-01
+  (b) d=  5 Hutch(5)   rel-noise=1.547e-01  ||mean||=1.097e-01
+  (b) d=  5 Hutch(20)  rel-noise=8.026e-02  ||mean||=1.091e-01
+  (b) d= 10 NH exact   rel-noise=0.000e+00  ||mean||=1.120e-01
+  (b) d= 10 Hutch(1)   rel-noise=4.653e-01  ||mean||=9.645e-02
+  (b) d= 10 Hutch(5)   rel-noise=2.044e-01  ||mean||=1.000e-01
+  (b) d= 10 Hutch(20)  rel-noise=9.650e-02  ||mean||=1.030e-01
+  (b) d= 20 NH exact   rel-noise=0.000e+00  ||mean||=1.846e-01
+  (b) d= 20 Hutch(1)   rel-noise=2.799e-01  ||mean||=1.651e-01
+  (b) d= 20 Hutch(5)   rel-noise=1.329e-01  ||mean||=1.666e-01
+  (b) d= 20 Hutch(20)  rel-noise=6.682e-02  ||mean||=1.665e-01
+  (b) d= 50 NH exact   rel-noise=0.000e+00  ||mean||=3.192e-01
+  (b) d= 50 Hutch(1)   rel-noise=1.854e-01  ||mean||=3.031e-01
+  (b) d= 50 Hutch(5)   rel-noise=8.246e-02  ||mean||=3.046e-01
+  (b) d= 50 Hutch(20)  rel-noise=4.186e-02  ||mean||=3.028e-01
+
+HEADLINE metric: grad-noise ratio at d=10 for NH exact = 0.000e+00
+saved /Users/wujiewang/code/det-sampler/.worktrees/nh-cnf-thorough-062/orbits/nh-cnf-thorough-062/figures/fig_training_stability.png (8.4s total)

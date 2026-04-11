@@ -1,0 +1,10 @@
+  d=    2 exact=   0.062 ms  h1=   0.114 ms  h5=   0.272 ms
+  d=    5 exact=   0.063 ms  h1=   0.123 ms  h5=   0.297 ms
+  d=   10 exact=   0.068 ms  h1=   0.131 ms  h5=   0.327 ms
+  d=   20 exact=   0.076 ms  h1=   0.159 ms  h5=   0.417 ms
+  d=   50 exact=   0.128 ms  h1=   0.257 ms  h5=   0.666 ms
+  d=  100 exact=   0.169 ms  h1=   0.461 ms  h5=   1.552 ms
+  d=  200 exact=   0.758 ms  h1=   1.381 ms  h5=   3.193 ms
+  d=  500 exact=   0.799 ms  h1=   1.792 ms  h5=   6.455 ms
+  d= 1000 exact=   1.589 ms  h1=   3.655 ms  h5=   9.567 ms
+saved fig_walltime

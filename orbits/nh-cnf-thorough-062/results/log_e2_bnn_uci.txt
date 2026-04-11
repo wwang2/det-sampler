@@ -1,0 +1,7 @@
+  sine           NH-CNF   NLL=1.176+/-0.123  cov=1.00  wall=3.5s
+  sine           SGLD     NLL=1.600+/-0.530  cov=0.80  wall=1.8s
+  boston-like    NH-CNF   NLL=1.320+/-0.095  cov=0.99  wall=3.8s
+  boston-like    SGLD     NLL=0.948+/-0.132  cov=0.98  wall=1.9s
+  concrete-like  NH-CNF   NLL=1.373+/-0.078  cov=1.00  wall=3.9s
+  concrete-like  SGLD     NLL=0.915+/-0.021  cov=1.00  wall=1.9s
+saved fig_bnn_uci
