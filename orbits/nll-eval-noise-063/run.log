@@ -1,0 +1,59 @@
+
+=== target: moons  (d=2) ===
+  iter 100/500  loss=34.152
+  iter 200/500  loss=12.092
+  iter 300/500  loss=9.293
+  iter 400/500  loss=4.715
+  iter 500/500  loss=4.058
+  trained in 15.1s  final loss=4.058
+  nh_exact    mean=5.0578  std=0.0000e+00  (2.5s)
+  hutch_1     mean=5.0626  std=2.7046e-02  (3.4s)
+  hutch_5     mean=5.0627  std=1.0979e-02  (5.2s)
+  hutch_20    mean=5.0663  std=6.1279e-03  (11.4s)
+
+=== target: spirals  (d=2) ===
+  iter 100/500  loss=13.761
+  iter 200/500  loss=6.094
+  iter 300/500  loss=5.635
+  iter 400/500  loss=4.788
+  iter 500/500  loss=4.182
+  trained in 15.4s  final loss=4.182
+  nh_exact    mean=5.1937  std=0.0000e+00  (2.6s)
+  hutch_1     mean=5.2051  std=1.8088e-02  (3.5s)
+  hutch_5     mean=5.2038  std=8.0407e-03  (5.4s)
+  hutch_20    mean=5.2045  std=4.1062e-03  (11.2s)
+
+=== target: aniso_10d  (d=10) ===
+  iter 100/500  loss=43.741
+  iter 200/500  loss=25.647
+  iter 300/500  loss=19.612
+  iter 400/500  loss=15.649
+  iter 500/500  loss=15.463
+  trained in 23.9s  final loss=15.463
+  nh_exact    mean=23.5325  std=0.0000e+00  (7.6s)
+  hutch_1     mean=23.6001  std=6.8773e-02  (7.2s)
+  hutch_5     mean=23.5944  std=3.1206e-02  (12.6s)
+  hutch_20    mean=23.5935  std=1.5235e-02  (26.4s)
+
+results.json saved.
+figures saved under /Users/wujiewang/code/det-sampler/.worktrees/nll-eval-noise-063/orbits/nll-eval-noise-063/figures
+
+=========== SUMMARY ===========
+
+moons (d=2)  true NLL = 1.0330
+  nh_exact    mean=5.0578  std=0.000e+00
+  hutch_1     mean=5.0626  std=2.705e-02
+  hutch_5     mean=5.0627  std=1.098e-02
+  hutch_20    mean=5.0663  std=6.128e-03
+
+spirals (d=2)  true NLL = 1.9620
+  nh_exact    mean=5.1937  std=0.000e+00
+  hutch_1     mean=5.2051  std=1.809e-02
+  hutch_5     mean=5.2038  std=8.041e-03
+  hutch_20    mean=5.2045  std=4.106e-03
+
+aniso_10d (d=10)  true NLL = 6.6500
+  nh_exact    mean=23.5325  std=0.000e+00
+  hutch_1     mean=23.6001  std=6.877e-02
+  hutch_5     mean=23.5944  std=3.121e-02
+  hutch_20    mean=23.5935  std=1.523e-02
