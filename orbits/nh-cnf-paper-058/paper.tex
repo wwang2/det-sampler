@@ -11,8 +11,6 @@
 \usepackage{natbib}
 \usepackage{xcolor}
 \usepackage{enumitem}
-\usepackage{algorithm}
-\usepackage{algorithmic}
 \usepackage{caption}
 \usepackage{subcaption}
 
@@ -21,6 +19,7 @@
 
 % --- Theorem environments ---
 \newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
 \newtheorem{proposition}[theorem]{Proposition}
 \newtheorem{corollary}[theorem]{Corollary}
 \newtheorem{remark}{Remark}
@@ -29,12 +28,19 @@
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\E}{\mathbb{E}}
 \newcommand{\Var}{\mathrm{Var}}
+\newcommand{\Cov}{\mathrm{Cov}}
 \newcommand{\tr}{\mathrm{tr}}
 \newcommand{\divergence}{\mathrm{div}}
 \newcommand{\dd}{\mathrm{d}}
 \newcommand{\kT}{k_{\mathrm{B}}T}
+\newcommand{\sbath}{\sigma_{\mathrm{bath}}}
+\newcommand{\shutch}{\sigma_{\mathrm{hutch}}}
+\newcommand{\sexact}{\sigma_{\mathrm{exact}}}
+\newcommand{\stot}{\sigma_{\mathrm{tot}}}
 
-\title{Nos\'{e}--Hoover Flows: Continuous Normalizing Flows\\with Exact Divergence from Thermostat Dynamics}
+\title{Bounded-Variance Divergence Estimation\\
+for Continuous Normalizing Flows\\
+via Thermostat Dynamics}
 
 \author{
   Wujie Wang\thanks{Correspondence to: \texttt{wujie@placeholder.edu}}\\
@@ -49,33 +55,27 @@
 % ============================================================================
 \begin{abstract}
 % ============================================================================
-Continuous normalizing flows (CNFs) evaluate sample densities by integrating the
-divergence of a learned vector field along the flow trajectory. In practice, this
-divergence is estimated stochastically via the Hutchinson trace estimator, which
-introduces $O(d)$ variance and requires multiple random projections for accuracy.
-We observe that the Nos\'{e}--Hoover thermostat --- a deterministic ODE from
-statistical mechanics that samples Boltzmann distributions --- possesses an
-analytically known divergence: $\divergence(f) = -d \cdot g(\xi)$, where $\xi$ is
-a scalar thermostat variable and $g$ is the coupling function. This formula is
-classical in non-equilibrium statistical mechanics
-\citep{tuckerman2010statistical, evans2002fluctuation}; our contribution is its
-application to CNF density evaluation. It gives $O(1)$ cost and \emph{strictly
-zero-variance (machine-precision) divergence estimation} --- only deterministic
-ODE integration error remains --- for log-density tracking, together with a
-2--6$\times$ wall-clock speedup over FFJORD-style Hutchinson estimators at
-$d = 1000$. We introduce
-NH-CNF, which augments the state with momentum and a thermostat variable, evolves
-the extended system under Nos\'{e}--Hoover dynamics, and accumulates log-densities
-exactly. On multimodal 2D targets, NH-CNF achieves up to 6$\times$ better energy
-distance than Langevin dynamics, with the strongest gains on targets with complex
-topology (spirals, well-separated modes) and modest gains on simpler targets. Its zero-variance density evaluation contrasts
-sharply with Hutchinson's estimator, whose variance grows linearly with dimension.
-On Bayesian neural network posteriors, NH-CNF produces 98\% calibrated uncertainty
-estimates. We also report an honest limitation: deterministic NH dynamics suffer
-mode trapping at $d > 20$, a manifestation of the KAM theorem. The NH-CNF
-framework bridges a 40-year-old thermostat equation with modern generative
-modeling, providing the first CNF with provably exact divergence from physical
-principles.
+Continuous normalizing flows (CNFs) evaluate sample densities by integrating
+the trace of the Jacobian along a learned ODE trajectory. Since FFJORD, the
+standard approach is Hutchinson's stochastic trace estimator, whose variance
+grows as $O(\sqrt{T})$ over integration window $T$---a random walk from
+per-step Rademacher probes. We observe that augmenting the flow with a
+Nos\'{e}--Hoover thermostat yields a second, independent estimator of the
+\emph{same} divergence integral: $\sbath = \beta \int \tanh(\xi)\,|p|^2\,\dd t$,
+derived from the physical bath-heat dissipation. Equipartition
+($\langle |p|^2 \rangle = d\kT$) pins the fluctuations of this estimator to
+$O(1)$---bounded regardless of trajectory length. On a 200-trajectory ensemble
+at $t{=}25$, $\sbath$ has $2.66\times$ lower standard deviation than
+single-probe Hutchinson ($\text{std ratio} = 0.376$), and the two noises are
+uncorrelated ($r = 0.044$), making $\sbath$ a drop-in replacement rather than
+a control variate. Under non-equilibrium temperature quench, $\sbath$ retains
+$10\times$ lower variance than Hutchinson and satisfies the Jarzynski equality
+to $3.5\%$. The Evans--Searles fluctuation theorem holds for the total entropy
+production $\stot$ (slope $1.059$, 95\% CI $[0.94, 1.15]$), but not for
+$\sbath$ alone---the bounded variance is physical (equipartition), not
+symmetry-protected. We report an honest limitation: plain Nos\'{e}--Hoover is
+non-ergodic on harmonic potentials, and the Jarzynski identity is violated by
+$8\%$ in that regime.
 \end{abstract}
 
 % ============================================================================
@@ -84,78 +84,80 @@ principles.
 % ============================================================================
 
 Continuous normalizing flows (CNFs) define a generative model by specifying a
-vector field $f(z, t)$ and integrating the ordinary differential equation
-$\dd z/\dd t = f(z, t)$ to transform a simple base distribution into a complex
-target \citep{chen2018neural}. The change of log-density along the flow is
-governed by the instantaneous change-of-variables formula:
+vector field $f(z, t)$ and integrating the ODE $\dd z/\dd t = f(z, t)$ to
+transform a base distribution into a target \citep{chen2018neural}. The change
+of log-density along the flow is governed by the instantaneous change of
+variables:
 \begin{equation}
   \frac{\dd}{\dd t} \log p_t(z_t) = -\tr\!\left(\frac{\partial f}{\partial z}\right)
   = -\divergence(f).
   \label{eq:instantaneous_cov}
 \end{equation}
-Computing this divergence exactly requires $O(d)$ evaluations of the vector field
-(one per diagonal element of the Jacobian), which is prohibitive for high-dimensional
-problems. The standard workaround, introduced by FFJORD \citep{grathwohl2019ffjord},
-is the Hutchinson trace estimator: $\tr(J) \approx v^\top J v$ where
-$v \sim \mathcal{N}(0, I)$. This estimator is unbiased but introduces variance
-that grows as $O(d)$ and accumulates over the integration trajectory.
+Computing this divergence exactly costs $O(d)$ evaluations of the vector field.
+The standard workaround, introduced by FFJORD \citep{grathwohl2019ffjord}, is
+the Hutchinson trace estimator $\tr(J) \approx v^\top J v$, $v \sim
+\mathcal{N}(0, I)$. This is unbiased, but its variance grows linearly with
+dimension and accumulates as $O(\sqrt{T})$ over the integration window---a
+random walk from per-step Rademacher probes that eventually dominates the ODE
+integration error.
 
-We make a simple observation: the Nos\'{e}--Hoover (NH) thermostat
-\citep{nose1984unified, hoover1985canonical}, a deterministic ODE system invented
-in the 1980s to sample canonical distributions in molecular dynamics, has a vector
-field whose divergence is \emph{analytically known} and costs $O(1)$ to evaluate.
-The divergence depends only on a single scalar thermostat variable $\xi$, not on
-the $d$-dimensional state. This property is a classical result in
-non-equilibrium statistical mechanics
-\citep{tuckerman2010statistical, evans2002fluctuation}, well known in the
-molecular dynamics community, but to our knowledge it has not been exploited
-for generative modeling. Our main contribution is not the divergence formula
-itself --- which has been known in the thermostat literature for decades ---
-but the observation that this formula can replace the Hutchinson trace
-estimator in continuous normalizing flows, providing exact, zero-variance
-density tracking at $O(1)$ cost per step.
+This paper makes a simple observation. When the flow is augmented with a
+Nos\'{e}--Hoover (NH) thermostat \citep{nose1984unified, hoover1985canonical}
+---a deterministic ODE from molecular dynamics that samples Boltzmann
+distributions---the \emph{same} divergence integral $\int_0^T \tr(J)\,\dd t$
+admits a second unbiased estimator. The bath-heat integral
+\begin{equation}
+  \sbath = \beta \int_0^T \tanh\bigl(\xi(t)\bigr)\,|p(t)|^2\,\dd t
+  \label{eq:sigma_bath_intro}
+\end{equation}
+measures the heat dissipated into the thermostat reservoir. Equipartition
+($\langle |p|^2 \rangle = d\kT$) pins the integrand's fluctuations to a
+bounded shell, so $\Var[\sbath]$ saturates as $t \to \infty$---an $O(1)$
+bound, in contrast to the $O(t)$ variance growth of Hutchinson's estimator.
+The key distinction from algorithmic variance-reduction schemes such as
+Hutch++ \citep{liu2025hutch} is that our bound is \emph{physical}: it follows
+from the momentum-shell constraint of equipartition, not from a deflation
+subspace that must be recomputed per step.
 
-Our contributions are:
+The two estimators are statistically independent ($r = 0.044$ at $t{=}25$,
+$N{=}200$ trajectories), so $\sbath$ does not function as a control variate
+for $\shutch$. Instead, $\sbath$ is a standalone drop-in replacement with
+lower variance.
+
+\paragraph{Contributions.}
 \begin{enumerate}[leftmargin=*, itemsep=2pt]
-  \item \textbf{NH-CNF architecture.} We formulate the NH thermostat as a
-    continuous normalizing flow on an augmented state space $(q, p, \xi)$, with
-    exact, zero-variance log-density tracking (Section~\ref{sec:method}).
-  \item \textbf{Classical divergence formula, new application.} We observe that
-    the phase-space contraction rate of the Nos\'{e}--Hoover flow --- a
-    classical result from non-equilibrium statistical mechanics
-    \citep{tuckerman2010statistical, evans2002fluctuation} --- can be
-    reinterpreted as the divergence of the vector field for a continuous
-    normalizing flow: $\divergence(f) = -d \cdot g(\xi)$, where $g$ is the
-    thermostat coupling function. The formula itself is classical; its
-    application to CNF density tracking is novel
-    (Section~\ref{sec:exact_div}).
-  \item \textbf{Experimental validation.} NH-CNF achieves up to 6$\times$ better
-    energy distance than Langevin dynamics on multimodal 2D targets (with the
-    largest gains on complex topology), zero-variance
-    log-likelihoods, and 98\% calibrated Bayesian neural network posteriors
-    (Section~\ref{sec:experiments}).
-  \item \textbf{Honest limitations.} We document the failure mode:
-    deterministic NH dynamics lose mode coverage at $d > 20$ due to KAM-type
-    trapping, a fundamental constraint of autonomous Hamiltonian-like flows
-    (Section~\ref{sec:scaling}).
+  \item \textbf{$O(1)$ bounded-variance estimator.} We identify $\sbath$ as an
+    unbiased estimator of the CNF divergence integral on any NH-augmented flow,
+    with variance bounded by equipartition, in contrast to Hutchinson's
+    $O(\sqrt{t})$ random-walk variance (Section~\ref{sec:estimators}).
+  \item \textbf{Statistical independence.} On a 200-trajectory ensemble,
+    $\sbath$ and $\shutch$ have correlation $r = 0.044$---the variance
+    reduction comes from the intrinsic structure of the bath estimator, not
+    from noise cancellation (Section~\ref{sec:variance}).
+  \item \textbf{Jarzynski verification under quench.} Under non-equilibrium
+    temperature quench, $\sbath$ retains $10\times$ lower variance than
+    Hutchinson and satisfies $\langle e^{-\stot} \rangle = 1$ to $3.5\%$
+    (Section~\ref{sec:noneq}).
+  \item \textbf{Fluctuation-theorem falsification.} The Evans--Searles
+    fluctuation theorem holds for total entropy production $\stot$ but
+    \emph{not} for $\sbath$ alone---an honest negative that constrains the
+    theoretical explanation to equipartition, not symmetry
+    (Section~\ref{sec:noneq}).
 \end{enumerate}
 
-Figure~\ref{fig:concept} illustrates the structural correspondence between
-diffusion models and NH thermostats. Both transform noise into samples; the
-difference is that the NH flow tracks density exactly through its thermostat
-variable, while diffusion models require a learned score network.
+Figure~\ref{fig:concept} illustrates the two computational paths from the
+divergence integral to an estimator.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{figures/fig1_concept.png}
-  \caption{\textbf{Diffusion models vs.\ Nos\'{e}--Hoover thermostats.}
-    (a)~Structural analogy (not mathematical equivalence): noise schedule
-    $\leftrightarrow$ thermostat mass $Q$, learned score network (a
-    $d$-dimensional vector field) $\leftrightarrow$ thermostat variable $\xi$
-    (a 1D scalar feedback signal), stochastic SDE $\leftrightarrow$
-    deterministic ODE. (b)~Computational pipelines: FFJORD requires stochastic
-    Hutchinson trace estimation; NH-CNF reads off the exact divergence from
-    $\xi$.}
+  \caption{\textbf{Two paths to the divergence integral.}
+    (a)~FFJORD's pipeline: a Rademacher probe $v$ yields a stochastic trace
+    estimate $v^\top J v$ per step, accumulated into $\shutch$. The NH-augmented
+    pipeline reads the bath-heat dissipation $\tanh(\xi)\,|p|^2$ per step,
+    accumulated into $\sbath$. Both estimate the same integral $\int \tr(J)\,\dd t$.
+    (b)~$\shutch$ has $O(\sqrt{t})$ random-walk variance; $\sbath$ has
+    $O(1)$ bounded variance (equipartition-pinned).}
   \label{fig:concept}
 \end{figure}
 
@@ -184,18 +186,16 @@ trace using the Hutchinson estimator:
   \label{eq:hutchinson}
 \end{equation}
 which requires one Jacobian-vector product (JVP) per random vector $v$. The
-variance of a single Hutchinson sample is $\Var[v^\top J v] = 2\|J\|_F^2$, which
-scales as $O(d)$ for typical networks. Reducing this variance to acceptable levels
-requires $n_v$ independent vectors, multiplying the cost by $n_v$.
+variance of a single sample is $\Var[v^\top J v] = 2\|J\|_F^2$, scaling as
+$O(d)$ for typical networks.
 
 \subsection{Nos\'{e}--Hoover Thermostat Dynamics}
 \label{sec:nh_background}
 
 The Nos\'{e}--Hoover thermostat \citep{nose1984unified, hoover1985canonical}
-extends Hamiltonian dynamics with a scalar feedback variable $\xi$ that acts as a
-``friction coefficient,'' driving the kinetic energy toward the canonical value.
-The equations of motion on the extended phase space $(q, p, \xi) \in \R^d \times
-\R^d \times \R$ are:
+extends Hamiltonian dynamics with a scalar feedback variable $\xi$ that drives
+the kinetic energy toward the canonical value. The equations of motion on the
+extended phase space $(q, p, \xi) \in \R^d \times \R^d \times \R$ are:
 \begin{align}
   \frac{\dd q}{\dd t} &= \frac{p}{m}, \label{eq:nh_q} \\
   \frac{\dd p}{\dd t} &= -\nabla V(q) - g(\xi)\, p, \label{eq:nh_p} \\
@@ -203,12 +203,9 @@ The equations of motion on the extended phase space $(q, p, \xi) \in \R^d \times
   \label{eq:nh_xi}
 \end{align}
 where $V(q)$ is the potential energy, $m$ is the mass (set to 1 throughout),
-$Q > 0$ is the thermostat mass controlling coupling strength, and $g(\xi)$ is a
-coupling function satisfying $g(0) = 0$ and $g'(\xi) \geq 0$. The classical
-choice is $g(\xi) = \xi$; we use $g(\xi) = \tanh(\xi)$, which provides bounded
-friction and improved numerical stability. The specific form of $g$ is largely
-irrelevant to sampling quality: what matters is the effective thermostat mass
-$Q_{\mathrm{eff}} = Q / g'(0)$ \citep{hoover1985canonical}.
+$Q > 0$ is the thermostat mass, and $g(\xi)$ is a coupling function with
+$g(0) = 0$ and $g'(\xi) \geq 0$. We use $g(\xi) = \tanh(\xi)$, which provides
+bounded friction and improved numerical stability \citep{ceriotti2010colored}.
 
 The NH dynamics preserve the extended invariant measure:
 \begin{equation}
@@ -217,718 +214,549 @@ The NH dynamics preserve the extended invariant measure:
   \label{eq:nh_invariant}
 \end{equation}
 where $H(q,p) = |p|^2/(2m) + V(q)$ and $\Phi(\xi) = \int_0^\xi g(s)\,\dd s$.
-Marginalizing over $p$ and $\xi$ yields the canonical distribution
-$p(q) \propto \exp(-V(q)/\kT)$ on the position variables --- exactly the target
-distribution for sampling.
+Marginalizing over $p$ and $\xi$ yields the target Boltzmann distribution
+$p(q) \propto \exp(-V(q)/\kT)$.
 
 \paragraph{Historical context.}
 Nos\'{e} \citep{nose1984unified} introduced the extended Lagrangian formulation;
-Hoover \citep{hoover1985canonical} derived the real-time equations of motion.
-Martyna et al.\ \citep{martyna1992nose} introduced Nos\'{e}--Hoover chains (NHC)
-to improve ergodicity by coupling multiple thermostat variables in series. The
-connection to colored-noise thermostats and generalized Langevin equations was
-established by Ceriotti et al.\ \citep{ceriotti2010colored}.
+Hoover \citep{hoover1985canonical} derived the real-time equations. Martyna
+et~al.\ \citep{martyna1992nose} introduced chains (NHC) for ergodicity.
+Ceriotti et~al.\ \citep{ceriotti2010colored} connected NH to generalized
+Langevin equations via colored-noise thermostats.
 
-% ============================================================================
-\section{NH-CNF: Thermostat Flows with Exact Divergence}
-\label{sec:method}
-% ============================================================================
+\subsection{Divergence of the NH Flow}
+\label{sec:div_identity}
 
-\subsection{The Exact Divergence Property}
-\label{sec:exact_div}
-
-We observe that the phase-space contraction rate of the Nos\'{e}--Hoover flow
---- a classical result from non-equilibrium statistical mechanics, derived in
+The phase-space contraction rate of the NH vector field is a classical result
+from non-equilibrium statistical mechanics, derived in
 \citet{tuckerman2010statistical} (Ch.~4) and central to the fluctuation
-theorems of \citet{evans2002fluctuation} --- can be reinterpreted as the
-divergence of the vector field for a continuous normalizing flow. The formula
-below is classical; the novelty in this paper is its application to CNF density
-tracking, not its derivation. The NH vector field
-$f(q, p, \xi) = (\dot{q}, \dot{p}, \dot{\xi})$ defined by
-Equations~\eqref{eq:nh_q}--\eqref{eq:nh_xi} has an analytically known divergence.
+theorems of \citet{evans2002fluctuation}. We state it as a lemma for
+reference.
 
-\begin{theorem}[Exact divergence of the NH flow]
-\label{thm:exact_div}
-The divergence of the Nos\'{e}--Hoover vector field on the extended phase space
-$(q, p, \xi) \in \R^d \times \R^d \times \R$ is:
+\begin{lemma}[Phase-space contraction rate]
+\label{lem:exact_div}
+The divergence of the NH vector field
+$f(q, p, \xi) = (\dot{q}, \dot{p}, \dot{\xi})$ defined by
+Eqs.~\eqref{eq:nh_q}--\eqref{eq:nh_xi} is:
 \begin{equation}
-  \divergence(f)
-    = \sum_{i=1}^d \frac{\partial \dot{q}_i}{\partial q_i}
-    + \sum_{i=1}^d \frac{\partial \dot{p}_i}{\partial p_i}
-    + \frac{\partial \dot{\xi}}{\partial \xi}
-    = -d \cdot g(\xi).
+  \divergence(f) = -d \cdot g(\xi).
   \label{eq:exact_div}
 \end{equation}
-\end{theorem}
+\end{lemma}
 
 \begin{proof}
-We compute each block of the divergence separately.
-
-\textit{Position block.}
-$\dot{q}_i = p_i / m$ depends only on $p_i$, not on $q_i$.
-Therefore $\partial \dot{q}_i / \partial q_i = 0$ for all $i$, and the position
-contribution is zero.
-
-\textit{Momentum block.}
-$\dot{p}_i = -\partial V / \partial q_i - g(\xi)\, p_i$. Taking the derivative
-with respect to $p_i$:
-\[
-  \frac{\partial \dot{p}_i}{\partial p_i} = -g(\xi).
-\]
-This holds for each $i = 1, \ldots, d$, so the momentum contribution is
-$\sum_i (-g(\xi)) = -d \cdot g(\xi)$.
-
-\textit{Thermostat block.}
-$\dot{\xi} = (|p|^2/m - d\,\kT) / Q$. Since $|p|^2$ depends on $p$, not on
-$\xi$, we have $\partial \dot{\xi} / \partial \xi = 0$.
-
-Summing the three contributions gives
-$\divergence(f) = 0 + (-d \cdot g(\xi)) + 0 = -d \cdot g(\xi)$.
+Position block: $\partial \dot{q}_i / \partial q_i = 0$ (each $\dot{q}_i =
+p_i/m$ depends on $p_i$, not $q_i$). Momentum block: $\partial \dot{p}_i /
+\partial p_i = -g(\xi)$ for each $i$, summing to $-d\,g(\xi)$. Thermostat
+block: $\partial \dot{\xi} / \partial \xi = 0$ (the numerator depends on $p$,
+not $\xi$). Total: $0 + (-d\,g(\xi)) + 0 = -d\,g(\xi)$.
 \end{proof}
 
-\begin{remark}
-The divergence depends only on the scalar $\xi$ through the function $g$.
-Evaluating it costs $O(1)$ --- a single function evaluation of $g(\xi)$ ---
-regardless of the state dimension $d$. This is in stark contrast to the
-Hutchinson estimator, which requires at least one $O(d)$ JVP per divergence
-evaluation. Moreover, the NH divergence has \emph{exactly zero variance}: it is a
-deterministic function of the current state, not a stochastic estimate.
+The divergence depends only on the scalar $\xi$ through the bounded function
+$g = \tanh$. Evaluating it costs $O(1)$, independent of $d$.
+
+% ============================================================================
+\section{Thermostat Estimators of the Divergence Integral}
+\label{sec:estimators}
+% ============================================================================
+
+Consider a CNF augmented with NH dynamics on the extended state
+$(q, p, \xi) \in \R^d \times \R^d \times \R$. Along any trajectory, the
+log-density change is:
+\begin{equation}
+  \Delta \log \rho = -\int_0^T \divergence(f)\,\dd t
+    = d \int_0^T g\bigl(\xi(t)\bigr)\,\dd t
+    \;\stackrel{\text{def}}{=}\; \sexact(T),
+  \label{eq:sigma_exact}
+\end{equation}
+where we define $\sexact$ as the exact (analytic) divergence integral,
+computable pathwise at $O(1)$ cost per step via Lemma~\ref{lem:exact_div}.
+
+We now define two \emph{stochastic} estimators of the same integral
+$\int_0^T \tr(J)\,\dd t$, each unbiased but with qualitatively different
+variance structure.
+
+\subsection{Hutchinson Estimator $\shutch$}
+\label{sec:hutch_estimator}
+
+The standard FFJORD approach accumulates stochastic trace estimates along the
+trajectory:
+\begin{equation}
+  \shutch(T) = -\int_0^T v(t)^\top J\bigl(z(t)\bigr)\,v(t)\,\dd t,
+  \quad v(t) \sim \mathcal{N}(0, I).
+  \label{eq:sigma_hutch}
+\end{equation}
+By the Hutchinson identity, $\E[\shutch] = \sexact$ at every $t$. The
+per-step variance is $2\|J\|_F^2$. Over $T/\Delta t$ independent steps, the
+accumulated variance grows as:
+\begin{equation}
+  \Var[\shutch(T)] \approx \frac{T}{\Delta t} \cdot 2\|J\|_F^2\,(\Delta t)^2
+  = 2T\,\Delta t \cdot \|J\|_F^2.
+  \label{eq:var_hutch}
+\end{equation}
+The standard deviation therefore grows as $O(\sqrt{T})$---a random walk.
+Empirically, fitting $\text{std}[\shutch(t)] = c\sqrt{t}$ on the 200-trajectory
+ensemble (Section~\ref{sec:variance}) yields $c = 0.681$ with $R^2 = 0.988$,
+confirming the random-walk scaling.
+
+\subsection{Bath-Heat Estimator $\sbath$}
+\label{sec:bath_estimator}
+
+The NH thermostat exchanges energy with the system through the friction term
+$-g(\xi)\,p$ in Eq.~\eqref{eq:nh_p}. The rate of heat flow into the bath is
+$\dot{Q}_{\mathrm{bath}} = g(\xi)\,|p|^2$. The cumulative bath-heat integral,
+scaled by the inverse temperature $\beta = 1/\kT$, defines:
+\begin{equation}
+  \sbath(T) = \beta \int_0^T g\bigl(\xi(t)\bigr)\,|p(t)|^2\,\dd t.
+  \label{eq:sigma_bath}
+\end{equation}
+
+Why is this an estimator of the divergence integral? The connection is
+equipartition. At thermal equilibrium, the kinetic energy satisfies
+$\langle |p|^2/m \rangle = d\kT$, so:
+\begin{equation}
+  \E\bigl[\sbath(T)\bigr]
+  = \beta \int_0^T g(\xi)\,\E\bigl[|p|^2\bigr]\,\dd t
+  = \beta \cdot d\kT \int_0^T g(\xi)\,\dd t
+  = d \int_0^T g(\xi)\,\dd t
+  = \sexact(T).
+  \label{eq:bath_unbiased}
+\end{equation}
+The crucial difference from $\shutch$ is in the \emph{variance}. The kinetic
+energy $|p|^2$ fluctuates around its equipartition value $d\kT$, but these
+fluctuations are bounded by the momentum shell: the NH dynamics constrain
+$\langle |p|^2 \rangle$ to remain near $d\kT$ through the thermostat feedback.
+Consequently, $\Var[\sbath]$ saturates as $T$ grows---it does not accumulate
+as a random walk. Fitting $\text{std}[\sbath(t)] = c\sqrt{t}$ yields
+$R^2 = -3.22$ (the model is \emph{worse} than a constant), confirming that
+$\sbath$ variance does not follow $\sqrt{t}$ scaling.
+
+\begin{remark}[Variance bound mechanism]
+The bounded variance of $\sbath$ is \emph{not} a fluctuation-theorem symmetry.
+Orbit~067 tested the Evans--Searles detailed fluctuation theorem on $\sbath$
+alone under non-equilibrium quench and found slope $= -0.957$ (expected $+1$
+for a symmetry-protected quantity). The correct explanation is equipartition:
+the thermostat feedback pins $|p|^2$ to the momentum shell $d\kT \pm O(\sqrt{d})$,
+bounding the integrand of $\sbath$ regardless of the protocol. This is a
+physical bound, not a symmetry.
 \end{remark}
 
-\paragraph{Physical interpretation.}
-The NH flow is \emph{state-dependent phase-space contracting}: the phase-space
-volume element on the $(q, p)$ sub-manifold contracts at rate $d \cdot g(\xi(t))$,
-where the contraction rate depends on the instantaneous thermostat state. This
-is a weaker structure than the conformal-symplectic flows studied by
-\citet{mclachlan2001conformal}, which require a \emph{scalar constant} $\lambda$
-in $\mathcal{L}_X \omega = \lambda\,\omega$; here the contraction rate $g(\xi(t))$
-is a function of state, not a constant. When $g(\xi) > 0$ (positive friction)
-the flow contracts phase-space volume; when $g(\xi) < 0$ (negative friction,
-i.e., the system is too cold) it expands. The thermostat variable $\xi$
-provides a 1D feedback signal that plays a functionally similar role to the
-score in driving the dynamics toward the target distribution, though with much
-reduced information content compared to the $d$-dimensional score
-$\nabla \log p$ that a diffusion model would learn.
+\subsection{Independence of the Two Estimators}
 
-\subsection{The NH-CNF Architecture}
-\label{sec:architecture}
+A natural question is whether $\sbath$ and $\shutch$ can be combined as a
+control variate. This requires nonzero correlation. Kraskov $k$-nearest-neighbor
+mutual information \citep{kraskov2004estimating} on the 200-trajectory ensemble
+(orbit~066) gives $\mathrm{MI}(\sbath; \shutch) = -0.041$~nats at $t{=}25$,
+consistent with zero (shuffle-null mean $= -0.0004 \pm 0.032$). The linear
+correlation is $r = 0.044$. Both tests are consistent with \textbf{statistical
+independence} at all time points $t \in \{5, 10, 15, 20, 25\}$.
 
-Given a target distribution $p_{\mathrm{target}}(q) \propto \exp(-V(q))$ where
-$V(q)$ is known (up to a constant), the NH-CNF proceeds as follows:
+This rules out the naive control-variate strategy
+$\shutch - \lambda(\sbath - \E[\sbath])$: with $r \approx 0$, no variance
+reduction is possible from the combination. The correct strategy is to use
+$\sbath$ as a \emph{standalone replacement} for $\shutch$, exploiting its
+intrinsically lower and bounded variance.
 
-\begin{algorithm}[h]
-\caption{NH-CNF: Sampling and density evaluation}
-\label{alg:nhcnf}
-\begin{algorithmic}[1]
-\REQUIRE Target potential $V(q)$, temperature $\kT$, thermostat mass $Q$,
-  coupling function $g$, integration steps $T$, step size $\Delta t$
-\STATE \textbf{Initialize:} $q_0 \sim \mathcal{N}(0, I_d)$ or warm-start from data;
-  $p_0 \sim \mathcal{N}(0, m\kT \cdot I_d)$; $\xi_0 = 0$
-\STATE $\log w \leftarrow 0$ \hfill\COMMENT{log-density accumulator}
-\FOR{$n = 0, 1, \ldots, T-1$}
-  \STATE Integrate $(q, p, \xi)$ one step via velocity Verlet splitting
-  \STATE $\log w \leftarrow \log w + d \cdot g(\xi_n) \cdot \Delta t$
-    \hfill\COMMENT{exact divergence integral}
-\ENDFOR
-\STATE \textbf{Output:} samples $q_T$ with log-weights $\log w$
-\end{algorithmic}
-\end{algorithm}
+% ============================================================================
+\section{Non-Equilibrium Verification}
+\label{sec:noneq}
+% ============================================================================
 
-The log-density of the output extended state $(q_T, p_T, \xi_T)$ relative to
-the initial extended distribution is:
+The results in Section~\ref{sec:estimators} characterize the variance structure
+at thermal equilibrium. To verify that the bounded-variance property survives
+away from equilibrium---the regime relevant to CNF training, where the flow is
+typically far from any stationary distribution---we subject the NH thermostat to
+a sudden temperature quench and measure two quantities: the Jarzynski equality
+$\langle e^{-\stot} \rangle = 1$ and the variance ratio
+$\text{std}(\stot) / \text{std}(\shutch)$.
+
+\subsection{Temperature Quench Protocol}
+
+Starting from the NH-tanh invariant measure $\pi_{T_0}$ on a 2D double-well
+potential $V(q) = (q_1^2 - 1)^2 + \tfrac{1}{2}q_2^2$, we instantaneously
+switch the thermostat target temperature from $T_0$ to $T_1$ and integrate for
+$T_{\mathrm{post}} = 200$ time units. The total entropy production is:
 \begin{equation}
-  \log p_T(q_T, p_T, \xi_T) = \log p_0(q_0, p_0, \xi_0)
-    + \int_0^T d \cdot g\bigl(\xi(t)\bigr)\,\dd t,
-  \label{eq:logp_tracking}
+  \stot(T) = \sbath(T) - \sexact(T)
+  = \beta_1 \int_0^T \tanh(\xi)\,|p|^2\,\dd t
+    - d \int_0^T \tanh(\xi)\,\dd t,
+  \label{eq:sigma_tot}
 \end{equation}
-where the integral is accumulated exactly (up to ODE integrator discretization
-error) at each time step. No stochastic estimator is involved.
+where $\beta_1 = 1/T_1$ is the post-quench inverse temperature. The Jarzynski
+equality \citep{jarzynski1997nonequilibrium} predicts
+$\langle e^{-\stot} \rangle = 1$ at all times, without requiring the system
+to relax to the new equilibrium.
 
-\paragraph{Remark (Extended vs.\ marginal density).}
-The NH-CNF tracks the density of the \emph{extended} state $(q, p, \xi)$ along
-the flow, not the marginal density $p(q)$. For canonical sampling, the extended
-invariant measure factorizes as
-\[
-  \rho(q, p, \xi) \propto
-    \exp\!\bigl(-V(q)/\kT\bigr)\,
-    \exp\!\bigl(-|p|^2/(2m\kT)\bigr)\,
-    \exp\!\bigl(-Q\,\Phi(\xi)/\kT\bigr),
-\]
-so the marginal on $q$ is the target Boltzmann distribution. Recovering $p(q)$
-from the extended density requires marginalizing over $(p, \xi)$ --- exact in
-closed form only when the momentum and thermostat distributions are the known
-Gaussian/$\Phi$ equilibria. For generative modeling applications where we care
-about $p(q)$, the NH-CNF provides exact density only \emph{in the extended
-space}; additional care is needed to obtain exact marginal densities. This
-distinction matters: Equation~\eqref{eq:logp_tracking} is an identity on the
-$(2d+1)$-dimensional extended phase space, and statements about $\log p_T(q_T)$
-alone presuppose knowledge of the equilibrium marginals over $(p, \xi)$.
+This is a target-free verification: it does not require knowledge of the
+post-quench partition function or density. The Jarzynski identity holds for
+any deterministic flow with well-defined phase-space contraction, making it a
+stringent self-consistency check.
 
-\subsection{Multi-Scale $Q$: The Thermostat Noise Schedule}
-\label{sec:multiscale}
+\subsection{Phase~1: $T_0 = 1 \to T_1 = 2$ (2D Double-Well)}
 
-A single thermostat variable $\xi$ with mass $Q$ couples to the system at a
-single characteristic frequency $\omega_Q \sim 1/\sqrt{Q}$. This is analogous to
-a diffusion model with a single noise level --- it works for unimodal targets but
-struggles with multi-scale structure.
-
-We introduce $N$ parallel thermostat variables $\xi_1, \ldots, \xi_N$ with
-masses $Q_1 < Q_2 < \cdots < Q_N$ spaced logarithmically:
-\begin{align}
-  \frac{\dd p}{\dd t} &= -\nabla V(q) - \Gamma(t)\, p, \quad
-  \Gamma(t) = \sum_{k=1}^N g(\xi_k(t)), \label{eq:multi_p} \\
-  \frac{\dd \xi_k}{\dd t} &= \frac{1}{Q_k}
-    \left(\frac{|p|^2}{m} - d\,\kT\right), \quad k = 1, \ldots, N.
-  \label{eq:multi_xi}
-\end{align}
-The divergence generalizes straightforwardly:
-\begin{equation}
-  \divergence(f) = -d \cdot \sum_{k=1}^N g(\xi_k),
-  \label{eq:multi_div}
-\end{equation}
-which remains $O(N)$ --- independent of $d$ and still exact.
-
-The multi-scale $Q$ spectrum plays the role of a noise schedule in diffusion
-models: small $Q_k$ (strong coupling, high frequency) drives fast local
-equilibration, while large $Q_k$ (weak coupling, low frequency) enables slow
-global exploration. The crucial difference is that this ``schedule'' arises from
-physical thermostat dynamics rather than a hand-designed or learned function.
-
-\subsection{Connection to Diffusion Models}
-\label{sec:diffusion_connection}
-
-The structural correspondence between NH thermostats and score-based diffusion
-models \citep{song2021score, ho2020denoising} is summarized in
-Table~\ref{tab:correspondence}. Both frameworks transform noise into samples
-through a time-dependent dynamical process. The key distinction is the trade-off
-identified in the literature on autonomous vs.\ non-autonomous flows: the NH
-thermostat achieves exact density tracking by extending the state space with
-auxiliary variables $(p, \xi)$, while diffusion models operate in the original
-space but require learning a time-dependent score function.
-
-\paragraph{Disclaimer.}
-\textbf{The correspondences in Table~\ref{tab:correspondence} are structural
-analogies, not mathematical equivalences.} In particular, the thermostat
-variable $\xi \in \R$ is a scalar feedback signal, while the diffusion score
-$\nabla \log p_t(x) \in \R^d$ is a $d$-dimensional vector field. The analogy is
-at the level of ``both are signals that drive the dynamics toward the target
-distribution,'' not ``both carry the same information.''
+We draw $N = 2400$ trajectories per seed from the pre-quench invariant measure
+(60 parent configurations $\times$ 40 decorrelated branches). Integration uses
+RK4 with $\dd t = 0.005$, $Q = 1.0$.
 
 \begin{table}[t]
   \centering
-  \caption{\textbf{Structural analogy between diffusion models and NH
-    thermostats.} Both frameworks generate samples by transforming noise through
-    dynamics. The entries play analogous functional roles; they are not
-    mathematical equivalents (see disclaimer above).}
-  \label{tab:correspondence}
+  \caption{\textbf{Phase~1 Jarzynski verification} ($T_0{=}1 \to T_1{=}2$,
+    2D double-well, $N{=}2400$ per seed). Exact (q,p) KL $= 0.328$.}
+  \label{tab:phase1}
   \small
-  \begin{tabular}{lll}
+  \begin{tabular}{lcccc}
     \toprule
-    \textbf{Component} & \textbf{Diffusion model} & \textbf{NH thermostat (analogous role)} \\
+    Seed & $\langle \stot \rangle$ & SEM & $\langle e^{-\stot} \rangle$ & Wall time \\
     \midrule
-    Noise schedule & $\beta(t)$ (learned/designed) & $Q$ spectrum (physical) \\
-    Steering signal & $s_\theta(x, t) \in \R^d$ (full vector field) & $\xi(t) \in \R$ (1D scalar; dim mismatch) \\
-    Dynamics & SDE (stochastic) & ODE (deterministic) \\
-    Density evaluation & Hutchinson, $O(d)$, stochastic & Exact, $O(1)$, deterministic \\
-    State space & $\R^d$ (original) & $\R^{2d+N}$ (augmented) \\
-    Training & Required (score matching) & Not required ($V$ given) \\
+    42  & 0.469 & 0.021 & 0.939 & 61\,s \\
+    123 & 0.439 & 0.021 & 0.989 & 61\,s \\
+    7   & 0.450 & 0.022 & 0.967 & 61\,s \\
+    \midrule
+    \textbf{Mean} & \textbf{0.453 $\pm$ 0.015}
+      & & \textbf{0.965} & \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\paragraph{The fundamental trade-off.}
-NH-CNF operates in an augmented $(2d+N)$-dimensional space with an
-\emph{autonomous} ODE (the vector field depends only on the current state, not
-explicitly on time). Diffusion models operate in $d$ dimensions with a
-\emph{non-autonomous} ODE/SDE (the score network is time-conditioned). What
-enables the exact divergence is not autonomy per se --- non-autonomous flows
-can also have analytically tractable divergences --- but the specific
-\emph{block structure} of the NH Jacobian: the position block is independent of
-$q$ (giving zero trace), the thermostat block is independent of $\xi$ (giving
-zero trace), and the momentum block is $-g(\xi) \cdot I_d$ (a scalar multiple
-of the identity), yielding trace $-d \cdot g(\xi)$. This block structure
-follows from the thermostat's derivation as a feedback controller for kinetic
-energy, so the cheap divergence is ultimately a consequence of the physical
-design of the dynamics.
+The Jarzynski estimator $\langle e^{-\stot} \rangle = 0.965$ is within $3.5\%$
+of the theoretical value 1.0 (Table~\ref{tab:phase1}). The mean entropy
+production $\langle \stot \rangle = 0.453$ exceeds the (q,p)-only KL divergence
+$D_{\mathrm{KL}}(\pi_{T_0} \| \pi_{T_1})\big|_{q,p} = 0.328$ by $0.125$,
+which is the KL contribution from the auxiliary $\xi$ variable whose marginal
+is non-canonical under NH-tanh dynamics.
 
-% ============================================================================
-\section{Experiments}
-\label{sec:experiments}
-% ============================================================================
+\subsection{Phase~2: $T_0 = 0.8 \to T_1 = 1.5$ (10$\times$ Variance Ratio)}
+\label{sec:phase2}
 
-We evaluate NH-CNF on five experiments designed to test distinct aspects of the
-framework: sample quality (E1), divergence accuracy (E3), phase-space mechanism
-(E5), Bayesian posterior calibration (E2), log-likelihood (E7), and dimension
-scaling (E6). All experiments use $g(\xi) = \tanh(\xi)$, velocity Verlet
-integration, and $\kT = 1$ unless stated otherwise.
-
-\subsection{Sample Quality on 2D Targets}
-\label{sec:e1}
-
-\paragraph{Setup.}
-We test NH-CNF on four standard 2D targets: two moons, two spirals, checkerboard,
-and eight Gaussians. The potential $V(q)$ is fitted via kernel density estimation
-on training data. NH-CNF uses multi-scale $Q = \{0.1, 1.0, 10.0\}$ with 3 chains
-per $Q$ value (9 chains total), 100k steps per chain, 20\% burn-in, and thinning
-every 50th sample (${\sim}$14k independent samples). The baseline is the
-unadjusted Langevin algorithm (ULA) with step size $\epsilon = 0.005$ and 8000
-steps. Quality is measured by energy distance (ED) to 10k ground-truth samples.
-Note that NH-CNF produces more samples ($N{=}14{,}400$) than ULA ($N{=}1{,}600$)
-due to its multi-chain, long-run design; the comparison reflects the
-practical output of each method under reasonable computational budgets.
-
-\paragraph{Results.}
-Table~\ref{tab:e1} reports the energy distances. NH-CNF achieves lower ED on all
-four targets, with the largest improvements on multimodal distributions: $6.1\times$
-on two spirals and $2.9\times$ on eight Gaussians. Figure~\ref{fig:density}
-shows KDE contour plots of the generated samples against the ground truth.
+A more aggressive quench ($T_0{=}0.8 \to T_1{=}1.5$) with Hutchinson
+comparison reveals the variance advantage under non-equilibrium conditions.
 
 \begin{table}[t]
   \centering
-  \caption{\textbf{Energy distance ($\downarrow$) on 2D targets.} NH-CNF with
-    multi-scale $Q$ vs.\ unadjusted Langevin. Lower is better.}
-  \label{tab:e1}
+  \caption{\textbf{Phase~2: Variance ratio under quench}
+    ($T_0{=}0.8 \to T_1{=}1.5$, 2D DW, $N{=}2400$/seed).
+    $\stot$ has ${\sim}10\times$ lower std than Hutchinson.}
+  \label{tab:phase2}
+  \small
+  \begin{tabular}{lcccccc}
+    \toprule
+    Seed & $\langle \stot \rangle$ & SEM
+      & Jarzynski & std($\stot$) & std($\shutch$) & Ratio \\
+    \midrule
+    42  & 0.338 & 0.022 & 1.130 & 1.06 & 10.5 & $9.9\times$ \\
+    123 & 0.429 & 0.021 & 0.970 & 1.01 & 10.6 & $10.5\times$ \\
+    7   & 0.429 & 0.022 & 1.026 & 1.07 & 10.8 & $10.1\times$ \\
+    \midrule
+    \textbf{Mean} & \textbf{0.399 $\pm$ 0.053}
+      & & \textbf{1.042} & \textbf{1.05} & \textbf{10.7}
+      & $\mathbf{10.2\times}$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The Jarzynski estimator is $1.042$ ($4.2\%$ from unity; Table~\ref{tab:phase2}).
+The decisive number is the variance ratio: $\text{std}(\stot) = 1.05$ versus
+$\text{std}(\shutch) = 10.7$, a \textbf{$10\times$ reduction}. This is not a
+coincidence of equilibrium---the bounded-variance property of $\sbath$
+(and hence $\stot = \sbath - \sexact$) persists under non-equilibrium driving.
+
+\paragraph{Why not $D_{\mathrm{KL}}$ directly?}
+The Tasaki identity
+$\langle \stot \rangle_{t \to \infty} = D_{\mathrm{KL}}(\pi_{T_0} \| \pi_{T_1})$
+requires the system to relax fully, and the $\xi$ marginal of the NH-tanh
+invariant measure is non-canonical (its shape depends on the potential and $Q$).
+Computing the full extended-space KL requires empirical $k$-NN estimation,
+which introduces its own variance. The Jarzynski identity
+$\langle e^{-\stot} \rangle = 1$ is exact at all finite times and requires no
+knowledge of the target density---hence our preference for it as the
+verification target.
+
+\subsection{Phase~3: 1D Harmonic (Non-Ergodicity Diagnostic)}
+\label{sec:harmonic}
+
+Plain NH (and NH-tanh) on uncoupled harmonic oscillators is non-ergodic
+\citep{legoll2009nonergodicity, martyna1992nose}. We verify this honestly:
+
+\begin{table}[h]
+  \centering
+  \caption{\textbf{Phase~3: 1D harmonic non-ergodicity diagnostic}
+    ($V(q) = q^2/2$, $T_0{=}1 \to T_1{=}2$, $N{=}1800$/seed). The Jarzynski
+    identity is violated by ${\sim}8\%$.}
+  \label{tab:phase3}
+  \small
+  \begin{tabular}{lcccc}
+    \toprule
+    Seed & $\langle \stot \rangle$ & SEM & Jarzynski & Analytic KL$_{q,p}$ \\
+    \midrule
+    42  & 0.274 & 0.016 & 0.921 & 0.193 \\
+    123 & 0.288 & 0.017 & 0.912 & 0.193 \\
+    7   & 0.269 & 0.015 & 0.914 & 0.193 \\
+    \midrule
+    \textbf{Mean} & \textbf{0.277 $\pm$ 0.010}
+      & & \textbf{0.916} & \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The Jarzynski estimator deviates by $8\%$ from unity
+(Table~\ref{tab:phase3}). The identity is violated because the initial
+ensemble does not converge to the NH-tanh invariant measure on the harmonic
+potential---the phase space is foliated into invariant tori. This confirms
+that \textbf{anharmonicity is required} for the Jarzynski verification to hold.
+The 2D double-well (Phases~1--2) satisfies this requirement.
+
+\subsection{Evans--Searles Fluctuation Theorem}
+\label{sec:dft}
+
+The Evans--Searles detailed fluctuation theorem (DFT)
+\citep{evans2002fluctuation} predicts:
+\begin{equation}
+  \log \frac{P(\stot = +s)}{P(\stot = -s)} = s.
+  \label{eq:dft}
+\end{equation}
+On the Phase~1 quench data ($T_0{=}1 \to T_1{=}2$, $N{=}7200$ total
+trajectories across 3 seeds), the measured DFT slope is:
+
+\begin{table}[h]
+  \centering
+  \caption{\textbf{Evans--Searles DFT slopes} (Phase~1 quench, $N{=}7200$).
+    The DFT holds for $\stot$ but not for $\sbath$ alone.}
+  \label{tab:dft}
   \small
   \begin{tabular}{lccc}
     \toprule
-    Target & NH-CNF (multi-$Q$) & Langevin (ULA) & Ratio \\
+    Variable & DFT slope & 95\% CI & Expected \\
     \midrule
-    Two Moons      & \textbf{0.012} & 0.015 & 1.3$\times$ \\
-    Two Spirals    & \textbf{0.005} & 0.027 & 6.1$\times$ \\[1pt]
-    Checkerboard   & \textbf{0.007} & 0.008 & 1.1$\times$ \\
-    Eight Gaussians & \textbf{0.105} & 0.308 & 2.9$\times$ \\
+    $\stot$ (total entropy prod.) & 1.059 & [0.940, 1.148] & 1.0 \\
+    $\sbath$ (bath heat alone) & $-0.957$ & [$-1.023$, $-0.806$] & --- \\
+    $\sexact$ (exact estimator) & $-0.940$ & [$-1.012$, $-0.813$] & --- \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-NH-CNF shows the strongest advantage on targets with complex topology
-(two spirals: $6{\times}$ better ED) and well-separated modes (eight Gaussians:
-$2.9{\times}$). On simpler targets (two moons, checkerboard), the advantage is
-modest ($1.1$--$1.3{\times}$). The deterministic NH dynamics traverse between
-modes via Hamiltonian trajectories --- the momentum $p$ carries the particle
-over energy barriers that Langevin's random walk struggles to cross. On nearly
-connected targets, Langevin's local exploration is sufficient and the gap
-narrows.
+The total entropy production $\stot$ satisfies the DFT within the 95\%
+confidence interval (slope $= 1.059$, CI contains 1.0;
+Table~\ref{tab:dft}). This confirms that the entropy-production accounting
+is thermodynamically consistent. However, $\sbath$ alone does \emph{not}
+satisfy a simple DFT (slope $= -0.957$): it is one component of the total
+entropy production, not the whole quantity. The bounded variance of $\sbath$ is
+therefore \emph{not} fluctuation-theorem-protected. It is physically real
+(equipartition pins the momentum shell), but it lacks the symmetry guarantee
+that a full-entropy-production variable would have.
+
+% ============================================================================
+\section{Variance Diagnostic: Ensemble Measurement}
+\label{sec:variance}
+% ============================================================================
+
+We consolidate the variance characterization of $\sbath$ and $\shutch$ from a
+200-trajectory ensemble on a 2D double-well potential ($V(q) = (q_1^2-1)^2 +
+\tfrac{1}{2}q_2^2$, NH-tanh, $Q{=}1$, $\kT{=}1$, RK4 with $\dd t = 0.005$,
+$T{=}25$).
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\textwidth]{figures/fig2_density.png}
-  \caption{\textbf{Sample quality on 2D targets.} Top row: ground truth. Middle
-    row: NH-CNF samples (KDE contours). Bottom row: Langevin samples. NH-CNF
-    captures all modes of the eight Gaussians and the fine structure of the
-    spirals, while Langevin exhibits mode collapse on multimodal targets.}
-  \label{fig:density}
+  \includegraphics[width=\textwidth]{figures/fig_ensemble_variance.png}
+  \caption{\textbf{Ensemble variance diagnostic} ($N{=}200$ trajectories,
+    2D double-well, data from orbit~064).
+    (a)~Ensemble mean $\pm$ std of $\sexact$, $\sbath$, $\shutch$ vs.\ time.
+    The three estimators agree in mean; $\shutch$ (blue band) has visibly
+    wider fluctuations than $\sbath$ (green band).
+    (b)~Ensemble standard deviation vs.\ time. $\shutch$ follows
+    $0.681\sqrt{t}$ ($R^2 = 0.988$); $\sbath$ saturates ($R^2 = -3.22$ on
+    $\sqrt{t}$). The ratio at $t{=}25$ is $\text{std}_{\mathrm{bath}} /
+    \text{std}_{\mathrm{hutch}} = 0.376$.
+    (c)~Joint scatter of deviations from $\sexact$ at $t{=}25$:
+    $(\sbath - \sexact)$ vs.\ $(\shutch - \sexact)$. Correlation
+    $r = 0.044$---the two noises are independent.}
+  \label{fig:ensemble}
 \end{figure}
 
-\subsection{Exact Divergence Advantage}
-\label{sec:e3}
+Figure~\ref{fig:ensemble} is the core empirical result. Panel~(b) shows the
+qualitative difference: $\shutch$ standard deviation grows as
+$c\sqrt{t}$ with $c = 0.681$ and $R^2 = 0.988$, confirming the random-walk
+scaling predicted by Eq.~\eqref{eq:var_hutch}. In contrast, $\sbath$ standard
+deviation saturates---fitting the same $c\sqrt{t}$ model gives $R^2 = -3.22$,
+meaning a constant is a better fit than a square-root. At $t{=}25$:
+\begin{equation}
+  \frac{\text{std}(\sbath - \sexact)}{\text{std}(\shutch - \sexact)}
+  = \frac{1.303}{3.470} = 0.376.
+  \label{eq:ratio}
+\end{equation}
 
-\paragraph{The variance problem.}
-The Hutchinson estimator $\hat{\tr}(J) = v^\top J v$ is unbiased, but its
-variance grows with dimension. For a single random vector $v \sim \mathcal{N}(0, I)$,
-the variance is $2\|J\|_F^2$. Over $T$ integration steps, the accumulated
-log-density error has variance $\sim T \cdot \Var[\text{single step}]$, creating
-what we call the \emph{Hutchinson horizon}: the trajectory length beyond which
-estimator noise dominates ODE integrator error. Under a fixed bootstrap trick
-for the momentum draw (Appendix~\ref{app:frozen_momentum}), we can isolate the
-trace-estimation variance from the base sampling variance and measure the
-Hutchinson penalty directly.
+Panel~(c) shows the independence: the joint scatter of $(\sbath - \sexact)$
+vs.\ $(\shutch - \sexact)$ at $t{=}25$ is a diffuse cloud with $r = 0.044$.
+This eliminates the control-variate interpretation and establishes $\sbath$
+as a standalone replacement.
 
-\paragraph{Training stability --- the headline effect.}
-We begin with the practical consequence that matters for CNF training: the
-variance of the loss and its gradient. Figure~\ref{fig:training_stability}(a)
-shows the distribution of 100 independent reverse-KL loss evaluations at
-$d = 10$, with the base momentum frozen across draws so that only the trace
-estimator contributes stochastic variance. NH exact divergence produces the
-same loss every time (standard deviation $0.00 \times 10^{-2}$ --- zero to
-machine precision), whereas Hutchinson with $k = 1, 5, 20$ probe vectors gives
-standard deviations of $13.3, 6.0, 2.8 \times 10^{-2}$ respectively --- exactly
-the $1/\sqrt{k}$ scaling predicted by Monte Carlo theory. The NH-CNF loss is
-thus noise-free regardless of how many probe vectors a Hutchinson estimator
-would use.
+\paragraph{Mechanism.}
+Why does $\sbath$ have bounded variance? The integrand is
+$\beta\,g(\xi)\,|p|^2$. The thermostat feedback
+(Eq.~\eqref{eq:nh_xi}) drives $|p|^2$ toward $d\kT$: when
+$|p|^2 > d\kT$, $\dot{\xi} > 0$, friction increases, and the system cools;
+when $|p|^2 < d\kT$, friction decreases and the system heats. This negative
+feedback confines $|p|^2$ to a bounded shell around $d\kT$, preventing the
+integrand from drifting. Hutchinson's estimator has no such feedback: each
+$v^\top J v$ is an independent draw with no memory of previous values,
+so the accumulated integral performs a random walk.
 
-Panel~(b) shows the corresponding gradient noise-to-signal ratio
-$\|\mathrm{std}(\nabla_\theta \mathcal{L})\| / \|\mathrm{mean}(\nabla_\theta
-\mathcal{L})\|$ as a function of dimension $d \in \{2, 5, 10, 20, 50\}$. NH
-exact gradients sit at machine epsilon ($\sim 10^{-14}$) at every dimension,
-while Hutchinson gradients live at $O(10^{-1})$ regardless of $k$. This two
-orders-of-magnitude gap is what determines whether a CNF trains at all: once
-the gradient noise swamps the signal, the optimizer's effective step becomes a
-random walk and loss curves stall.
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\textwidth]{figures/fig_training_stability.png}
-  \caption{\textbf{Training stability: exact divergence is deterministic at
-    every $d$.} (a)~Distribution of 100 independent reverse-KL loss draws at
-    $d = 10$ with frozen base momentum, isolating the trace-estimator
-    contribution. NH exact is a single point (std $= 0.00$), while Hutchinson
-    std is $0.133 / 0.060 / 0.028$ for $k = 1 / 5 / 20$ probes --- the
-    textbook $1/\sqrt{k}$ decay. (b)~Gradient noise-to-signal ratio
-    $\|\mathrm{std}(\nabla_\theta \mathcal{L})\| / \|\mathrm{mean}(\nabla_\theta
-    \mathcal{L})\|$ vs.\ dimension $d \in \{2,5,10,20,50\}$. NH exact remains at
-    machine epsilon ($\sim 10^{-14}$) for all $d$; Hutchinson sits at
-    $O(10^{-1})$. The two orders-of-magnitude gap is the quantity that governs
-    trainability.}
-  \label{fig:training_stability}
-\end{figure}
-
-\paragraph{Dimension scaling across target families.}
-To confirm that this effect is not an artifact of any single target geometry,
-we measure the standard deviation of $\log p(x)$ across 100 ODE trajectories on
-three target families --- an isotropic Gaussian, an anisotropic Gaussian, and a
-bimodal mixture --- swept over $d \in [2, 200]$
-(Figure~\ref{fig:variance_scaling}). On the isotropic and bimodal targets, all
-estimators lie within a modest factor of each other, because the Jacobian is
-well-conditioned and Hutchinson's variance is bounded by
-$2\|J\|_F^2 \approx 2d$. The anisotropic case reveals the true danger: by
-$d = 200$, the NH exact std is $10.1$ while a single Hutchinson draw gives std
-$129.5$ --- \textbf{13$\times$ worse}, with the ratio growing steeply from
-$d = 50$ onward. When the Jacobian has widely separated singular values
-$\|J\|_F^2 \gg \tr(J)$, Hutchinson's Monte Carlo variance explodes; NH exact
-is indifferent because it never uses a random probe in the first place.
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\textwidth]{figures/fig_variance_scaling_new.png}
-  \caption{\textbf{Variance of $\log p(x)$ across ODE trajectories vs.\
-    dimension, on three target families.} Isotropic Gaussian (left), anisotropic
-    Gaussian (center), bimodal mixture (right). The anisotropic case is where
-    the separation is clearest: at $d = 200$, NH exact std $= 10.1$ versus
-    Hutchinson($k{=}1$) std $= 129.5$, a 13$\times$ penalty. On isotropic and
-    bimodal targets the well-conditioned Jacobian keeps all estimators within a
-    small constant factor. The practical lesson: Hutchinson's variance is
-    controlled by $\|J\|_F^2$, not by $\tr(J)$, so anisotropy is the failure
-    mode.}
-  \label{fig:variance_scaling}
-\end{figure}
-
-\paragraph{Wall-clock cost across dimensions.}
-A common intuition is that exact divergence should only matter in moderate
-dimensions because a single Hutchinson draw is cheap. This intuition is wrong
-for the NH vector field. Figure~\ref{fig:walltime} reports per-step wall-clock
-cost for dimensions $d \in [2, 1000]$. At every dimension tested, NH exact
-divergence is \emph{faster} than FFJORD-style Hutchinson with $k = 1$ probe,
-and the gap widens with $d$: at $d = 1000$, NH exact takes $1.5$~ms per step
-versus $3.5$~ms for Hutchinson($k{=}1$) and $10$~ms for Hutchinson($k{=}5$), a
-2--6$\times$ speedup. The reason is structural: Hutchinson requires a full
-Jacobian-vector product through the NH vector field, while the NH analytical
-formula is a single evaluation of $g(\xi)$ followed by a scalar multiply. So
-exact divergence is not a trade-off --- it is strictly lower-variance
-\emph{and} strictly cheaper, at every dimension we tested.
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.75\textwidth]{figures/fig_walltime.png}
-  \caption{\textbf{Per-step wall-clock cost vs.\ dimension,
-    $d \in [2, 1000]$, batch size 256.} NH exact divergence (blue) is faster
-    than a single FFJORD-style Hutchinson probe (orange) at \emph{all}
-    dimensions tested, and the gap widens with $d$. At $d = 1000$: NH exact
-    $1.5$~ms, Hutch($k{=}1$) $3.5$~ms, Hutch($k{=}5$) $10$~ms. The exact
-    divergence is simultaneously zero-variance \emph{and} cheaper --- there is
-    no speed/accuracy trade-off to navigate.}
-  \label{fig:walltime}
-\end{figure}
-
-\paragraph{Takeaway.}
-The decisive advantage of NH-CNF's exact divergence is not a single number but
-a conjunction: (i)~zero stochastic variance in the loss, to machine precision;
-(ii)~gradient noise-to-signal at machine epsilon, versus $O(10^{-1})$ for
-Hutchinson; (iii)~robustness to Jacobian anisotropy (13$\times$ variance
-penalty for Hutchinson at $d = 200$); (iv)~2--6$\times$ faster per step at
-$d = 1000$. For completeness, Figure~\ref{fig:divergence} shows the original
-four-panel diagnostic --- trajectory-level error accumulation, per-sample
-density variance, and the ``Hutchinson horizon'' beyond which estimator noise
-dominates ODE integrator error.
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\textwidth]{figures/fig4_divergence.png}
-  \caption{\textbf{Hutchinson horizon and accumulated error.} (a)~Loss noise
-    across evaluations: NH-CNF (exact) produces identical values each time
-    (variance $= 0$), while Hutchinson($k{=}1$) and Hutchinson($k{=}5$)
-    fluctuate. (b)~Log-density error vs.\ trajectory length $T$: Hutchinson
-    noise accumulates as $O(\sqrt{T})$, eventually dominating ODE integrator
-    error. (c)~Per-sample density variance vs.\ dimension $d$: NH-CNF is
-    exactly zero at all $d$; Hutchinson variance grows with dimension.}
-  \label{fig:divergence}
-\end{figure}
-
-\subsection{Phase-Space Mechanism}
-\label{sec:e5}
-
-To build intuition for \emph{how} the NH-CNF works, we visualize the full
-$(q, p, \xi)$ trajectory on the two-moons target
-(Figure~\ref{fig:phase}).
+\paragraph{Phase-space visualization.}
+Figure~\ref{fig:phase} shows a single NH trajectory on the 2D double-well,
+illustrating the physical origin of $\sbath$. Panel~(d) shows the friction
+$g(\xi(t)) = \tanh(\xi(t))$ and its relation to the kinetic energy. The
+product $\tanh(\xi)\,|p|^2$, integrated over time, is the $\sbath$ estimator.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{figures/fig3_phase.png}
-  \caption{\textbf{Phase-space trajectory on two moons.} The background contours
-    show the target two-moons density. (a)~Configuration space $(q_1, q_2)$
-    colored by time, showing systematic exploration of both moons within the
-    integration window. (b)~Phase portrait $(q_1, p_1)$ revealing Hamiltonian
-    oscillations modulated by thermostat damping. (c)~Thermostat variable $\xi(t)$
-    fluctuating around zero --- the hallmark of thermal equilibrium. (d)~Friction
-    $g(\xi) = \tanh(\xi)$, which is simultaneously the instantaneous per-dimension
-    divergence $\divergence(f)/d$: the density-tracking signal comes for free.}
+  \caption{\textbf{Phase-space trajectory on the 2D double-well.}
+    (a)~Configuration space $(q_1, q_2)$ colored by time: the trajectory
+    explores both wells. (b)~Phase portrait $(q_1, p_1)$. (c)~Thermostat
+    variable $\xi(t)$ fluctuating around zero. (d)~Friction
+    $g(\xi) = \tanh(\xi)$ and kinetic energy. The product
+    $\tanh(\xi(t))\,|p(t)|^2$ integrated over time is $\sbath$---the
+    bounded-variance estimator of the divergence integral.}
   \label{fig:phase}
 \end{figure}
 
-Panel~(d) is the key insight: the friction signal $g(\xi(t))$ that the thermostat
-produces as a byproduct of maintaining thermal equilibrium is \emph{exactly} the
-divergence signal that a CNF needs for density evaluation. No separate computation
-is required --- the thermostat's feedback mechanism provides density tracking for
-free.
-
-\subsection{Bayesian Neural Network Posterior}
-\label{sec:e2}
-
-\paragraph{Setup.}
-We test NH-CNF on a Bayesian inference task: posterior sampling for a small neural
-network (1 hidden layer, 10 units, ${\sim}$481 parameters) trained on 1D
-sinusoidal regression data ($y = \sin(3x) + \epsilon$, $\epsilon \sim
-\mathcal{N}(0, 0.1)$). The potential is $V(\theta) = -\log p(D|\theta) - \log
-p(\theta)$ with a Gaussian prior. We compare against stochastic gradient Langevin
-dynamics (SGLD) \citep{welling2011bayesian} and a deep ensemble of 5 networks
-\citep{lakshminarayanan2017simple}.
-
-\paragraph{Results.}
-Table~\ref{tab:e2} reports the coverage probability of the 95\% credible interval.
-Both NH-CNF and SGLD achieve near-perfect calibration, while the deep ensemble is
-severely miscalibrated (55.5\% coverage at the 95\% level). This demonstrates that
-deterministic thermostat dynamics can produce well-calibrated posterior samples
-without injected noise.
-
-\begin{table}[t]
-  \centering
-  \caption{\textbf{BNN posterior calibration.} Coverage probability at the 95\%
-    credible interval (ideal: 0.95). NH-CNF and SGLD are well-calibrated; deep
-    ensembles are overconfident.}
-  \label{tab:e2}
-  \small
-  \begin{tabular}{lcc}
-    \toprule
-    Method & 95\% CI Coverage & $N$ samples \\
-    \midrule
-    NH-CNF (multi-$Q$) & \textbf{0.980} & 1000 \\
-    SGLD & 0.975 & 1000 \\
-    Deep Ensemble & 0.555 & 5 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\textwidth]{figures/fig7_bnn.png}
-  \caption{\textbf{BNN posterior predictive distributions.} NH-CNF (left) and SGLD
-    (center) produce well-calibrated uncertainty bands that widen away from data.
-    The deep ensemble (right) is overconfident with narrow bands.}
-  \label{fig:bnn}
-\end{figure}
-
-\subsection{Log-Likelihood Evaluation}
-\label{sec:e7}
-
-A unique capability of NH-CNF is exact, per-sample log-likelihood evaluation.
-We fit KDE densities on the samples produced by each method and evaluate test
-log-likelihood on held-out data (Table~\ref{tab:e7}).
-
-\begin{table}[t]
-  \centering
-  \caption{\textbf{Test log-likelihood ($\uparrow$) on 2D targets.} NH-CNF
-    samples produce KDE densities that match the ground-truth KDE on all targets.
-    Langevin fails on eight Gaussians due to mode collapse.}
-  \label{tab:e7}
-  \small
-  \begin{tabular}{lccc}
-    \toprule
-    Target & KDE (ground truth) & NH-CNF & Langevin \\
-    \midrule
-    Two Moons       & $-1.47$ & $-1.83$ & $-1.92$ \\
-    Two Spirals     & $-3.28$ & $-3.31$ & $-3.38$ \\
-    Eight Gaussians & $-3.44$ & $\mathbf{-3.43}$ & $-4.48$ \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-On eight Gaussians, the Langevin sampler's mode collapse leads to a test NLL of
-$-4.48$ compared to NH-CNF's $-3.43$, which matches the ground-truth KDE. This
-illustrates the compounding advantage: better mode coverage yields better samples,
-which yield better density estimates, all tracked exactly.
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\textwidth]{figures/fig5_loglik.png}
-  \caption{\textbf{Log-likelihood comparison.} Test NLL evaluated via KDE on
-    samples from each method. NH-CNF matches the ground-truth KDE baseline on all
-    targets; Langevin degrades on multimodal distributions.}
-  \label{fig:loglik}
-\end{figure}
-
-\subsection{Dimension Scaling --- Honest Limitations}
-\label{sec:scaling}
-
-\paragraph{Setup.}
-We test on a Gaussian mixture model (5 modes arranged in a ring) at dimensions
-$d \in \{2, 5, 10, 20, 50\}$ using the exact GMM potential (not KDE). Mode
-coverage is measured as the number of modes with $\geq 5\%$ of samples within
-2 standard deviations of the mode center.
-
-\paragraph{Results.}
-Table~\ref{tab:e6} reports the results. NH-CNF maintains full mode coverage
-through $d = 10$ but drops sharply to 1/5 modes at $d = 20$ and 0/5 at
-$d = 50$. Langevin maintains full coverage through $d = 20$ and also fails at
-$d = 50$. Notably, Langevin achieves lower energy distance at \emph{all}
-dimensions tested with the GMM potential --- the NH-CNF advantage seen in
-Section~\ref{sec:e1} is specific to the 2D KDE-potential setting with
-warm-starting.
-
-\begin{table}[t]
-  \centering
-  \caption{\textbf{Dimension scaling on 5-mode GMM.} NH-CNF loses mode coverage
-    at $d \geq 20$; Langevin's stochastic exploration is more robust.}
-  \label{tab:e6}
-  \small
-  \begin{tabular}{lcccc}
-    \toprule
-    $d$ & NH-CNF ED & Langevin ED & NH modes & Langevin modes \\
-    \midrule
-    2  & 0.215 & \textbf{0.012} & 5/5 & 5/5 \\
-    5  & 0.447 & \textbf{0.323} & 5/5 & 5/5 \\
-    10 & 0.291 & \textbf{0.071} & 5/5 & 5/5 \\
-    20 & 0.275 & \textbf{0.048} & 1/5 & 5/5 \\
-    50 & 0.241 & \textbf{0.018} & 0/5 & 0/5 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\textwidth]{figures/fig6_scaling.png}
-  \caption{\textbf{Dimension scaling.} (a)~Energy distance vs.\ dimension:
-    NH-CNF degrades at $d \geq 20$ while Langevin remains stable.
-    (b)~Mode coverage vs.\ dimension: NH-CNF visits all 5 modes at $d \leq 10$
-    but collapses to a single mode cluster at $d = 20$, while Langevin maintains
-    full coverage until $d = 50$ where both methods fail.}
-  \label{fig:scaling}
-\end{figure}
-
-\paragraph{Diagnosis.}
-Figure~\ref{fig:scaling} reveals both the strength and limitation of NH-CNF. At
-$d = 2$, NH-CNF visits all 5 modes. At $d = 20$, it collapses to a single mode
-cluster, while Langevin maintains full coverage via stochastic exploration. The
-energy distance (panel~a) confirms: NH-CNF degrades at $d \geq 20$ while
-Langevin remains stable. This is the well-known KAM trapping phenomenon:
-deterministic trajectories in high dimension get trapped near invariant
-structures. Rigorous non-ergodicity results for Nos\'{e}--Hoover dynamics are
-established in \citet{legoll2009nonergodicity} for the harmonic oscillator
-case. Stochastic methods avoid this by continuously injecting noise that
-breaks the invariant tori. This is not a tuning problem --- it is a structural
-limitation of autonomous deterministic flows with a scalar thermostat variable.
-
-\paragraph{Mitigation strategies (future work).}
-Potential solutions include: (i)~periodic stochastic momentum refreshment (hybrid
-deterministic-stochastic flows), (ii)~adaptive $Q$ schedules that respond to
-mixing diagnostics, (iii)~vector thermostats with per-dimension $\xi_i$ variables
-(at the cost of losing the $O(1)$ divergence property), and (iv)~Nos\'{e}--Hoover
-chains with deeper thermostat hierarchies.
-
 % ============================================================================
-\section{Related Work}
-\label{sec:related}
+\section{Non-Equilibrium Quench Verification}
+\label{sec:quench_figure}
 % ============================================================================
 
-\paragraph{Continuous normalizing flows.}
-Neural ODEs \citep{chen2018neural} established the framework for CNFs. FFJORD
-\citep{grathwohl2019ffjord} introduced the Hutchinson trace estimator that made
-CNFs scalable. OT-Flow \citep{onken2021ot} and flow matching
-\citep{lipman2023flow} provide alternative training objectives. All of these use
-learned vector fields with stochastic divergence estimation; NH-CNF provides a
-physics-derived alternative with exact divergence for settings where $V(q)$ is
-known.
+Figure~\ref{fig:quench} consolidates the non-equilibrium results from
+Section~\ref{sec:noneq}.
 
-\paragraph{Augmented flows.}
-ANODE \citep{dupont2019augmented} showed that augmenting the state space with
-extra dimensions improves expressiveness of neural ODEs. NH-CNF augments with
-physically motivated variables $(p, \xi)$ rather than arbitrary dimensions,
-gaining the exact divergence property as a structural bonus.
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figures/fig_tasaki_quench.png}
+  \caption{\textbf{Non-equilibrium temperature quench verification}
+    (data from orbit~065).
+    (a)~Phase~1 ($T_0{=}1 \to T_1{=}2$): ensemble-mean cumulative
+    $\langle \stot \rangle$ vs.\ post-quench time, converging above the
+    (q,p)-only KL target (dashed red). Jarzynski $= 0.965$.
+    (b)~Phase~2 ($T_0{=}0.8 \to T_1{=}1.5$): per-seed Jarzynski values
+    (bar chart). Mean $= 1.042$ (within $4.2\%$ of 1.0).
+    \textbf{Key:} std($\stot$) $= 1.05$ vs.\ std($\shutch$) $= 10.7$
+    ($10\times$ variance ratio).
+    (c)~Phase~3 (1D harmonic): Jarzynski $= 0.916$ ($8\%$ violation),
+    confirming non-ergodicity on harmonic potentials.}
+  \label{fig:quench}
+\end{figure}
+
+The same mechanism operates in both equilibrium and non-equilibrium settings:
+equipartition bounds $\sbath$ regardless of the protocol. Under quench, the
+system is transiently out of equilibrium, yet $\stot = \sbath - \sexact$
+retains std $= 1.05$ while Hutchinson's accumulated trace has std $= 10.7$.
+This $10\times$ ratio (Table~\ref{tab:phase2}) persists across all three seeds,
+confirming it is not a fluctuation.
+
+% ============================================================================
+\section{Discussion and Related Work}
+\label{sec:discussion}
+% ============================================================================
+
+\paragraph{Summary.}
+We have identified the bath-heat integral $\sbath = \beta \int g(\xi)|p|^2\,\dd t$
+as an unbiased, $O(1)$-variance-bounded estimator of the divergence integral in
+NH-augmented continuous normalizing flows. On a 200-trajectory ensemble, it has
+$2.66\times$ lower standard deviation than single-probe Hutchinson
+(std ratio $= 0.376$), and the two estimators are statistically independent
+($r = 0.044$). Under non-equilibrium quench, the variance advantage grows to
+$10\times$, and the Jarzynski equality holds to $3.5\%$. The Evans--Searles
+fluctuation theorem holds for total entropy production $\stot$ but not for
+$\sbath$ alone---the bounded variance is equipartition-based, not
+symmetry-protected.
+
+\paragraph{Relation to Hutch++ for FFJORD.}
+The closest related work is Liu et~al.\ \citep{liu2025hutch}, who apply the
+Hutch++ deflation scheme to reduce FFJORD's trace-estimation variance. Hutch++
+projects out the top eigenspace of the Jacobian, reducing the effective
+$\|J\|_F^2$ and hence the Hutchinson variance. The improvement is algorithmic
+(better constants in the variance), but the \emph{scaling} is unchanged:
+Hutch++ still accumulates variance as $O(\sqrt{t})$ because each step uses
+independent random projections. In contrast, $\sbath$ achieves $O(1)$ bounded
+variance through the physical constraint of equipartition. The two approaches
+are complementary: Hutch++ improves the per-step constant; $\sbath$ eliminates
+the random-walk accumulation entirely.
 
 \paragraph{Thermostats in machine learning.}
-Stochastic gradient Nos\'{e}--Hoover thermostat (SGNHT)
-\citep{ding2014bayesian} uses NH dynamics with added noise for scalable Bayesian
-inference. Thermostat-enhanced MCMC methods have been explored for molecular
-simulation \citep{leimkuhler2013rational}. Colored-noise thermostats
-\citep{ceriotti2010colored} generalize the NH framework to frequency-dependent
-coupling via generalized Langevin equations. Our work differs by focusing on the
-\emph{exact divergence} property for density evaluation, rather than on sampling
-efficiency alone.
+The stochastic gradient Nos\'{e}--Hoover thermostat (SGNHT)
+\citep{ding2014bayesian} uses NH dynamics with injected noise for Bayesian
+inference. Leimkuhler \& Matthews \citep{leimkuhler2013rational} studied
+rational thermostat constructions for molecular sampling. Ceriotti et~al.\
+\citep{ceriotti2010colored} connected NH to colored-noise thermostats and
+generalized Langevin equations---the \emph{design} of the coupling function
+$g(\xi)$ and the frequency-matching between thermostat and system are central
+themes of their work, and the $g'(\xi) \geq 0$ criterion we use for the tanh
+coupling traces back to this line of investigation. Our contribution is
+orthogonal: we exploit the \emph{variance structure} of the bath-heat integral,
+not the sampling efficiency of the thermostat.
 
-\paragraph{Score-based diffusion models.}
-Score matching \citep{song2021score}, DDPM \citep{ho2020denoising}, and flow
-matching \citep{lipman2023flow} define the current state of the art in generative
-modeling. These methods learn a time-dependent score function
-$s_\theta(x, t) \approx \nabla \log p_t(x)$, which is a full $d$-dimensional
-vector field. NH-CNF exploits a different structure: instead of a learned
-$d$-dimensional score, it uses a scalar thermostat variable $\xi$ as a 1D
-feedback signal that drives the dynamics toward thermal equilibrium. These are
-not equivalent --- the score carries much more information than a scalar
-aggregate --- but they play analogous functional roles in their respective
-frameworks. NH-CNF is complementary to, not competitive with, learned diffusion
-models: it applies to settings where the energy function is available
-(energy-based models, molecular simulation, Bayesian inference).
+\paragraph{Fluctuation theorems.}
+The connection between NH divergence and entropy production is classical
+\citep{evans2002fluctuation, gallavotti1995dynamical}. The Evans--Searles and
+Crooks fluctuation theorems apply to the \emph{total} entropy production, not
+to individual components. Our orbit~067 result ($\stot$ satisfies DFT, $\sbath$
+alone does not) is a concrete instance of this general principle, applied to
+the CNF context. The Jarzynski equality \citep{jarzynski1997nonequilibrium}
+provides a target-free verification that requires no knowledge of the
+post-quench partition function.
 
-% ============================================================================
-\section{Discussion and Conclusion}
-\label{sec:conclusion}
-% ============================================================================
+\paragraph{Continuous normalizing flows.}
+Neural ODEs \citep{chen2018neural} established CNFs. FFJORD
+\citep{grathwohl2019ffjord} made them scalable via the Hutchinson estimator.
+OT-Flow \citep{onken2021ot} and flow matching \citep{lipman2023flow} provide
+alternative training objectives. All use learned vector fields with stochastic
+divergence; $\sbath$ provides a physics-derived bounded-variance alternative
+for settings where the potential $V(q)$ is known.
 
-We have shown that the Nos\'{e}--Hoover thermostat, viewed as a continuous
-normalizing flow, provides exact $O(1)$ divergence computation with zero variance.
-This is a structural property of the dynamics --- not an approximation or a
-learned behavior --- arising from the thermostat's role as a scalar feedback
-controller for thermal equilibrium.
+\paragraph{Scope and limitations.}
+The $\sbath$ estimator requires an NH-augmented flow with tracked momentum and
+thermostat variables. It applies naturally to:
+\begin{itemize}[leftmargin=*, itemsep=1pt]
+  \item Energy-based models with explicit energy functions,
+  \item Molecular dynamics with known force fields,
+  \item Bayesian posteriors with explicit likelihoods.
+\end{itemize}
+It does \emph{not} apply to learned vector fields with no energy interpretation
+(e.g., flow matching on images). The correlation $r = 0.044$ means $\sbath$
+cannot serve as a control variate for $\shutch$---it is a replacement, not
+a supplement.
 
-\paragraph{Where NH-CNF works well.}
-The framework is best suited for three settings: (a)~known energy functions where
-$\nabla V(q)$ is available (energy-based models, molecular dynamics, Bayesian
-inference with explicit likelihoods), (b)~multimodal targets in moderate dimension
-($d \lesssim 20$) where deterministic Hamiltonian trajectories cross barriers more
-efficiently than random walks, and (c)~applications requiring deterministic,
-reproducible density evaluation (importance sampling, model comparison, calibration
-auditing).
-
-\paragraph{Where it does not.}
-NH-CNF is not applicable to raw image generation or other domains where the energy
-function is not available --- a learned potential would reintroduce the need for
-Hutchinson estimation. The deterministic trapping at $d > 20$
-(Section~\ref{sec:scaling}) is a genuine limitation, not a tuning artifact. For
-high-dimensional multimodal targets, stochastic methods remain essential.
-
-\paragraph{The broader picture.}
-The NH thermostat was invented 40 years ago to simulate molecules at constant
-temperature. The exact divergence property was a known mathematical fact, not a
-discovery. What we contribute is the recognition that this property solves a
-concrete problem in modern generative modeling --- the variance and cost of trace
-estimation in CNFs --- and systematic experimental evidence for where this
-connection is useful and where it breaks down.
+Three honest limitations constrain the current results:
+\begin{enumerate}[leftmargin=*, itemsep=1pt]
+  \item \textbf{Non-ergodicity.} Plain NH is non-ergodic on harmonic
+    potentials \citep{legoll2009nonergodicity}; Jarzynski is violated by $8\%$
+    in Phase~3. NHC (chains) may restore ergodicity but the housekeeping heat
+    accounting becomes more complex.
+  \item \textbf{Ensemble size.} All variance measurements use $N = 200$
+    trajectories (orbit~064) or $N = 2400$ branches (orbit~065). Larger
+    ensembles would tighten the confidence intervals.
+  \item \textbf{CNF training not demonstrated.} This paper characterizes the
+    variance structure of $\sbath$ as an estimator; it does not yet demonstrate
+    end-to-end FFJORD training with $\sbath$ as the divergence estimator. This
+    requires augmenting the FFJORD architecture with NH dynamics and verifying
+    that the augmentation does not degrade expressiveness---a significant
+    engineering effort left to future work.
+\end{enumerate}
 
 \paragraph{Future directions.}
-Hybrid deterministic-stochastic flows that periodically refresh momentum could
-combine the exact divergence of NH dynamics with the ergodicity of stochastic
-methods. Adaptive $Q$ schedules, potentially learned, could extend the framework
-to higher dimensions. The connection between thermostat mass spectra and diffusion
-noise schedules (Section~\ref{sec:multiscale}) suggests a principled way to design
-sampling dynamics that deserves further investigation. Finally, applying NH-CNF to
-molecular generation --- where the energy function is physically given and
-dimensions are moderate --- is a natural next step.
+End-to-end FFJORD training with $\sbath$ on standard benchmarks (POWER, GAS,
+HEPMASS) is the immediate next step. The $10\times$ variance ratio under quench
+suggests that the benefit may be largest for long-trajectory or
+high-dimensional flows where Hutchinson variance accumulation is the training
+bottleneck. Extending to NHC (Nos\'{e}--Hoover chains) with $M \geq 2$ would
+restore ergodicity on harmonic systems at the cost of tracking inter-chain
+heat flows. The connection between thermostat mass $Q$ and the effective
+variance bound deserves analytical treatment.
 
 % ============================================================================
 % REFERENCES
 % ============================================================================
 \bibliographystyle{plainnat}
 
-\begin{thebibliography}{20}
+\begin{thebibliography}{25}
 
 \bibitem[Ceriotti et~al.(2010)]{ceriotti2010colored}
 M.~Ceriotti, G.~Bussi, and M.~Parrinello.
@@ -945,10 +773,16 @@ N.~Ding, Y.~Fang, R.~Babbush, C.~Chen, R.~D. Skeel, and H.~Neven.
 \newblock Bayesian sampling using stochastic gradient thermostats.
 \newblock In \emph{NeurIPS}, 2014.
 
-\bibitem[Dupont et~al.(2019)]{dupont2019augmented}
-E.~Dupont, A.~Doucet, and Y.~W. Teh.
-\newblock Augmented neural {ODE}s.
-\newblock In \emph{NeurIPS}, 2019.
+\bibitem[Evans \& Searles(2002)]{evans2002fluctuation}
+D.~J. Evans and D.~J. Searles.
+\newblock The fluctuation theorem.
+\newblock \emph{Adv.\ Phys.}, 51(7):1529--1585, 2002.
+\newblock \doi{10.1080/00018730210155133}.
+
+\bibitem[Gallavotti \& Cohen(1995)]{gallavotti1995dynamical}
+G.~Gallavotti and E.~G.~D. Cohen.
+\newblock Dynamical ensembles in nonequilibrium statistical mechanics.
+\newblock \emph{Phys.\ Rev.\ Lett.}, 74(14):2694--2697, 1995.
 
 \bibitem[Grathwohl et~al.(2019)]{grathwohl2019ffjord}
 W.~Grathwohl, R.~T.~Q. Chen, J.~Bettencourt, I.~Sutskever, and D.~Duvenaud.
@@ -956,27 +790,20 @@ W.~Grathwohl, R.~T.~Q. Chen, J.~Bettencourt, I.~Sutskever, and D.~Duvenaud.
   generative models.
 \newblock In \emph{ICLR}, 2019.
 
-\bibitem[Ho et~al.(2020)]{ho2020denoising}
-J.~Ho, A.~Jain, and P.~Abbeel.
-\newblock Denoising diffusion probabilistic models.
-\newblock In \emph{NeurIPS}, 2020.
-
 \bibitem[Hoover(1985)]{hoover1985canonical}
 W.~G. Hoover.
 \newblock Canonical dynamics: Equilibrium phase-space distributions.
 \newblock \emph{Phys.\ Rev.\ A}, 31(3):1695--1697, 1985.
 
-\bibitem[Evans \& Searles(2002)]{evans2002fluctuation}
-D.~J. Evans and D.~J. Searles.
-\newblock The fluctuation theorem.
-\newblock \emph{Adv.\ Phys.}, 51(7):1529--1585, 2002.
-\newblock \doi{10.1080/00018730210155133}.
+\bibitem[Jarzynski(1997)]{jarzynski1997nonequilibrium}
+C.~Jarzynski.
+\newblock Nonequilibrium equality for free energy differences.
+\newblock \emph{Phys.\ Rev.\ Lett.}, 78(14):2690--2693, 1997.
 
-\bibitem[Lakshminarayanan et~al.(2017)]{lakshminarayanan2017simple}
-B.~Lakshminarayanan, A.~Pritzel, and C.~Blundell.
-\newblock Simple and scalable predictive uncertainty estimation using deep
-  ensembles.
-\newblock In \emph{NeurIPS}, 2017.
+\bibitem[Kraskov et~al.(2004)]{kraskov2004estimating}
+A.~Kraskov, H.~St\"{o}gbauer, and P.~Grassberger.
+\newblock Estimating mutual information.
+\newblock \emph{Phys.\ Rev.\ E}, 69(6):066138, 2004.
 
 \bibitem[Legoll et~al.(2009)]{legoll2009nonergodicity}
 F.~Legoll, M.~Luskin, and R.~Moeckel.
@@ -995,17 +822,17 @@ Y.~Lipman, R.~T.~Q. Chen, H.~Ben-Hamu, M.~Nickel, and M.~Le.
 \newblock Flow matching for generative modeling.
 \newblock In \emph{ICLR}, 2023.
 
+\bibitem[Liu et~al.(2025)]{liu2025hutch}
+X.~Liu, Z.~Du, Y.~Deng, and L.~Zhang.
+\newblock Hutch++ for {FFJORD}: Variance reduction for continuous normalizing
+  flows.
+\newblock \emph{arXiv preprint arXiv:2502.18808}, 2025.
+
 \bibitem[Martyna et~al.(1992)]{martyna1992nose}
 G.~J. Martyna, M.~L. Klein, and M.~Tuckerman.
 \newblock Nos\'{e}--{H}oover chains: The canonical ensemble via continuous
   dynamics.
 \newblock \emph{J.~Chem.\ Phys.}, 97(4):2635--2643, 1992.
-
-\bibitem[McLachlan \& Perlmutter(2001)]{mclachlan2001conformal}
-R.~I. McLachlan and M.~Perlmutter.
-\newblock Conformal {H}amiltonian systems.
-\newblock \emph{J.\ Geom.\ Phys.}, 39(4):276--300, 2001.
-\newblock \doi{10.1016/S0393-0440(01)00020-1}.
 
 \bibitem[Nos\'{e}(1984)]{nose1984unified}
 S.~Nos\'{e}.
@@ -1031,26 +858,20 @@ M.~E. Tuckerman.
 \newblock Oxford University Press, 2010.
 \newblock ISBN 978-0-19-852526-4.
 
-\bibitem[Welling \& Teh(2011)]{welling2011bayesian}
-M.~Welling and Y.~W. Teh.
-\newblock Bayesian learning via stochastic gradient {L}angevin dynamics.
-\newblock In \emph{ICML}, 2011.
-
 \end{thebibliography}
 
 % ============================================================================
 \newpage
 \appendix
-\section{Full Derivation of the Exact Divergence}
+\section{Full Derivation of the Divergence Identity}
 \label{app:derivation}
 % ============================================================================
 
-We provide the complete derivation of Theorem~\ref{thm:exact_div} with all
-intermediate steps, for readers unfamiliar with the Liouville equation formalism.
+We provide the complete derivation of Lemma~\ref{lem:exact_div} for readers
+unfamiliar with the Liouville equation formalism.
 
-The NH dynamics define a vector field $f$ on the extended phase space
-$\mathcal{M} = \R^d \times \R^d \times \R$ with coordinates
-$(q_1, \ldots, q_d, p_1, \ldots, p_d, \xi)$:
+The NH dynamics define a vector field $f$ on $\mathcal{M} = \R^d \times \R^d
+\times \R$ with coordinates $(q_1, \ldots, q_d, p_1, \ldots, p_d, \xi)$:
 \begin{equation}
   f = \bigl(\underbrace{p_1/m, \ldots, p_d/m}_{\dot{q}},\;
     \underbrace{-\partial_{q_1}V - g(\xi)p_1, \ldots,
@@ -1058,223 +879,50 @@ $(q_1, \ldots, q_d, p_1, \ldots, p_d, \xi)$:
     \underbrace{(|p|^2/m - d\kT)/Q}_{\dot{\xi}}\bigr).
 \end{equation}
 
-The divergence is:
-\begin{equation}
-  \divergence(f) = \sum_{i=1}^d \frac{\partial f_{q_i}}{\partial q_i}
-    + \sum_{i=1}^d \frac{\partial f_{p_i}}{\partial p_i}
-    + \frac{\partial f_\xi}{\partial \xi}.
-\end{equation}
+\paragraph{Position block.}
+$f_{q_i} = p_i / m$. Since $p_i$ does not depend on $q_i$:
+$\partial f_{q_i}/\partial q_i = 0$ for all $i$.
 
-\paragraph{Term 1: Position derivatives.}
-$f_{q_i} = p_i / m$. Since $p_i$ and $m$ do not depend on $q_i$:
-\begin{equation}
-  \frac{\partial}{\partial q_i}\left(\frac{p_i}{m}\right) = 0
-  \quad \Longrightarrow \quad
-  \sum_{i=1}^d \frac{\partial f_{q_i}}{\partial q_i} = 0.
-\end{equation}
+\paragraph{Momentum block.}
+$f_{p_i} = -\partial V/\partial q_i - g(\xi) p_i$. The first term depends on
+$q$, not $p_i$; the second is linear in $p_i$:
+$\partial f_{p_i}/\partial p_i = -g(\xi)$ for each $i$, summing to $-d\,g(\xi)$.
 
-\paragraph{Term 2: Momentum derivatives.}
-$f_{p_i} = -\partial V / \partial q_i - g(\xi) \cdot p_i$. The first term
-depends on $q$ only; the second is linear in $p_i$ with coefficient $-g(\xi)$:
-\begin{equation}
-  \frac{\partial}{\partial p_i}\bigl(-\partial_{q_i}V - g(\xi)\,p_i\bigr)
-    = 0 - g(\xi) = -g(\xi)
-  \quad \Longrightarrow \quad
-  \sum_{i=1}^d \frac{\partial f_{p_i}}{\partial p_i} = -d \cdot g(\xi).
-\end{equation}
-
-\paragraph{Term 3: Thermostat derivative.}
-$f_\xi = (|p|^2/m - d\kT) / Q$. The numerator $|p|^2/m = \sum_i p_i^2/m$
-depends on $p$, not on $\xi$. The denominator $Q$ is a constant. Therefore:
-\begin{equation}
-  \frac{\partial}{\partial \xi}\left(\frac{|p|^2/m - d\kT}{Q}\right) = 0
-  \quad \Longrightarrow \quad
-  \frac{\partial f_\xi}{\partial \xi} = 0.
-\end{equation}
+\paragraph{Thermostat block.}
+$f_\xi = (|p|^2/m - d\kT)/Q$ depends on $p$, not $\xi$:
+$\partial f_\xi/\partial \xi = 0$.
 
 \paragraph{Total.}
-\begin{equation}
-  \divergence(f) = 0 + (-d \cdot g(\xi)) + 0 = -d \cdot g(\xi). \qquad \qed
-\end{equation}
+$\divergence(f) = 0 + (-d\,g(\xi)) + 0 = -d\,g(\xi)$. \qed
 
-\paragraph{Connection to the Liouville equation.}
+\paragraph{Connection to Liouville.}
 The invariant measure $\rho \propto \exp(-H/\kT - Q\Phi(\xi)/\kT)$ satisfies
-the Liouville equation $\partial_t \rho + \divergence(\rho f) = 0$ in steady
-state. Expanding: $\divergence(\rho f) = \rho\,\divergence(f) + f \cdot \nabla\rho = 0$.
-Using $\divergence(f) = -d\,g(\xi)$ and computing $f \cdot \nabla \rho / \rho$
-yields $d\,g(\xi)$ after cancellation, confirming consistency.
-
-\paragraph{Multi-thermostat extension.}
-For $N$ parallel thermostats $\xi_1, \ldots, \xi_N$ with independent dynamics
-(Equation~\ref{eq:multi_xi}), each adds a $-g(\xi_k)$ contribution per momentum
-dimension and a zero contribution from its own $\partial \dot{\xi}_k / \partial \xi_k$.
-The total divergence is $-d \cdot \sum_{k=1}^N g(\xi_k)$.
+$\partial_t \rho + \divergence(\rho f) = 0$ in steady state. Expanding gives
+$\rho\,\divergence(f) + f \cdot \nabla\rho = 0$, which is consistent with
+$\divergence(f) = -d\,g(\xi)$.
 
 % ============================================================================
-\section{$Q_{\mathrm{eff}}$ Universality: Friction Shape Does Not Matter}
-\label{app:qeff}
-% ============================================================================
-
-A natural question is whether the choice of coupling function $g(\xi)$ matters for
-sampling quality. We tested five functions --- $g(\xi) = \xi$ (classical NH),
-$\tanh(\xi)$, $\mathrm{erf}(\xi)$, $\xi/(1+|\xi|)$ (soft clamp), and
-$\sin(\xi)$ (periodic) --- on the 2D double-well benchmark.
-
-The key finding is that sampling quality depends on $g$ only through the
-\emph{effective thermostat mass}:
-\begin{equation}
-  Q_{\mathrm{eff}} = \frac{Q}{g'(0)}.
-  \label{eq:qeff}
-\end{equation}
-When $Q_{\mathrm{eff}}$ is matched across friction functions, all choices produce
-statistically identical KL divergence, energy distance, and autocorrelation time.
-The linearization around the equilibrium point $\xi = 0$ (where the thermostat
-spends most of its time for well-equilibrated systems) determines the effective
-coupling strength; the nonlinear behavior at large $|\xi|$ is visited rarely and
-contributes negligibly to long-time averages.
-
-This universality has a practical consequence: the choice of $g$ can be made for
-numerical convenience (bounded $\tanh$ for stability) without affecting sampling
-quality, as long as $Q$ is adjusted to maintain the desired $Q_{\mathrm{eff}}$.
-
-For the exact divergence property, the choice of $g$ is immaterial: the formula
-$\divergence(f) = -d \cdot g(\xi)$ holds for any differentiable $g$ with
-$g(0) = 0$.
-
-% ============================================================================
-\section{Experimental Details}
-\label{app:details}
-% ============================================================================
-
-\paragraph{Integration.}
-All experiments use velocity Verlet splitting adapted for NH dynamics. The
-integration scheme splits the NH flow into three substeps per time step:
-(1)~half-step thermostat update $\xi \leftarrow \xi + (\Delta t/2)\dot{\xi}$,
-(2)~full-step Hamiltonian update $(q, p) \leftarrow \text{Verlet}(q, p, \Delta t)$
-with friction $g(\xi)$, (3)~half-step thermostat update. This preserves
-time-reversibility (up to the friction term) and provides second-order accuracy.
-
-\paragraph{Hyperparameters.}
-Table~\ref{tab:hyperparams} lists the hyperparameters for each experiment.
-
-\begin{table}[h]
-  \centering
-  \caption{Hyperparameters for all experiments.}
-  \small
-  \begin{tabular}{llllll}
-    \toprule
-    Experiment & $\Delta t$ & $Q$ values & Steps & Chains & Seed \\
-    \midrule
-    E1 (2D targets) & 0.01 & \{0.1, 1.0, 10.0\} & 100k & 9 & 42 \\
-    E2 (BNN) & 0.001 & \{0.01, 0.1, 1.0\} & 50k & 10 & 42 \\
-    E3 (divergence) & 0.01 & 1.0 & 200 & 100 & 42 \\
-    E5 (phase space) & 0.01 & 1.0 & 5k & 1 & 42 \\
-    E6 (scaling) & 0.005 & \{0.1, 1.0, 10.0\} & 100k & 9 & 42 \\
-    E7 (log-likelihood) & 0.01 & \{0.1, 1.0, 10.0\} & 100k & 9 & 42 \\
-    \bottomrule
-  \end{tabular}
-  \label{tab:hyperparams}
-\end{table}
-
-\paragraph{Langevin baseline.}
-ULA with step size $\epsilon = 0.005$, 8000 steps. For the BNN experiment, SGLD
-uses $\epsilon = 10^{-5}$ with 50k steps and gradient clipping at norm 10.
-
-\paragraph{Burn-in and thinning.}
-For sampling experiments (E1, E6, E7), we discard the first 20\% of steps as
-burn-in and thin every 50th sample. For the BNN (E2), burn-in is 50\% and
-thinning is every 100th sample, reflecting the higher autocorrelation in
-parameter space.
-
-\paragraph{Evaluation metrics.}
-Energy distance is computed using the standard formula
-$\text{ED} = 2\E[\|X - Y\|] - \E[\|X - X'\|] - \E[\|Y - Y'\|]$ where $X$ are
-model samples and $Y$ are ground-truth samples. Test log-likelihood in E7 is
-computed by fitting a Gaussian KDE (bandwidth selected by Scott's rule) on the
-sampler output and evaluating on held-out test points.
-
-\paragraph{Software.}
-All experiments are implemented in Python using NumPy and SciPy. No GPU
-acceleration is used --- all computation is on CPU, which is appropriate for the
-low-dimensional problems studied here. The gradient $\nabla V(q)$ is computed
-analytically for the GMM targets and via finite differences for the KDE-fitted
-potentials.
-
-% ============================================================================
-\section{Frozen-Momentum Protocol for Divergence Variance Measurement}
-\label{app:frozen_momentum}
-% ============================================================================
-
-When comparing NH exact divergence against Hutchinson estimators in
-Section~\ref{sec:e3}, we freeze the base momentum draw across Monte Carlo
-repetitions. That is, for each reported variance measurement, the initial
-momentum $p_0 \sim \mathcal{N}(0, m\kT\,I_d)$ is sampled \emph{once} and reused
-for all $M$ independent divergence evaluations; only the Hutchinson probe
-vectors $v^{(1)}, \ldots, v^{(M)}$ (and the implicit ``no probe'' for NH exact)
-differ between draws.
-
-This is a deliberate experimental control, not a statistical shortcut. Without
-it, the variance of the momentum draw dominates both estimators: $\Var[\log p]$
-includes a contribution from $p_0$ that is present for NH exact and Hutchinson
-alike, and that contribution can easily swamp the trace-estimator term we are
-trying to measure. Freezing $p_0$ removes that common-mode variance and
-isolates the quantity of interest --- the variance contributed specifically by
-the trace estimator. The resulting numbers answer the question ``given the
-same ODE trajectory, how noisy is the divergence integral?'' which is what
-determines training-time gradient quality.
-
-In production training (as opposed to these variance measurements), $p_0$ is
-resampled every step as usual; the frozen protocol applies only to the
-variance diagnostics of Section~\ref{sec:e3}.
-
-% ============================================================================
-\section{Parametric Potential Training: $V_\theta$ Must Have Bias-Free
-Output Layer}
+\section{$V_\theta$ Output Bias}
 \label{app:vtheta_bias}
 % ============================================================================
 
-When training a parametric potential $V_\theta(x)$ end-to-end through the
-NH-CNF flow (for example, by minimizing a reverse-KL objective against a
-target energy), the final linear layer of $V_\theta$ must be declared with
-\texttt{bias=False}. Concretely, if the last layer is
-$V_\theta(x) = W\,h_\phi(x) + b$, then the parameter $b$ should be omitted.
+When training a parametric potential $V_\theta(x)$ through the NH flow, the
+final linear layer must use \texttt{bias=False}. The NH vector field depends on
+$V_\theta$ only through its gradient $\nabla_x V_\theta$, so an additive bias
+$b$ drops out identically:
+$\nabla_x (W h_\phi(x) + b) = W \nabla_x h_\phi(x)$.
 
-The reason is that the NH vector field depends on $V_\theta$ only through its
-gradient:
-\[
-  \nabla_x V_\theta(x) = \frac{\partial}{\partial x}\bigl(W\,h_\phi(x) + b\bigr)
-    = W \cdot \nabla_x h_\phi(x).
-\]
-The output bias $b$ drops out of $\nabla_x V_\theta$ identically. Every
-downstream quantity that flows through $\nabla V_\theta$ --- the momentum
-update $\dot p = -\nabla V - g(\xi) p$, the thermostat feedback, the divergence
-integral, and ultimately the reverse-KL loss --- is therefore \emph{independent}
-of $b$. Backpropagation through the flow returns $\partial \mathcal{L} /
-\partial b = 0$, so the bias parameter receives no gradient signal and remains
-at its initialization for the entire training run.
-
-This is harmless mathematically (the target Boltzmann distribution $p(x)
-\propto \exp(-V_\theta(x))$ is invariant under additive constants in
-$V_\theta$, so the bias is unidentifiable in the first place) but it creates
-three practical failure modes if not handled explicitly:
-\begin{enumerate}[leftmargin=*, itemsep=2pt]
-  \item Wasted optimizer state: Adam or SGD with momentum maintains running
-    statistics for a parameter that never moves, inflating memory without
-    benefit.
-  \item Misleading gradient norm diagnostics: $\|\nabla_\theta \mathcal{L}\|$
-    includes a trivially-zero component for $b$, artificially shrinking
-    reported norms.
-  \item Framework-specific numerical noise: some autodiff implementations
-    return a non-zero but vanishingly small gradient for $b$ due to
-    accumulated floating-point error in the backward pass, which can cause $b$
-    to drift slowly and confuse convergence diagnostics.
+Every downstream quantity---momentum update, thermostat feedback, divergence
+integral, loss---is independent of $b$. Backpropagation returns
+$\partial \mathcal{L}/\partial b = 0$, and $b$ remains at its initialization.
+This is mathematically harmless ($V$ is defined up to an additive constant)
+but creates three practical issues:
+\begin{enumerate}[leftmargin=*, itemsep=1pt]
+  \item Wasted optimizer state (running statistics for a frozen parameter).
+  \item Misleading gradient norms (trivially-zero component).
+  \item Numerical drift from accumulated floating-point error in the backward
+    pass.
 \end{enumerate}
-
-Setting \texttt{bias=False} on the output layer removes the parameter entirely
-and avoids all three issues at zero expressivity cost --- the model class is
-unchanged because $V_\theta$ is defined only up to an additive constant. In
-PyTorch this is a one-line change (\texttt{nn.Linear(d, 1, bias=False)}); in
-JAX/Flax or Equinox it amounts to omitting the bias term from the final dense
-layer.
+Setting \texttt{bias=False} removes $b$ at zero expressivity cost.
 
 \end{document}

@@ -3,188 +3,147 @@ strategy: nh-cnf-paper
 type: paper
 status: complete
 eval_version: eval-v1
-metric: 0.012
+metric: 0.376
 issue: 58
 parents:
   - nh-cnf-deep-057
   - bayesian-posterior-056
+  - triple-identity-064
+  - tasaki-quench-065
+  - symmetry-protection-066
+  - corrected-dft-067
 ---
 
-# nh-cnf-paper-058: NeurIPS paper draft -- NH-CNF with exact divergence
+# nh-cnf-paper-058: Paper 2 — Bounded-Variance CNF Divergence Estimation via Thermostat Dynamics
 
 ## Glossary
 
-- **NH**: Nose-Hoover thermostat
+- **NH**: Nose-Hoover thermostat (plain, M=1 chain)
+- **NHC**: Nose-Hoover Chain (M >= 2)
 - **CNF**: Continuous Normalizing Flow
 - **FFJORD**: Free-Form Jacobian of Reversible Dynamics (Grathwohl et al. 2019)
-- **KDE**: Kernel Density Estimation
-- **ED**: Energy Distance
-- **ULA**: Unadjusted Langevin Algorithm
-- **SGLD**: Stochastic Gradient Langevin Dynamics
-- **BNN**: Bayesian Neural Network
-- **KAM**: Kolmogorov-Arnold-Moser (theory of invariant tori)
-- **NHC**: Nose-Hoover Chain
 - **JVP**: Jacobian-Vector Product
+- **DFT**: Detailed Fluctuation Theorem (Evans-Searles)
+- **MI**: Mutual Information (Kraskov k-NN estimator)
+- **KL**: Kullback-Leibler divergence
+- **RK4**: Classical 4th-order Runge-Kutta integrator
+- **DW**: Double-well potential V(q) = (q1^2-1)^2 + 0.5 q2^2
 
-## Approach
+## Summary
 
-Complete NeurIPS-format paper draft presenting the Nose-Hoover thermostat as a continuous normalizing flow with exact, zero-variance divergence computation. The paper synthesizes experimental results from orbits 056 and 057, plus theoretical insights from orbits 052 and 054.
+Complete rewrite of paper.tex per the audit.md blueprint (commit 67b04d2). The paper pivots from "NH-CNF as a sampler with exact divergence" to "bounded-variance divergence estimation for CNFs via thermostat dynamics."
 
-## Results
+### What changed
 
-The paper (`paper.tex`, 1036 lines) contains:
+**Title:** "Bounded-Variance Divergence Estimation for Continuous Normalizing Flows via Thermostat Dynamics"
 
-1. **Abstract** (~200 words): Problem (Hutchinson variance), observation (NH exact divergence), method (NH-CNF), results (up to 6x on 2D multimodal, zero variance, 98% BNN calibration), honest limitation (d>20 trapping).
+**Line count:** 1280 -> 928 (27% reduction, net of cuts and additions)
 
-2. **Introduction** (1 page): CNF density bottleneck, NH thermostat observation, contribution list, concept figure.
+**Sections rewritten from scratch (60%):**
+- Abstract: new 200-word abstract focused on bounded variance, 10x ratio, Jarzynski, honest DFT falsification
+- S1 Introduction: FFJORD variance problem -> sigma_bath as O(1) bounded replacement -> contributions
+- S3 Thermostat estimators: formal definition of sigma_hutch and sigma_bath, unbiasedness via equipartition, variance analysis with orbit 064 numbers, independence (MI = -0.041 nats)
+- S4 Non-equilibrium verification: temperature quench protocol, Phase 1 (Jar=0.965), Phase 2 (10x variance, Jar=1.042), Phase 3 (1D harmonic failure), Evans-Searles DFT (sigma_tot slope=1.059, sigma_bath slope=-0.957)
+- S5 Variance diagnostic: 200-trajectory ensemble figure, mechanism explanation
+- S6 Discussion + related work: Liu et al. 2025 as competitor, Ceriotti 2010, honest limitations
 
-3. **Background** (1 page): CNF framework with Hutchinson estimator; NH thermostat dynamics with invariant measure; historical context (Nose 1984, Hoover 1985, Martyna 1992, Ceriotti 2010).
+**Sections kept with relabeling (25%):**
+- S2.1 CNF background: tightened
+- S2.2 NH background: relabeled
+- S2.3 Divergence identity: Theorem 1 downgraded to Lemma, cited Tuckerman Ch4 + Evans-Searles
+- Phase-space figure (fig3_phase): relabeled caption to reference sigma_bath
 
-4. **Method** (1.5 pages):
-   - Theorem 1: div(f) = -d*g(xi), with 3-line proof
-   - NH-CNF algorithm with exact log-density tracking
-   - Multi-scale Q as thermostat noise schedule
-   - Correspondence table: diffusion models vs NH thermostats
+**Sections cut (15%):**
+- Algorithm 1 (NH-CNF sampling): artifact of sampler framing
+- S3.3 Multi-scale Q: irrelevant to estimator pitch
+- S3.4 Diffusion connection + Table 1: analogy, not load-bearing
+- S4.1 E1 sample quality (6.1x ED): untuned ULA baseline
+- S4.4 BNN posterior (98% calibration): over-cautious (1.00), orthogonal
+- S4.5 Log-likelihood (KDE-on-samples): not marginal log p(q)
+- S4.6 Dimension scaling (d>20 trapping): sampler question, out of scope
+- App B Q_eff universality: belongs to Paper 1
+- App D Frozen-momentum protocol: the tautology enabler
 
-5. **Experiments** (2.5 pages):
-   - E1: 2D sample quality (6.1x on spirals, 2.9x on eight Gaussians)
-   - E3: Zero-variance divergence vs Hutchinson O(d) variance
-   - E5: Phase-space trajectory visualization
-   - E2: BNN posterior (98% calibration)
-   - E7: Log-likelihood comparison
-   - E6: Dimension scaling (honest negative: mode trapping at d>20)
+**Appendices kept:**
+- App A: Full divergence derivation (shrunk)
+- App B (was E): V_theta bias=False (compressed)
 
-6. **Related work** (0.5 page): CNFs, augmented flows, thermostats in ML, diffusion models.
+### Figures
 
-7. **Discussion** (0.5 page): Honest assessment of where NH-CNF works and fails.
+4 figures, all with data provenance:
+1. **fig1_concept.png** — Two computational paths (FFJORD vs NH-augmented). Relabeled caption.
+2. **fig_ensemble_variance.png** — 3-panel ensemble diagnostic from orbit 064 (mean+std, sqrt(t) fits, scatter). Hero figure.
+3. **fig3_phase.png** — Phase-space trajectory on 2D double-well. Relabeled caption to reference sigma_bath.
+4. **fig_tasaki_quench.png** — 3-panel quench verification from orbit 065 (convergence, Jarzynski bars, harmonic failure).
 
-8. **Appendix**: Full divergence derivation, Q_eff universality, experimental details.
+9 figures deleted: fig2_density, fig4_schematic, fig5_loglik, fig6_scaling, fig7_bnn, fig_training_stability, fig4_divergence, fig_variance_scaling_new, fig_walltime.
 
-All 8 figures from sibling orbits are included. 15 references cited.
+### Key numbers (all from orbit data, no invented statistics)
 
-## What I Learned
+| Quantity | Value | Source |
+|----------|-------|--------|
+| std_bath / std_hutch at t=25 | 0.376 | orbit 064, N=200 |
+| std(sigma_bath - sigma_exact) | 1.303 | orbit 064 |
+| std(sigma_hutch - sigma_exact) | 3.470 | orbit 064 |
+| corr(bath, hutch) | 0.044 | orbit 064 |
+| MI(bath, hutch) | -0.041 nats | orbit 066 |
+| sqrt(t) R^2 for hutch | 0.988 | orbit 064 |
+| sqrt(t) R^2 for bath | -3.22 | orbit 064 |
+| Jarzynski Phase 1 (T0=1->T1=2) | 0.965 | orbit 065 |
+| Jarzynski Phase 2 (T0=0.8->T1=1.5) | 1.042 | orbit 065 |
+| std(Sigma) / std(Hutch) Phase 2 | 1.05 / 10.7 = 10x | orbit 065 |
+| DFT slope sigma_tot | 1.059 CI [0.94, 1.15] | orbit 067 |
+| DFT slope sigma_bath | -0.957 | orbit 067 |
+| Jarzynski Phase 3 (1D harmonic) | 0.916 (8% violation) | orbit 065 |
 
-- The paper narrative is strongest when built around the exact divergence theorem as the central contribution, with sampling quality as supporting evidence.
-- Honest reporting of the d>20 limitation strengthens the paper -- reviewers respect candor about failure modes.
-- The diffusion model correspondence table (Table 1) is a compact way to communicate the conceptual bridge.
+### Honest disclosures
+
+1. sigma_bath is NOT fluctuation-theorem-protected (orbit 067 falsified this). Bounded variance is from equipartition, not symmetry.
+2. Plain NH is non-ergodic on harmonic potentials (Phase 3, 8% Jarzynski violation).
+3. End-to-end FFJORD training with sigma_bath is NOT demonstrated -- explicitly stated as future work.
+4. Ensemble size is N=200 (orbit 064) / N=2400 (orbit 065) -- finite sample sizes stated.
+5. The naive control-variate combination does not work (r=0.044) -- sigma_bath is a replacement, not a supplement.
+
+### TODO items
+
+None -- all numbers filled from orbit data, all figures present.
 
 ## Prior Art & Novelty
 
 ### What is already known
-- NH thermostat divergence = -d*g(xi) is well known in MD (Hoover 1985, Martyna 1992)
-- FFJORD Hutchinson estimator (Grathwohl et al. 2019) is the standard for CNF divergence
-- SGNHT (Ding et al. 2014) uses NH dynamics for Bayesian inference
+- NH divergence = -d*g(xi) is classical (Tuckerman 2010, Evans & Searles 2002)
+- Hutchinson trace estimator for CNFs (Grathwohl et al. 2019)
+- Hutch++ variance reduction for FFJORD (Liu et al. 2025, arXiv:2502.18808)
+- Evans-Searles fluctuation theorem applies to total entropy production
+- NH non-ergodicity on harmonic oscillators (Legoll et al. 2009, Martyna et al. 1992)
 
 ### What this orbit adds
-- Systematic framing of NH as a CNF with exact divergence for generative modeling
-- Quantitative "Hutchinson horizon" concept and variance scaling measurements
-- Experimental evidence on where NH-CNF wins (multimodal 2D, BNN) and fails (d>20)
-- Explicit correspondence table between diffusion models and thermostats
+- Identification of sigma_bath as a bounded-variance estimator of the SAME integral that Hutchinson estimates
+- Empirical characterization: O(1) saturation (R^2 = -3.22 vs sqrt(t)) vs O(sqrt(t)) random walk (R^2 = 0.988)
+- Statistical independence measurement (MI = -0.041 nats, r = 0.044) ruling out control-variate combination
+- Non-equilibrium verification via Jarzynski (3.5-4.2% accuracy)
+- 10x variance ratio under temperature quench
+- Honest falsification: DFT does NOT hold for sigma_bath alone (slope -0.957)
 
 ### Honest positioning
-This paper applies a known mathematical property (NH exact divergence) to a specific modern problem (CNF density evaluation). The novelty is in the connection and the systematic experimental evidence, not in the thermostat dynamics themselves. The paper is transparent about this.
+This paper applies known thermodynamic identities (equipartition, Jarzynski equality, Evans-Searles DFT) to the specific problem of divergence estimation in continuous normalizing flows. The bounded-variance property of sigma_bath is physically real and empirically verified, but its theoretical explanation (equipartition) is classical, not novel. The contribution is the connection to CNF training and the systematic variance characterization, not the underlying physics. Liu et al. 2025 is the direct competitor; our differentiator is the O(1) bound (physical) vs their improved constants (algorithmic).
 
 ## References
 
 - Nose (1984). A unified formulation of the constant temperature molecular dynamics methods. J. Chem. Phys.
 - Hoover (1985). Canonical dynamics: Equilibrium phase-space distributions. Phys. Rev. A.
 - Martyna et al. (1992). Nose-Hoover chains. J. Chem. Phys.
-- Chen et al. (2018). Neural Ordinary Differential Equations. NeurIPS.
+- Chen et al. (2018). Neural ODEs. NeurIPS.
 - Grathwohl et al. (2019). FFJORD. ICLR.
-- Song et al. (2021). Score-based generative modeling through SDEs. ICLR.
-- Ho et al. (2020). DDPM. NeurIPS.
-- Lipman et al. (2023). Flow matching. ICLR.
 - Ceriotti et al. (2010). Colored-noise thermostats. JCTC.
-- Ding et al. (2014). SGNHT. NeurIPS.
-- Dupont et al. (2019). Augmented Neural ODEs. NeurIPS.
+- Tuckerman (2010). Statistical Mechanics: Theory and Molecular Simulation. Oxford.
+- Evans & Searles (2002). The fluctuation theorem. Adv. Phys.
+- Jarzynski (1997). Nonequilibrium equality for free energy differences. PRL.
+- Gallavotti & Cohen (1995). Dynamical ensembles in nonequilibrium statistical mechanics. PRL.
+- Legoll et al. (2009). Non-ergodicity of Nose-Hoover dynamics. Nonlinearity.
+- Liu et al. (2025). Hutch++ for FFJORD. arXiv:2502.18808.
+- Kraskov et al. (2004). Estimating mutual information. Phys. Rev. E.
+- Lipman et al. (2023). Flow matching. ICLR.
 - Onken et al. (2021). OT-Flow. AAAI.
-- Welling & Teh (2011). SGLD. ICML.
-- Lakshminarayanan et al. (2017). Deep Ensembles. NeurIPS.
-- Leimkuhler & Matthews (2013). Stochastic numerical methods for molecular sampling.
-
----
-
-## Refinement 1: Updated figures and corrected numbers
-
-Copied updated figures from nh-cnf-deep-057 refine 2:
-- fig1_concept.png (from e4_concept.png)
-- fig2_density.png (from e1_density.png) -- KDE contour plots with proper thinning
-- fig3_phase.png (from e5_phase_space.png) -- background density contours added
-- fig4_divergence.png (from e3_advantage.png) -- 3-panel layout (loss noise, trajectory error, dimension scaling)
-- fig5_loglik.png (from e7_loglik.png)
-- fig6_scaling.png (from e6_scaling.png) -- 2-panel (a)/(b) layout
-- fig4_schematic.png (from bayesian-posterior-056/e3_schematic.png)
-
-Paper text updates:
-- Abstract: "3--6x" changed to "up to 6x" with honest framing about topology dependence
-- Section 4.1: Added note about sample count difference (NH-CNF 14400 vs ULA 1600); added specific ratio breakdown by target
-- Section 4.2: Figure caption updated from 4-panel to 3-panel description matching actual figure
-- Section 4.3: Removed stale "5000 steps" claim; added background contour description
-- Section 4.5: Updated figure caption to (a)/(b) panel labels; rewrote diagnosis with figure references; added honest note that Langevin wins at all dimensions on GMM potential
-- Contributions list: updated to match abstract
-
----
-
-## Refinement 3: Theory cleanup from deep-review comment
-
-Addressed three critical theoretical errors flagged in the theory deep-dive review ([Issue #58 comment](https://github.com/wwang2/det-sampler/issues/58#issuecomment-4228031268)):
-
-### Fix 1: Extended vs. marginal density (Section 3.2)
-Clarified that `log p_T(...)` tracked by the NH-CNF refers to the density on the *extended* state `(q, p, xi)`, not the marginal `p(q)`. Added a dedicated "Remark (Extended vs. marginal density)" paragraph after Eq. 13 and updated Eq. 13 itself to display the extended variables explicitly. The extended-vs-marginal distinction matters for density-evaluation applications: NH-CNF provides exact density in the extended space and relies on the known equilibrium marginals of `(p, xi)` to recover `p(q)`.
-
-### Fix 2: "Conformal-symplectic" was mathematically wrong
-Conformal-symplectic requires a *scalar constant* lambda in L_X omega = lambda*omega (McLachlan & Perlmutter 2001). The NH flow has a *state-dependent* contraction rate g(xi(t)), which is a strictly weaker structure. Replaced the claim with "state-dependent phase-space contracting" and added a citation to McLachlan & Perlmutter (2001) for the classical terminology.
-
-### Fix 3: "1D cheap score" is an analogy, not an equivalence
-The diffusion score is a d-dimensional vector field; xi is a scalar. These are not mathematically equivalent. Demoted Table 1 from "Correspondence" to "Analogy," added an explicit disclaimer paragraph noting the dim mismatch, updated the table header to "(analogous role)," updated the concept figure caption, and rewrote Section 3.4 + the related-work paragraph with hedged language. Also fixed the "autonomy enables exact divergence" claim — it is the *block structure* of the Jacobian (position block zero, thermostat block zero, momentum block = -g(xi)*I_d) that enables the cheap trace, not autonomy per se.
-
-### New citations added
-- **Tuckerman, M. E. (2010).** *Statistical Mechanics: Theory and Molecular Simulation.* Oxford University Press. ISBN 978-0-19-852526-4. — classical derivation of the NH divergence formula.
-- **Evans, D. J., & Searles, D. J. (2002).** The fluctuation theorem. *Adv. Phys.* 51(7), 1529-1585. [doi:10.1080/00018730210155133](https://doi.org/10.1080/00018730210155133). — phase-space contraction in non-equilibrium stat mech.
-- **Legoll, F., Luskin, M., & Moeckel, R. (2009).** Non-ergodicity of Nose-Hoover dynamics. *Nonlinearity* 22(7), 1673. [doi:10.1088/0951-7715/22/7/011](https://doi.org/10.1088/0951-7715/22/7/011). — rigorous NH non-ergodicity result, cited for d>20 trapping.
-- **McLachlan, R. I., & Perlmutter, M. (2001).** Conformal Hamiltonian systems. *J. Geom. Phys.* 39(4), 276-300. [doi:10.1016/S0393-0440(01)00020-1](https://doi.org/10.1016/S0393-0440(01)00020-1). — for the conformal-symplectic terminology context.
-
-### Honest reframing
-- **Section 3 header** reframed: instead of "we prove" the divergence formula, now "we observe that the phase-space contraction rate of the NH flow — a classical result from non-equilibrium statistical mechanics — can be reinterpreted as the divergence of the vector field for a CNF. The formula is classical; its application to CNF density tracking is novel."
-- **Introduction** now contains the explicit disclaimer: "Our main contribution is not the divergence formula itself — which has been known in the thermostat literature for decades — but the observation that this formula can replace the Hutchinson trace estimator in continuous normalizing flows."
-- **Contribution bullet** renamed from "Exact divergence theorem" to "Classical divergence formula, new application."
-- **Abstract** now says "exactly zero *stochastic* variance (deterministic ODE integration error remains)" to avoid the "exact means zero total error" ambiguity.
-
-None of these fixes invalidate the experimental claims or the core theorem — they are presentation cleanups that remove specific attack surfaces a careful NeurIPS/ICLR reviewer would flag.
-
----
-
-## Refinement 4: Integrate orbit 062 publication-quality figures + crisp numbers
-
-Pulled three new publication-quality figures from sibling orbit `nh-cnf-thorough-062` and rebuilt Section 4.2 (Exact Divergence Advantage) around them. These figures were produced with a frozen-momentum protocol that isolates the trace-estimator variance from the base-sampling variance, making the Hutchinson penalty directly visible.
-
-### New figures
-- **`fig_training_stability.png`** (new headline) — 2 panels: (a) reverse-KL loss distribution at d=10 across 100 draws, (b) gradient noise-to-signal ratio vs d in {2, 5, 10, 20, 50}. NH exact sits at machine epsilon (~1e-14) while Hutchinson lives at O(1e-1) regardless of k.
-- **`fig_variance_scaling_new.png`** — 3 panels (Isotropic, Anisotropic, Bimodal): std(log p) across ODE trajectories vs d in [2, 200]. Anisotropic case shows the clearest separation: at d=200 NH exact std=10.1 vs Hutch(k=1) std=129.5 (13x penalty).
-- **`fig_walltime.png`** — per-step wall-clock cost vs d in [2, 1000]. NH exact is strictly faster than Hutchinson at all dimensions tested; 2-6x speedup at d=1000.
-
-### Text changes in Section 4.2 (Exact Divergence Advantage)
-Replaced the old "quantitative comparison" + "wall-clock cost" paragraphs and their two tables with three new paragraphs built around the new figures:
-1. **"Training stability — the headline effect"** — the loss variance numbers (0.00 / 0.133 / 0.060 / 0.028 for NH/Hutch k=1,5,20) and gradient noise-to-signal story.
-2. **"Dimension scaling across target families"** — the 3-panel variance scaling figure with the 13x anisotropic penalty at d=200.
-3. **"Wall-clock cost across dimensions"** — the strict-dominance claim (NH exact faster at every d tested) and the d=1000 speedups.
-4. **"Takeaway"** — conjunction of all four advantages + retention of the original `fig4_divergence.png` as a secondary diagnostic of the Hutchinson horizon.
-
-The old `tab:e3` and `tab:e3_cost` tables were removed because the new figures convey the same information with richer dimension sweeps and the corrected frozen-momentum protocol.
-
-### Abstract update
-- "exactly zero stochastic variance (deterministic ODE integration error remains)" tightened to "strictly zero-variance (machine-precision) divergence estimation --- only deterministic ODE integration error remains".
-- Added: "together with a 2--6x wall-clock speedup over FFJORD-style Hutchinson estimators at d=1000".
-
-### New appendix sections
-- **Appendix D: Frozen-Momentum Protocol for Divergence Variance Measurement** — explains why the momentum is frozen across MC draws when measuring trace-estimator variance (to remove common-mode variance so the trace-estimator contribution becomes visible). Explicit about it being a diagnostic control, not used in production training.
-- **Appendix E: Parametric Potential Training: V_theta Must Have Bias-Free Output Layer** — documents that the final linear layer of V_theta must use `bias=False` because ∇V is independent of the output bias, so b receives no gradient signal. Lists the three practical failure modes (wasted optimizer state, misleading gradient norms, framework-specific numerical drift) and notes this is mathematically a no-op (V is defined up to an additive constant).
-
-### What the new numbers say
-The key quantitative claims now in the paper:
-- Loss variance at d=10 (frozen momentum): NH exact = 0 (machine precision); Hutch k=1 = 0.133; Hutch k=5 = 0.060; Hutch k=20 = 0.028 --- textbook 1/sqrt(k) decay.
-- Gradient noise-to-signal: NH exact ~1e-14 at all d in {2,5,10,20,50}; Hutchinson O(0.1-0.5).
-- Anisotropic variance penalty at d=200: NH exact std=10.1 vs Hutch(k=1) std=129.5 (13x worse).
-- Wall-clock at d=1000: NH exact 1.5ms; Hutch(k=1) 3.5ms; Hutch(k=5) 10ms.
-
-These upgrade the paper from "zero variance matters in principle" to "zero variance matters in practice with these specific numbers, on this specific protocol, at these specific dimensions". The section now has a clean internal narrative: training-stability headline → dimension scaling across target families → wall-clock dominance → takeaway conjunction.
+- Ding et al. (2014). SGNHT. NeurIPS.
+- Leimkuhler & Matthews (2013). Rational stochastic numerical methods. AMRX.
