@@ -3,12 +3,16 @@ strategy: triple-identity-validation
 type: experiment
 status: in-progress
 eval_version: eval-v1
-metric: 4.07e-05
+metric: 0.376
 issue: 64
 parents:
   - nh-cnf-thorough-062
 ---
-# triple-identity-064: Hero figure for Paper 1
+# triple-identity-064: Variance baseline for NH-CNF estimators
+
+*(Refinement 1: bug fixes + 200-trajectory ensemble. Reframed from "hero
+figure" to a baseline characterization feeding orbit 065's control-variate
+experiment.)*
 
 ## Abstract
 
@@ -218,6 +222,143 @@ This is the right hero figure for Paper 1 because:
 
 - `experiment.py` -- single self-contained script (numpy + matplotlib)
 - `run.sh` -- one-line reproducer
-- `results/triple_identity.npz` -- raw arrays (times, all four sigmas, xi, q, H_phys)
-- `results/triple_identity.json` -- summary metrics
-- `figures/fig_triple_identity.png` -- 2-panel hero figure
+- `results/triple_identity.npz` -- raw single-trajectory arrays
+- `results/triple_identity.json` -- single-trajectory summary
+- `results/ensemble_sigmas.npz` -- (200, 5001) arrays of each sigma and xi
+- `results/ensemble_summary.json` -- ensemble variance / covariance metrics
+- `figures/fig_triple_identity.png` -- single-trajectory pedagogical figure
+- `figures/fig_triple_identity_ensemble.png` -- 3-panel ensemble figure
+
+---
+
+## Refinement 1 (N=200 ensemble, bug fixes)
+
+This refinement reframes the orbit from a "hero" narrative (which the
+single-trajectory numbers could not support — the old 0.79 was a sample std
+of a time series, not an ensemble statistic) to a **variance-baseline
+characterization** that feeds the control-variate experiment in orbit 065.
+
+### Bug fixes
+
+1. **`fig_triple_identity.png` panel (a) label (BUG-1).** The
+   `sigma_bath` curve is the *direct heat-integral* `beta * int tanh(xi)|p|^2 dt`
+   of Gallavotti, not `beta * Delta H_phys`. For NH-tanh the latter is
+   wrong (no smooth conserved extended Hamiltonian); the caveat already
+   noted the discrepancy but the old figure label was inconsistent with
+   the text. Label now matches the code: `beta * int tanh(xi)|p|^2 dt`.
+2. **Hutchinson timing (BUG-2).** Previously `sigma_hutch` evaluated
+   `v^T J(z_old) v` at the start of each RK4 step (left Riemann sum),
+   while `sigma_exact` and `sigma_bath` used a trapezoid rule across
+   `(xi_old, xi_new)` / `(z_old, z_new)`. That gave `sigma_hutch` an
+   `O(dt)` systematic lag. Now `sigma_hutch` is `0.5 * (v^T J(z_old) v
+   + v^T J(z_new) v) * dt`, reusing the SAME Rademacher `v` at both
+   endpoints, matching the trapezoid scheme of the other estimators.
+3. **Ensemble statistics (BUG-3).** The old "std = 0.79" was the sample
+   std of a single time series, not an ensemble statistic. All variance
+   quantities below are computed across 200 independent trajectories
+   (seeds 0..199), same IC family (`q0=(-1,0)`, `p0 ~ N(0,I)`, `xi0=0`,
+   NH-tanh, 2D double-well, `kT=1`, `Q=1`, `dt=0.005`, `T=25`).
+
+### Two-level identity
+
+- **Level 1 (pathwise, exact).** `sigma_exact(t) == sigma_lyap(t)` to RK4
+  precision on every individual trajectory. This is Liouville's theorem
+  applied to the NH-tanh flow: `log|det Phi_t| = int_0^t tr(J(z(s))) ds`
+  with `tr J = -D tanh(xi)`. Verified at 4.07e-05 absolute, 2.08e-06
+  relative, on the seed=42 trajectory -- and would hold for every other
+  seed identically (it is a numerical consistency check, not an
+  ensemble phenomenon).
+- **Level 2 (on-average, unbiased asymptotically).** `sigma_bath` and
+  `sigma_hutch` are two stochastic estimators of the same deterministic
+  integral with DIFFERENT noise sources:
+  - `sigma_bath`: randomness from thermal fluctuations of `|p|^2` around
+    `D kT`; noise is BOUNDED (equipartition pins the fluctuation scale).
+  - `sigma_hutch`: randomness from Rademacher `v` resampled every step;
+    noise RANDOM-WALKS as `~sqrt(t)` (variance per step is
+    `2 * sum_{i != j} J_ij^2 * dt`, independent across steps).
+
+### Ensemble results (N = 200, T = 25)
+
+Evaluated at `t = 25`:
+
+| quantity                                                | value   |
+|---------------------------------------------------------|---------|
+| ensemble mean of `sigma_exact`                          | -2.008  |
+| ensemble mean of `sigma_bath`                           | -1.040  |
+| ensemble mean of `sigma_hutch`                          | -2.106  |
+| mean bias `<sigma_bath - sigma_exact>`                  | **+0.968**  |
+| mean bias `<sigma_hutch - sigma_exact>`                 | -0.097  |
+| ensemble std `std(sigma_bath  - sigma_exact)`           | **1.303** |
+| ensemble std `std(sigma_hutch - sigma_exact)`           | **3.470** |
+| headline ratio `std_bath / std_hutch`                   | **0.376** |
+| cross-correlation `Corr(bath - exact, hutch - exact)`   | **+0.044** |
+
+Scaling fits (`std_dev(t) ~ C * sqrt(t)` on `t > 1`):
+
+| estimator    | coefficient `C` | `R^2` |
+|--------------|-----------------|-------|
+| bath         | 0.346           | **-3.22** (BAD -- not sqrt(t)) |
+| hutch        | 0.681           | **+0.988** (clean sqrt(t)) |
+
+So the ensemble stds at a few intermediate times:
+
+| `t`    |  `std_bath` | `std_hutch` | ratio |
+|--------|-------------|-------------|-------|
+|  5     |  1.41       | 1.52        | 0.93  |
+| 10     |  1.39       | 1.99        | 0.70  |
+| 15     |  1.10       | 2.57        | 0.43  |
+| 20     |  1.50       | 3.17        | 0.47  |
+| 25     |  1.30       | 3.47        | 0.38  |
+
+`sigma_bath` variance **saturates** (`~O(1)`, bounded by equipartition:
+`|p|^2 - D kT` has a finite-variance stationary distribution and short
+autocorrelation on the NH-tanh attractor, so the running integral does
+not random-walk away). `sigma_hutch` variance grows linearly in `t`
+(stepwise iid Rademacher draws). The ratio therefore shrinks like
+`~1/sqrt(t)` asymptotically.
+
+### Interpretation
+
+Two messages for the control-variate program (orbit 065):
+
+1. **Cross-correlation is tiny (0.044).** The two noises are essentially
+   independent — bath fluctuations come from the physical momentum-shell
+   variance, Hutchinson fluctuations come from a sign pattern unrelated
+   to any physical quantity. A naive control variate `sigma_hutch
+   - lambda * (sigma_bath - <sigma_bath>)` would give almost no variance
+   reduction at finite `t` beyond what `sigma_bath` already offers alone.
+2. **Bath is NOT a variance-growing estimator, it is a biased-but-bounded
+   one.** Its std is `O(1)`, its bias at T=25 is `+0.97` (dominated by
+   the pre-thermalization transient of the initial `p ~ N(0,I)`). For
+   `T >> 25` one would expect the mean bias to shrink like `1/T` while
+   the variance remains `O(1)`. Practitioners caching FFJORD log-density
+   could, in principle, REPLACE the Hutchinson estimator with the
+   equipartition-based integral for drastically lower variance — but only
+   in thermostat-equipped systems.
+
+### Framing for Paper 1
+
+This orbit establishes the variance structure that orbit 065 will
+exploit for control variates. It is **not a standalone result** — it is
+a baseline characterization. The "four curves overlay" narrative of the
+original log has been retained for the single-trajectory panel because
+it is the most compact way to introduce the two-level identity visually,
+but the claims have been downgraded from "hero" to "pedagogical
+consistency check" in the prose. The publishable measurement is the
+**bath/hutch variance ratio curve** and its **independence** from each
+other — both of which feed directly into the orbit 065 experimental
+design.
+
+### Headline numbers (for the frontmatter metric and Issue #64 comment)
+
+- `std(sigma_bath - sigma_exact) / std(sigma_hutch - sigma_exact)` @ t=25 = **0.376**
+- `Corr(sigma_bath - sigma_exact, sigma_hutch - sigma_exact)` @ t=25 = **0.044**
+- Verdict: bath has smaller variance (2.66x); cross-correlation is near
+  zero, so bath and Hutchinson are effectively independent noises.
+  Orbit 065 should **proceed** but with the revised framing: the
+  interesting question is not "can bath reduce Hutchinson variance via
+  control variates?" (answer: not much, because they are decorrelated),
+  but rather "does the saturated bath estimator outperform the
+  random-walking Hutchinson estimator as a cheap drop-in for CNF
+  log-density estimation in thermostatted systems?" (answer from this
+  orbit: yes by >2x at T=25, growing as sqrt(T)).
