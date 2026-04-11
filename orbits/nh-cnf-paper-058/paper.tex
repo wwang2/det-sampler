@@ -16,6 +16,9 @@
 \usepackage{caption}
 \usepackage{subcaption}
 
+% --- DOI macro (safe fallback) ---
+\providecommand{\doi}[1]{\href{https://doi.org/#1}{doi:#1}}
+
 % --- Theorem environments ---
 \newtheorem{theorem}{Theorem}
 \newtheorem{proposition}[theorem]{Proposition}
@@ -53,8 +56,12 @@ introduces $O(d)$ variance and requires multiple random projections for accuracy
 We observe that the Nos\'{e}--Hoover thermostat --- a deterministic ODE from
 statistical mechanics that samples Boltzmann distributions --- possesses an
 analytically known divergence: $\divergence(f) = -d \cdot g(\xi)$, where $\xi$ is
-a scalar thermostat variable and $g$ is the coupling function. This gives $O(1)$
-cost and \emph{exactly zero variance} for log-density tracking. We introduce
+a scalar thermostat variable and $g$ is the coupling function. This formula is
+classical in non-equilibrium statistical mechanics
+\citep{tuckerman2010statistical, evans2002fluctuation}; our contribution is its
+application to CNF density evaluation. It gives $O(1)$ cost and
+\emph{exactly zero stochastic variance} (deterministic ODE integration error
+remains) for log-density tracking. We introduce
 NH-CNF, which augments the state with momentum and a thermostat variable, evolves
 the extended system under Nos\'{e}--Hoover dynamics, and accumulates log-densities
 exactly. On multimodal 2D targets, NH-CNF achieves up to 6$\times$ better energy
@@ -96,18 +103,29 @@ We make a simple observation: the Nos\'{e}--Hoover (NH) thermostat
 in the 1980s to sample canonical distributions in molecular dynamics, has a vector
 field whose divergence is \emph{analytically known} and costs $O(1)$ to evaluate.
 The divergence depends only on a single scalar thermostat variable $\xi$, not on
-the $d$-dimensional state. This property is well known in the molecular dynamics
-community but, to our knowledge, has not been exploited for generative modeling.
+the $d$-dimensional state. This property is a classical result in
+non-equilibrium statistical mechanics
+\citep{tuckerman2010statistical, evans2002fluctuation}, well known in the
+molecular dynamics community, but to our knowledge it has not been exploited
+for generative modeling. Our main contribution is not the divergence formula
+itself --- which has been known in the thermostat literature for decades ---
+but the observation that this formula can replace the Hutchinson trace
+estimator in continuous normalizing flows, providing exact, zero-variance
+density tracking at $O(1)$ cost per step.
 
 Our contributions are:
 \begin{enumerate}[leftmargin=*, itemsep=2pt]
   \item \textbf{NH-CNF architecture.} We formulate the NH thermostat as a
     continuous normalizing flow on an augmented state space $(q, p, \xi)$, with
     exact, zero-variance log-density tracking (Section~\ref{sec:method}).
-  \item \textbf{Exact divergence theorem.} We prove that
-    $\divergence(f) = -d \cdot g(\xi)$ for the NH flow, where $g$ is the
-    thermostat coupling function. The proof is elementary --- three lines of
-    calculus --- but the consequence is significant: density evaluation is free
+  \item \textbf{Classical divergence formula, new application.} We observe that
+    the phase-space contraction rate of the Nos\'{e}--Hoover flow --- a
+    classical result from non-equilibrium statistical mechanics
+    \citep{tuckerman2010statistical, evans2002fluctuation} --- can be
+    reinterpreted as the divergence of the vector field for a continuous
+    normalizing flow: $\divergence(f) = -d \cdot g(\xi)$, where $g$ is the
+    thermostat coupling function. The formula itself is classical; its
+    application to CNF density tracking is novel
     (Section~\ref{sec:exact_div}).
   \item \textbf{Experimental validation.} NH-CNF achieves up to 6$\times$ better
     energy distance than Langevin dynamics on multimodal 2D targets (with the
@@ -129,11 +147,13 @@ variable, while diffusion models require a learned score network.
   \centering
   \includegraphics[width=\textwidth]{figures/fig1_concept.png}
   \caption{\textbf{Diffusion models vs.\ Nos\'{e}--Hoover thermostats.}
-    (a)~Correspondence table: noise schedule $\leftrightarrow$ thermostat mass $Q$,
-    score network $\leftrightarrow$ thermostat variable $\xi$,
-    stochastic SDE $\leftrightarrow$ deterministic ODE.
-    (b)~Computational pipelines: FFJORD requires stochastic Hutchinson trace
-    estimation; NH-CNF reads off the exact divergence from $\xi$.}
+    (a)~Structural analogy (not mathematical equivalence): noise schedule
+    $\leftrightarrow$ thermostat mass $Q$, learned score network (a
+    $d$-dimensional vector field) $\leftrightarrow$ thermostat variable $\xi$
+    (a 1D scalar feedback signal), stochastic SDE $\leftrightarrow$
+    deterministic ODE. (b)~Computational pipelines: FFJORD requires stochastic
+    Hutchinson trace estimation; NH-CNF reads off the exact divergence from
+    $\xi$.}
   \label{fig:concept}
 \end{figure}
 
@@ -215,7 +235,13 @@ established by Ceriotti et al.\ \citep{ceriotti2010colored}.
 \subsection{The Exact Divergence Property}
 \label{sec:exact_div}
 
-The central theoretical observation is that the NH vector field
+We observe that the phase-space contraction rate of the Nos\'{e}--Hoover flow
+--- a classical result from non-equilibrium statistical mechanics, derived in
+\citet{tuckerman2010statistical} (Ch.~4) and central to the fluctuation
+theorems of \citet{evans2002fluctuation} --- can be reinterpreted as the
+divergence of the vector field for a continuous normalizing flow. The formula
+below is classical; the novelty in this paper is its application to CNF density
+tracking, not its derivation. The NH vector field
 $f(q, p, \xi) = (\dot{q}, \dot{p}, \dot{\xi})$ defined by
 Equations~\eqref{eq:nh_q}--\eqref{eq:nh_xi} has an analytically known divergence.
 
@@ -268,13 +294,19 @@ deterministic function of the current state, not a stochastic estimate.
 \end{remark}
 
 \paragraph{Physical interpretation.}
-The NH flow is \emph{conformal-symplectic}: the phase-space volume element
-contracts or expands at a rate determined entirely by the scalar thermostat
-channel $\xi$. When $g(\xi) > 0$ (positive friction), the flow is contracting;
-when $g(\xi) < 0$ (negative friction, i.e., the system is too cold), the flow
-expands. The thermostat variable $\xi$ acts as a one-dimensional ``cheap score''
-that encodes the system's deviation from thermal equilibrium --- replacing the
-$d$-dimensional score $\nabla \log p$ that a diffusion model would learn.
+The NH flow is \emph{state-dependent phase-space contracting}: the phase-space
+volume element on the $(q, p)$ sub-manifold contracts at rate $d \cdot g(\xi(t))$,
+where the contraction rate depends on the instantaneous thermostat state. This
+is a weaker structure than the conformal-symplectic flows studied by
+\citet{mclachlan2001conformal}, which require a \emph{scalar constant} $\lambda$
+in $\mathcal{L}_X \omega = \lambda\,\omega$; here the contraction rate $g(\xi(t))$
+is a function of state, not a constant. When $g(\xi) > 0$ (positive friction)
+the flow contracts phase-space volume; when $g(\xi) < 0$ (negative friction,
+i.e., the system is too cold) it expands. The thermostat variable $\xi$
+provides a 1D feedback signal that plays a functionally similar role to the
+score in driving the dynamics toward the target distribution, though with much
+reduced information content compared to the $d$-dimensional score
+$\nabla \log p$ that a diffusion model would learn.
 
 \subsection{The NH-CNF Architecture}
 \label{sec:architecture}
@@ -300,13 +332,35 @@ $V(q)$ is known (up to a constant), the NH-CNF proceeds as follows:
 \end{algorithmic}
 \end{algorithm}
 
-The log-density of the output sample $q_T$ relative to the initial distribution is:
+The log-density of the output extended state $(q_T, p_T, \xi_T)$ relative to
+the initial extended distribution is:
 \begin{equation}
-  \log p_T(q_T) = \log p_0(q_0) + \int_0^T d \cdot g\bigl(\xi(t)\bigr)\,\dd t,
+  \log p_T(q_T, p_T, \xi_T) = \log p_0(q_0, p_0, \xi_0)
+    + \int_0^T d \cdot g\bigl(\xi(t)\bigr)\,\dd t,
   \label{eq:logp_tracking}
 \end{equation}
 where the integral is accumulated exactly (up to ODE integrator discretization
 error) at each time step. No stochastic estimator is involved.
+
+\paragraph{Remark (Extended vs.\ marginal density).}
+The NH-CNF tracks the density of the \emph{extended} state $(q, p, \xi)$ along
+the flow, not the marginal density $p(q)$. For canonical sampling, the extended
+invariant measure factorizes as
+\[
+  \rho(q, p, \xi) \propto
+    \exp\!\bigl(-V(q)/\kT\bigr)\,
+    \exp\!\bigl(-|p|^2/(2m\kT)\bigr)\,
+    \exp\!\bigl(-Q\,\Phi(\xi)/\kT\bigr),
+\]
+so the marginal on $q$ is the target Boltzmann distribution. Recovering $p(q)$
+from the extended density requires marginalizing over $(p, \xi)$ --- exact in
+closed form only when the momentum and thermostat distributions are the known
+Gaussian/$\Phi$ equilibria. For generative modeling applications where we care
+about $p(q)$, the NH-CNF provides exact density only \emph{in the extended
+space}; additional care is needed to obtain exact marginal densities. This
+distinction matters: Equation~\eqref{eq:logp_tracking} is an identity on the
+$(2d+1)$-dimensional extended phase space, and statements about $\log p_T(q_T)$
+alone presuppose knowledge of the equilibrium marginals over $(p, \xi)$.
 
 \subsection{Multi-Scale $Q$: The Thermostat Noise Schedule}
 \label{sec:multiscale}
@@ -350,19 +404,28 @@ thermostat achieves exact density tracking by extending the state space with
 auxiliary variables $(p, \xi)$, while diffusion models operate in the original
 space but require learning a time-dependent score function.
 
+\paragraph{Disclaimer.}
+\textbf{The correspondences in Table~\ref{tab:correspondence} are structural
+analogies, not mathematical equivalences.} In particular, the thermostat
+variable $\xi \in \R$ is a scalar feedback signal, while the diffusion score
+$\nabla \log p_t(x) \in \R^d$ is a $d$-dimensional vector field. The analogy is
+at the level of ``both are signals that drive the dynamics toward the target
+distribution,'' not ``both carry the same information.''
+
 \begin{table}[t]
   \centering
-  \caption{\textbf{Structural correspondence between diffusion models and NH
+  \caption{\textbf{Structural analogy between diffusion models and NH
     thermostats.} Both frameworks generate samples by transforming noise through
-    dynamics. The NH approach trades state augmentation for exact divergence.}
+    dynamics. The entries play analogous functional roles; they are not
+    mathematical equivalents (see disclaimer above).}
   \label{tab:correspondence}
   \small
   \begin{tabular}{lll}
     \toprule
-    \textbf{Component} & \textbf{Diffusion model} & \textbf{NH thermostat} \\
+    \textbf{Component} & \textbf{Diffusion model} & \textbf{NH thermostat (analogous role)} \\
     \midrule
     Noise schedule & $\beta(t)$ (learned/designed) & $Q$ spectrum (physical) \\
-    Score function & $s_\theta(x, t) \approx \nabla \log p_t$ & $\xi(t)$ (1D scalar, ``cheap score'') \\
+    Steering signal & $s_\theta(x, t) \in \R^d$ (full vector field) & $\xi(t) \in \R$ (1D scalar; dim mismatch) \\
     Dynamics & SDE (stochastic) & ODE (deterministic) \\
     Density evaluation & Hutchinson, $O(d)$, stochastic & Exact, $O(1)$, deterministic \\
     State space & $\R^d$ (original) & $\R^{2d+N}$ (augmented) \\
@@ -375,10 +438,16 @@ space but require learning a time-dependent score function.
 NH-CNF operates in an augmented $(2d+N)$-dimensional space with an
 \emph{autonomous} ODE (the vector field depends only on the current state, not
 explicitly on time). Diffusion models operate in $d$ dimensions with a
-\emph{non-autonomous} ODE/SDE (the score network is time-conditioned). The
-autonomous structure is what enables the exact divergence: because the dynamics
-are derived from a physical invariant measure, the phase-space geometry is
-analytically tractable.
+\emph{non-autonomous} ODE/SDE (the score network is time-conditioned). What
+enables the exact divergence is not autonomy per se --- non-autonomous flows
+can also have analytically tractable divergences --- but the specific
+\emph{block structure} of the NH Jacobian: the position block is independent of
+$q$ (giving zero trace), the thermostat block is independent of $\xi$ (giving
+zero trace), and the momentum block is $-g(\xi) \cdot I_d$ (a scalar multiple
+of the identity), yielding trace $-d \cdot g(\xi)$. This block structure
+follows from the thermostat's derivation as a feedback controller for kinetic
+energy, so the cheap divergence is ultimately a consequence of the physical
+design of the dynamics.
 
 % ============================================================================
 \section{Experiments}
@@ -702,7 +771,9 @@ cluster, while Langevin maintains full coverage via stochastic exploration. The
 energy distance (panel~a) confirms: NH-CNF degrades at $d \geq 20$ while
 Langevin remains stable. This is the well-known KAM trapping phenomenon:
 deterministic trajectories in high dimension get trapped near invariant
-structures. Stochastic methods avoid this by continuously injecting noise that
+structures. Rigorous non-ergodicity results for Nos\'{e}--Hoover dynamics are
+established in \citet{legoll2009nonergodicity} for the harmonic oscillator
+case. Stochastic methods avoid this by continuously injecting noise that
 breaks the invariant tori. This is not a tuning problem --- it is a structural
 limitation of autonomous deterministic flows with a scalar thermostat variable.
 
@@ -747,12 +818,15 @@ efficiency alone.
 Score matching \citep{song2021score}, DDPM \citep{ho2020denoising}, and flow
 matching \citep{lipman2023flow} define the current state of the art in generative
 modeling. These methods learn a time-dependent score function
-$s_\theta(x, t) \approx \nabla \log p_t(x)$. NH-CNF replaces this learned score
-with a 1D thermostat variable $\xi$ --- a drastic dimensionality reduction that
-is only possible because the dynamics are derived from a known potential $V(q)$.
-NH-CNF is therefore complementary to, not competitive with, learned diffusion
-models: it applies to settings where the energy function is available (energy-based
-models, molecular simulation, Bayesian inference).
+$s_\theta(x, t) \approx \nabla \log p_t(x)$, which is a full $d$-dimensional
+vector field. NH-CNF exploits a different structure: instead of a learned
+$d$-dimensional score, it uses a scalar thermostat variable $\xi$ as a 1D
+feedback signal that drives the dynamics toward thermal equilibrium. These are
+not equivalent --- the score carries much more information than a scalar
+aggregate --- but they play analogous functional roles in their respective
+frameworks. NH-CNF is complementary to, not competitive with, learned diffusion
+models: it applies to settings where the energy function is available
+(energy-based models, molecular simulation, Bayesian inference).
 
 % ============================================================================
 \section{Discussion and Conclusion}
@@ -842,11 +916,23 @@ W.~G. Hoover.
 \newblock Canonical dynamics: Equilibrium phase-space distributions.
 \newblock \emph{Phys.\ Rev.\ A}, 31(3):1695--1697, 1985.
 
+\bibitem[Evans \& Searles(2002)]{evans2002fluctuation}
+D.~J. Evans and D.~J. Searles.
+\newblock The fluctuation theorem.
+\newblock \emph{Adv.\ Phys.}, 51(7):1529--1585, 2002.
+\newblock \doi{10.1080/00018730210155133}.
+
 \bibitem[Lakshminarayanan et~al.(2017)]{lakshminarayanan2017simple}
 B.~Lakshminarayanan, A.~Pritzel, and C.~Blundell.
 \newblock Simple and scalable predictive uncertainty estimation using deep
   ensembles.
 \newblock In \emph{NeurIPS}, 2017.
+
+\bibitem[Legoll et~al.(2009)]{legoll2009nonergodicity}
+F.~Legoll, M.~Luskin, and R.~Moeckel.
+\newblock Non-ergodicity of Nos\'{e}--Hoover dynamics.
+\newblock \emph{Nonlinearity}, 22(7):1673--1694, 2009.
+\newblock \doi{10.1088/0951-7715/22/7/011}.
 
 \bibitem[Leimkuhler \& Matthews(2013)]{leimkuhler2013rational}
 B.~Leimkuhler and C.~Matthews.
@@ -865,6 +951,12 @@ G.~J. Martyna, M.~L. Klein, and M.~Tuckerman.
   dynamics.
 \newblock \emph{J.~Chem.\ Phys.}, 97(4):2635--2643, 1992.
 
+\bibitem[McLachlan \& Perlmutter(2001)]{mclachlan2001conformal}
+R.~I. McLachlan and M.~Perlmutter.
+\newblock Conformal {H}amiltonian systems.
+\newblock \emph{J.\ Geom.\ Phys.}, 39(4):276--300, 2001.
+\newblock \doi{10.1016/S0393-0440(01)00020-1}.
+
 \bibitem[Nos\'{e}(1984)]{nose1984unified}
 S.~Nos\'{e}.
 \newblock A unified formulation of the constant temperature molecular dynamics
@@ -882,6 +974,12 @@ Y.~Song, J.~Sohl-Dickstein, D.~P. Kingma, A.~Kumar, S.~Ermon, and B.~Poole.
 \newblock Score-based generative modeling through stochastic differential
   equations.
 \newblock In \emph{ICLR}, 2021.
+
+\bibitem[Tuckerman(2010)]{tuckerman2010statistical}
+M.~E. Tuckerman.
+\newblock \emph{Statistical Mechanics: Theory and Molecular Simulation}.
+\newblock Oxford University Press, 2010.
+\newblock ISBN 978-0-19-852526-4.
 
 \bibitem[Welling \& Teh(2011)]{welling2011bayesian}
 M.~Welling and Y.~W. Teh.
