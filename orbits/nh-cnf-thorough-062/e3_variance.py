@@ -107,7 +107,13 @@ def main():
                    for k, tm in results.items()}, f, indent=2)
 
     # --- figure: 1x3 panels, one per target family ---
-    fig, axes = plt.subplots(1, 3, figsize=(13, 4), sharey=True)
+    # Iso and Bimod are data-variance dominated (all methods overlap because
+    # the intrinsic std[log p] ~ sqrt(d) swamps the estimator variance); only
+    # Aniso actually separates the methods. We annotate the dominated panels
+    # so the reader isn't confused by the overlap.
+    DOMINATED = {'iso', 'bimod'}
+    fig, axes = plt.subplots(1, 3, figsize=(13, 4.2), sharey=True,
+                             constrained_layout=True)
     for ax, (target_key, (_maker, label)) in zip(axes, TARGETS.items()):
         for method_name, _mode, _k in METHODS:
             md = results[target_key][method_name]
@@ -124,10 +130,20 @@ def main():
         ax.set_xlabel('dimension d')
         ax.set_title(label)
         ax.grid(True, alpha=0.3, which='both')
+        if target_key in DOMINATED:
+            ax.text(
+                0.04, 0.96, 'data variance dominated',
+                transform=ax.transAxes, ha='left', va='top', fontsize=11,
+                color='#444', style='italic',
+                bbox=dict(boxstyle='round,pad=0.3',
+                          facecolor='white', edgecolor='#888', alpha=0.9),
+            )
     axes[0].set_ylabel('std[ log p(x) ]  across ODE trajectories')
-    axes[-1].legend(loc='upper left', frameon=True, framealpha=0.95)
-    fig.suptitle('E3.1  NH-CNF exact divergence vs Hutchinson — variance scaling', y=1.03)
-    fig.tight_layout()
+    axes[-1].legend(loc='lower right', frameon=True, framealpha=0.95)
+    # constrained_layout reserves space for the in-layout suptitle; do NOT
+    # call tight_layout — it would clobber constrained_layout.
+    fig.suptitle('E3.1  NH-CNF exact divergence vs Hutchinson — variance scaling',
+                 fontsize=14)
     fig.savefig(os.path.join(FIGDIR, 'fig_variance_scaling.png'), bbox_inches='tight')
     fig.savefig(os.path.join(FIGDIR, 'fig_variance_scaling.pdf'), bbox_inches='tight')
     print('saved fig_variance_scaling')

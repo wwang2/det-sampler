@@ -41,6 +41,35 @@ def div_exact_step(xi_start, xi_end, d, dt):
     return -d * 0.5 * (g0 + g1) * dt
 
 
+def hutch_div_step(q, p, xi, grad_V_fn, k=1, Q=1.0, kT=1.0,
+                   generator=None, create_graph=False):
+    """Hutchinson(k) trace estimate of d/d(q,p,xi) . f for the NH-tanh RHS.
+
+    Shared single source of truth used by both the variance experiments
+    (detached forward use) and the training experiments (needs
+    `create_graph=True` to backprop through theta).
+
+    Returns a [B]-shaped tensor; caller may detach if they don't need grads.
+    """
+    q_ = q.requires_grad_(True) if not q.requires_grad else q
+    p_ = p.requires_grad_(True) if not p.requires_grad else p
+    xi_ = xi.requires_grad_(True) if not xi.requires_grad else xi
+    dq, dp, dxi = nh_tanh_f(q_, p_, xi_, grad_V_fn, Q, kT)
+    f_flat = torch.cat([dq, dp, dxi], dim=-1)
+
+    acc = torch.zeros(q.shape[0], device=q.device)
+    for _ in range(k):
+        eps = (torch.randint(0, 2, f_flat.shape, generator=generator,
+                             device=q.device).float() * 2 - 1)
+        s = (f_flat * eps).sum()
+        gq, gp, gxi = torch.autograd.grad(
+            s, [q_, p_, xi_], retain_graph=True, create_graph=create_graph,
+        )
+        grad_flat = torch.cat([gq, gp, gxi], dim=-1)
+        acc = acc + (grad_flat * eps).sum(-1)
+    return acc / k
+
+
 def trace_jac_hutch_step(q, p, xi, grad_V_fn, Q, kT, k, generator=None):
     """Hutchinson(k) estimate of trace(Jac(f)) for the NH-tanh ODE RHS.
 
@@ -55,31 +84,15 @@ def trace_jac_hutch_step(q, p, xi, grad_V_fn, Q, kT, k, generator=None):
     RHS would see (it does NOT know the structure), we sample eps_q, eps_p,
     eps_xi Rademacher and compute eps^T (Jac f) eps via autograd.
 
-    Returns estimate shape [B].
+    Returns estimate shape [B] (detached, no grad graph).
     """
-    B, d = q.shape
-    q_ = q.detach().clone().requires_grad_(True)
-    p_ = p.detach().clone().requires_grad_(True)
-    xi_ = xi.detach().clone().requires_grad_(True)
-    dq, dp, dxi = nh_tanh_f(q_, p_, xi_, grad_V_fn, Q, kT)
-    # concatenate outputs as [dq, dp, dxi] shape [B, 2d+1]
-    f_flat = torch.cat([dq, dp, dxi], dim=-1)  # [B, 2d+1]
-
-    acc = torch.zeros(B, device=q.device)
-    for _ in range(k):
-        # Rademacher noise eps
-        eps = (torch.randint(0, 2, f_flat.shape, generator=generator,
-                             device=q.device).float() * 2 - 1)
-        # eps^T f
-        f_dot_eps = (f_flat * eps).sum()
-        grads = torch.autograd.grad(
-            f_dot_eps, [q_, p_, xi_], retain_graph=True, create_graph=False
-        )
-        gq, gp, gxi = grads
-        grad_flat = torch.cat([gq, gp, gxi], dim=-1)   # [B, 2d+1]
-        # eps^T (Jac f) eps = (grad_flat * eps).sum(-1)
-        acc = acc + (grad_flat * eps).sum(-1)
-    return (acc / k).detach()
+    # Thin wrapper over hutch_div_step. Detaches inputs first (variance-mode
+    # use case) and returns a detached result.
+    q_ = q.detach().clone()
+    p_ = p.detach().clone()
+    xi_ = xi.detach().clone()
+    return hutch_div_step(q_, p_, xi_, grad_V_fn, k=k, Q=Q, kT=kT,
+                          generator=generator, create_graph=False).detach()
 
 
 def run_nh_cnf_batch(grad_V_fn, n_samples, d, n_steps, dt=0.01,

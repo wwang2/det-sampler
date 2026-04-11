@@ -9,6 +9,45 @@ parents:
   - nh-cnf-deep-057
 ---
 
+## Glossary
+
+- **CNF** — continuous normalizing flow
+- **FFJORD** — Free-form Jacobian Of Reversible Dynamics (continuous normalizing flow with Hutchinson trace estimator)
+- **RK4** — Runge-Kutta 4 (fourth-order explicit ODE integrator)
+- **BNN** — Bayesian neural network
+- **NLL** — negative log-likelihood
+- **SGLD** — stochastic gradient Langevin dynamics
+- **MLP** — multi-layer perceptron
+- **KL** — Kullback-Leibler divergence
+- **RHS** — right-hand side (of an ODE, i.e. the vector field)
+- **NH** — Nose-Hoover (thermostat)
+- **ODE** — ordinary differential equation
+
+## Prior Art & Novelty
+
+The divergence formula for the Nose-Hoover (and NH-tanh) flow —
+`div f = -d * g(xi)` where `g = tanh(xi)` for the bounded variant, or
+`g = xi` in the original NH — is classical. It falls out of elementary
+calculation on the augmented ODE and is stated in Hoover's 1985 paper
+and Tuckerman's 2010 statistical-mechanics textbook. We make no claim
+to novelty on the formula itself.
+
+What this orbit contributes is a **rigorous empirical comparison**: a
+side-by-side measurement, under frozen base samples and frozen momenta,
+showing exactly 0 estimator variance for the exact-divergence NH-CNF
+versus an O(1) Hutchinson variance that only shrinks as 1/sqrt(k). The
+training-stability and wall-clock panels quantify what that gap costs
+a FFJORD-style learner on the same architecture. To our knowledge no
+prior work reports this head-to-head comparison on the NH-augmented
+flow.
+
+## References
+
+- Hoover, W. G. (1985). "Canonical dynamics: Equilibrium phase-space distributions." *Physical Review A* **31**, 1695. — canonical NH thermostat + the divergence formula.
+- Tuckerman, M. E. (2010). *Statistical Mechanics: Theory and Molecular Simulation.* Oxford University Press. — textbook derivation of NH/NHC phase-space compressibility.
+- Grathwohl, W., Chen, R. T. Q., Bettencourt, J., Sutskever, I., Duvenaud, D. (2018). "FFJORD: Free-form Continuous Dynamics for Scalable Reversible Generative Models." [arXiv:1810.01367](https://arxiv.org/abs/1810.01367). — introduces the Hutchinson trace estimator we compare against.
+- Hutchinson, M. F. (1989). "A stochastic estimator of the trace of the influence matrix for Laplacian smoothing splines." *Communications in Statistics - Simulation and Computation* **18**(3), 1059-1076. — the trace estimator itself.
+
 # nh-cnf-thorough-062 — Exhaustive refinement of NH-CNF
 
 Parent: `orbit/nh-cnf-deep-057` (NH-tanh integrator with exact divergence).

@@ -35,6 +35,12 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
+# Single source of truth for hutch_div_step — see _nh_core.py.
+# (Keeping the NH RHS / RK4 duplicated locally is deliberate because this
+# file uses a torch.nn.Module whose `grad_V` is a bound method; the Hutchinson
+# trace estimator is the piece that was genuinely duplicated.)
+from _nh_core import hutch_div_step
+
 mpl.rcParams.update({
     'font.size': 12, 'axes.titlesize': 13, 'axes.labelsize': 12,
     'xtick.labelsize': 10, 'ytick.labelsize': 10, 'legend.fontsize': 10,
@@ -93,26 +99,6 @@ def rk4_nh(q, p, xi, grad_V_fn, dt, Q=1.0, kT=1.0):
     p_new  = p  + (dt/6.0) * (k1p + 2*k2p + 2*k3p + k4p)
     xi_new = xi + (dt/6.0) * (k1x + 2*k2x + 2*k3x + k4x)
     return q_new, p_new, xi_new
-
-
-def hutch_div_step(q, p, xi, grad_V_fn, k=1, generator=None, create_graph=False):
-    """Hutchinson(k) trace estimate of d/d(q,p,xi) . f for the NH-tanh RHS."""
-    q_ = q.requires_grad_(True) if not q.requires_grad else q
-    p_ = p.requires_grad_(True) if not p.requires_grad else p
-    xi_ = xi.requires_grad_(True) if not xi.requires_grad else xi
-    dq, dp, dxi = nh_tanh_rhs(q_, p_, xi_, grad_V_fn)
-    f_flat = torch.cat([dq, dp, dxi], dim=-1)
-
-    acc = torch.zeros(q.shape[0])
-    for _ in range(k):
-        eps = (torch.randint(0, 2, f_flat.shape, generator=generator).float() * 2 - 1)
-        s = (f_flat * eps).sum()
-        gq, gp, gxi = torch.autograd.grad(
-            s, [q_, p_, xi_], retain_graph=True, create_graph=create_graph,
-        )
-        grad_flat = torch.cat([gq, gp, gxi], dim=-1)
-        acc = acc + (grad_flat * eps).sum(-1)
-    return acc / k
 
 
 def target_logp(x):
@@ -194,7 +180,7 @@ def panel_a_loss_variance(d=10, n_draws=100, n_flow=16, dt=0.05, batch=64):
 
 # ------------------------ panel (b): gradient noise vs d ------------------------
 
-def measure_grad_noise(d, method, hutch_k=0, n_trials=12, n_flow=10, dt=0.05, batch=32):
+def measure_grad_noise(d, method, hutch_k=0, n_trials=10, n_flow=10, dt=0.05, batch=32):
     torch.manual_seed(0)
     V = MLPPotential(d=d, hidden=32)
     x0 = torch.randn(batch, d)
@@ -260,9 +246,8 @@ def main():
         }, f, indent=2)
 
     # -------- figure --------
-    fig = plt.figure(figsize=(12, 4.5))
-    ax_a = fig.add_subplot(1, 2, 1)
-    ax_b = fig.add_subplot(1, 2, 2)
+    fig, (ax_a, ax_b) = plt.subplots(1, 2, figsize=(12, 4.8),
+                                     constrained_layout=True)
 
     colors = {
         'NH exact':  '#1f77b4',
@@ -293,7 +278,7 @@ def main():
         s = np.std(loss_data[m], ddof=1)
         ax_a.annotate(f'std={s:.2e}', xy=(i + 1, max(loss_data[m])),
                       xytext=(0, 10), textcoords='offset points',
-                      ha='center', fontsize=9, color=colors[m])
+                      ha='center', fontsize=11, color=colors[m])
     ax_a.set_xticklabels(method_order, rotation=0)
 
     # (b) gradient noise vs d
@@ -310,11 +295,16 @@ def main():
     ax_b.grid(True, alpha=0.3, which='both')
     ax_b.legend(loc='lower right', framealpha=0.95)
 
+    # With constrained_layout=True (set at figure creation), matplotlib
+    # reserves top space for an in-layout suptitle automatically. Placing it
+    # at y=1.02 would put it outside the reserved region and collide with
+    # the (a)/(b) subplot titles, so we use the default in-layout placement.
+    # bbox_inches='tight' on savefig still prevents any clipping.
     fig.suptitle(
         'E3.3  NH-CNF training stability: exact divergence is deterministic at every $d$',
-        y=1.02,
+        fontsize=14,
     )
-    fig.tight_layout()
+    # Do NOT call tight_layout — it would clobber constrained_layout.
     out_png = os.path.join(FIGDIR, 'fig_training_stability.png')
     out_pdf = os.path.join(FIGDIR, 'fig_training_stability.pdf')
     fig.savefig(out_png, bbox_inches='tight')
