@@ -1,0 +1,35 @@
+- key: zwanzig1954
+  title: "High-Temperature Equation of State by a Perturbation Method. I. Nonpolar Gases"
+  authors: "R. W. Zwanzig"
+  year: 1954
+  doi: 10.1063/1.1740409
+  type: paper
+  finding: "Original free energy perturbation formula (Zwanzig relation)"
+  cited_by: [orbit/exact-fep-059]
+
+- key: bennett1976
+  title: "Efficient Estimation of Free Energy Differences from Monte Carlo Data"
+  authors: "C. H. Bennett"
+  year: 1976
+  doi: 10.1016/0021-9991(76)90078-4
+  type: paper
+  finding: "Bennett Acceptance Ratio (BAR) method for bidirectional FEP"
+  cited_by: [orbit/exact-fep-059]
+
+- key: shirts_chodera2008
+  title: "Statistically Optimal Analysis of Samples from Multiple Equilibrium States"
+  authors: "M. R. Shirts, J. D. Chodera"
+  year: 2008
+  doi: 10.1063/1.2978177
+  type: paper
+  finding: "MBAR: multistate Bennett acceptance ratio estimator"
+  cited_by: [orbit/exact-fep-059]
+
+- key: jarzynski1997
+  title: "Nonequilibrium Equality for Free Energy Differences"
+  authors: "C. Jarzynski"
+  year: 1997
+  doi: 10.1103/PhysRevLett.78.2690
+  type: paper
+  finding: "Non-equilibrium work theorem for exact free energy differences"
+  cited_by: [orbit/exact-fep-059]
