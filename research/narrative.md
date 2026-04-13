@@ -4,41 +4,53 @@ The campaign has **bifurcated into two papers**, both building on the same body 
 
 ---
 
-## Paper 1 — "Bounded friction is necessary and sufficient for efficient Nosé-Hoover sampling"
+## Paper 1 — "Q-tuning dominates Nosé-Hoover thermostat design: correcting the 536× gap artifact"
 
-**Thesis (one sentence, revised 2026-04-13):** The decisive design criterion for Nosé-Hoover friction g(ξ) is **boundedness** — any odd function with |g(ξ)| ≤ 1 and g'(0)=1 performs comparably to tanh, while unbounded friction (log-oscillator) causes catastrophic BAOAB numerical instability at large ξ, fully explaining the 536× τ_int gap; additionally, tanh-NH achieves 7–19× efficiency gains over NHC(M=3) and tuned HMC on anisotropic and multimodal targets in 10 dimensions.
+**Thesis (one sentence, revised 2026-04-13 v2):** The apparent 536× τ_int advantage of tanh over log-oscillator NH friction (reported by orbit 047 and widely cited) is a **Q-mismatch methodology artifact** — at matched Q, log-oscillator is 20–37% *faster* than tanh due to its stronger near-origin coupling (g'(0)=2 vs 1); the true design rules are: (1) g must be bounded (necessary for BAOAB numerical stability), and (2) Q-tuning is the dominant performance lever, with g-shape secondary.
 
-**Status:** thesis revised; needs paper rewrite before submission. Target venue: JCTC.
+**Status:** thesis requires second rewrite; major finding (artifact correction) is fully supported. Target venue: JCTC.
 
-### Evidence chain
+### Evidence chain — story evolution (orbits 052 → 069 → 071 → 072)
 
-**The 536× gap mechanism (orbits 052 → 069 → 071):**
-- **orbit/gprime-ablation-052** — g'≥0 is NOT causally responsible: clipped-log-osc (g'≥0) performs identically to log-osc at large Q; at small Q it is 1.25–1.52× WORSE. The 536× gap in orbit 047 was a methodology artifact (non-matched Q ranges). g'(0) magnitude and saturation behavior are the real discriminants.
-- **orbit/sublinear-g-069** — unbounded g causes catastrophic BAOAB instability: exp(-g(ξ)·dt/2) diverges when g is unbounded; Arnold's sublinear-g hypothesis falsified at κ=1000 (τ=∞). **Tanh's bounded range is a stability feature.**
-- **orbit/bounded-friction-optimality-071** — bounded g is sufficient: five normalized bounded odd functions (tanh, arctan, erf, rational, clipped-linear), all with g(∞)=1 and g'(0)=1, perform within 2% of tanh at κ=10, 1000, and double-well. erf is 23–31% faster at κ=100.
+| Orbit | Claim tested | Result |
+|-------|-------------|--------|
+| 052 | g'≥0 causes 536× gap | FALSIFIED — clipped-log-osc (g'≥0) no better than log-osc |
+| 069 | unbounded g avoids frequency ceiling | FALSIFIED — causes BAOAB instability; bounded g necessary |
+| 071 | tanh is special among bounded g | FALSIFIED — all normalized g'(0)=1 functions equivalent at d=2 |
+| 072 | log-osc fails because g→0 at large ξ | FALSIFIED — log-osc 37% FASTER than tanh at matched Q |
 
-**Efficiency gains (orbits 041, 042, 047, 049):**
-- **orbit/q-exponent-theory-041** — ω_max = 0.732 for log-osc (resonance calculation).
-- **orbit/paper-experiments-047** — τ_int = 2.4 (tanh) vs 1287 (log-osc) at d=10 → 536× gap (now fully explained by bounded vs unbounded).
+**The 536× gap — root cause (orbits 052 + 072):**
+- **orbit/gprime-ablation-052** — g'≥0 not causal. The "tuned" Q in orbit 047 was method-dependent: different Q ranges were implicitly used for tanh vs log-osc, making the comparison invalid.
+- **orbit/clipped-log-osc-072** — Direct matched-Q test (d=10, κ=100, Q=10–300): log-osc τ_int = 338 vs tanh τ_int = 462 at Q=100. **Log-osc wins by 37%.** The 536× gap is 100% artifact.
+  - Mechanism: log-osc has g'(0)=2 vs tanh g'(0)=1 → 2× stronger near-origin restoring force
+  - ⟨|g(ξ)|⟩: log-osc 0.50 > tanh 0.37 (log-osc more active, not less)
+  - ⟨|ξ|⟩: log-osc 0.30 < tanh 0.41 (tighter temperature control)
+
+**Bounded g is a hard requirement (orbit 069):**
+- **orbit/sublinear-g-069** — Unbounded g(ξ) (grows as ξ→∞) causes exp(-g·dt/2)→0, catastrophically zeroing momentum. At κ=1000 τ→∞. Bounded g is a BAOAB stability requirement, not a preference.
+- Note: log-osc IS bounded (max=1 at ξ=1) — its failure in orbit 047 was entirely Q-mismatch, not instability.
+
+**Efficiency gains over NHC (real, mechanism now clarified):**
 - **orbit/mode-hopping-042** — 7× multi-scale Q mode-hopping advantage at d=10.
-- **orbit/paper-final-049** — 19.5× ESS vs tuned HMC across 4 benchmarks.
+- **orbit/paper-final-049** — 19.5× ESS vs tuned HMC across 4 benchmarks. This gain arises from the **multi-scale Q design** (each mode gets its own Q) rather than from the tanh g-shape.
+- **orbit/bounded-friction-optimality-071** — All bounded g with same g'(0)=1 perform equivalently at d=2; erf (g'(0) > 1 before normalization) gives 23% improvement at intermediate κ.
 
-**Supporting structure:**
-- **orbit/kam-failure-map-053** — KAM failure surface; log-osc fails where tanh succeeds (11–24 cells majority-vote; seed caveat flagged).
-- **orbit/forensic-qeff-054** — Q_eff mechanism confirmation.
-- **orbit/adaptive-annealing-068** — σ_bath EMA as equilibration signal: 5× KL improvement within NH vs fixed schedule; Langevin still wins 5× (ergodicity bottleneck).
+**Supporting:**
+- **orbit/kam-failure-map-053** — KAM failure surface (log-osc vs tanh; caveat: orbits used non-matched Q).
+- **orbit/forensic-qeff-054** — Q_eff mechanism.
 
 ### What remains for Paper 1
-- (a) Rewrite intro and mechanism section: replace g'≥0 framing with bounded-g framing.
-- (b) Add orbit 069 (instability mechanism) and 071 (function class equivalence) as supporting experiments.
-- (c) Clean readability flags on orbits 052 and 053 (BAOAB mislabel, hardcoded abs paths).
-- (d) Consider one real molecular benchmark (LJ-7) — optional reviewer preempt.
-- (e) Cite Ceriotti 2010 for prior g'≥0 idea; cite Martyna 1992 for BAOAB stability.
+- (a) Reframe: "correction paper" — show artifact, explain mechanism, give g'(0) + Q-tuning rules.
+- (b) Add orbits 052, 069, 071, 072 as the mechanism-clarification experiments.
+- (c) Clarify that the 19.5× NHC gain (orbit 049) is real and from multi-scale Q, not g-shape.
+- (d) Clean readability flags on orbits 052 and 053.
+- (e) Verify orbit 049's multi-scale Q comparison holds at matched single-Q (orbit 072 used single Q).
 
 ### Open questions (Paper 1)
-- Does bounded-g advantage survive on real molecular systems (LJ-7)?
-- Is erf's 23–31% improvement at κ=100 robust across d>2 and different potentials?
-- Is the N-scaling law `N_opt ~ log(κ_ratio)` real or a seed artifact? (R²=0.33, suggestive.)
+- Does the log-osc advantage (g'(0)=2 > 1) survive with N=5 parallel thermostats (orbit 047 setup)?
+- Is there an optimal g'(0) > 1? Does g'(0) = 2 (log-osc) beat g'(0) = 2/√π·(√π/2) = erf-rescaled?
+- How much of the 19.5× NHC gain (orbit 049) is from g-shape vs multi-scale Q?
+- Is the N-scaling law `N_opt ~ log(κ_ratio)` real or a seed artifact? (R²=0.33.)
 
 ---
 
