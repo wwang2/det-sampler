@@ -38,10 +38,22 @@ function renderIndex(data) {
 
   const sorted = [...orbits].sort((a, b) => metricRank(a, c) - metricRank(b, c));
 
+  let heroHtml = '';
+  if (c.teaser_image) {
+    heroHtml += `<img src="${esc(c.teaser_image)}" class="teaser-hero" style="max-width:100%;border-radius:8px;margin:16px 0;" />`;
+  }
+  if (c.background) {
+    heroHtml += `<details class="background-section" style="margin:16px 0;">
+        <summary style="cursor:pointer;font-weight:bold;">Research Background</summary>
+        <div style="padding:8px 0;">${renderMarkdown(c.background)}</div>
+    </details>`;
+  }
+
   return `
     <header class="hero">
       <small class="meta">campaign</small>
       <h1>${esc(c.title || 'Untitled')}</h1>
+      ${heroHtml}
       <div class="problem">${renderMarkdown(c.problem || '')}</div>
       <div class="stats">${stats}</div>
     </header>
@@ -141,6 +153,9 @@ function renderTimeline(entries) {
     const isMilestone = body.includes('## Round') || body.includes('## Milestone') || body.includes('Leaderboard');
     const isOrbitComplete = body.includes('complete') && body.includes('orbit/');
     const tag = isDebate ? 'debate' : isMilestone ? 'milestone' : isOrbitComplete ? 'result' : 'update';
+    const imgs = (e.images || []).map(url =>
+      `<img src="${esc(url)}" loading="lazy" class="timeline-image" style="max-width:100%;margin:8px 0;border-radius:4px;" />`
+    ).join('');
     return `
       <div class="tl-entry" data-tag="${tag}">
         <div class="tl-header">
@@ -148,6 +163,7 @@ function renderTimeline(entries) {
           <span class="tl-tag tl-tag-${tag}">${tag}</span>
         </div>
         <div class="tl-body">${renderMarkdown(body)}</div>
+        ${imgs ? `<div class="tl-images">${imgs}</div>` : ''}
       </div>`;
   }).join('');
   return `<div class="timeline-log">${items}</div>`;
