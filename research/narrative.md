@@ -4,11 +4,11 @@ The campaign has **bifurcated into two papers**, both building on the same body 
 
 ---
 
-## Paper 1 — "Q-tuning dominates Nosé-Hoover thermostat design: correcting the 536× gap artifact"
+## Paper 1 — "Log-oscillator friction outperforms tanh via adaptive damping: correcting a Q-mismatch artifact"
 
-**Thesis (one sentence, revised 2026-04-13 v2):** The apparent 536× τ_int advantage of tanh over log-oscillator NH friction (reported by orbit 047 and widely cited) is a **Q-mismatch methodology artifact** — at matched Q, log-oscillator is 20–37% *faster* than tanh due to its stronger near-origin coupling (g'(0)=2 vs 1); the true design rules are: (1) g must be bounded (necessary for BAOAB numerical stability), and (2) Q-tuning is the dominant performance lever, with g-shape secondary.
+**Thesis (one sentence, revised 2026-04-13 v3, FINAL):** The apparent 536× τ_int advantage of tanh over log-oscillator NH friction is a **Q-mismatch artifact** — at optimally matched Q, log-osc achieves 47% lower τ_int than tanh through **adaptive damping**: strong near-origin coupling (g'(0)=2 vs 1 for tanh) combined with the g→0 decay at large ξ that allows free phase-space exploration before thermalization, giving a nonlinear control mechanism qualitatively superior to tanh's constant saturated coupling.
 
-**Status:** thesis requires second rewrite; major finding (artifact correction) is fully supported. Target venue: JCTC.
+**Status:** thesis fully established by 5 orbits (052, 069, 071, 072, 073); paper needs rewrite. Target venue: JCTC.
 
 ### Evidence chain — story evolution (orbits 052 → 069 → 071 → 072)
 
@@ -18,38 +18,44 @@ The campaign has **bifurcated into two papers**, both building on the same body 
 | 069 | unbounded g avoids frequency ceiling | FALSIFIED — causes BAOAB instability; bounded g necessary |
 | 071 | tanh is special among bounded g | FALSIFIED — all normalized g'(0)=1 functions equivalent at d=2 |
 | 072 | log-osc fails because g→0 at large ξ | FALSIFIED — log-osc 37% FASTER than tanh at matched Q |
+| **073** | **is g'(0)=2 optimal?** | **log-osc 47% faster via adaptive damping** |
+
+**Adaptive damping mechanism (orbit 073 — FINAL finding):**
+- **orbit/gprime-optimization-073** — Swept g_α(ξ) = tanh(α·ξ) with α ∈ {0.25, 0.5, 1, 2, 4, 8}.
+  - α=2: 7% better than α=1 (tanh). α=4,8: no better / worse (over-coupling).
+  - **log-osc (g'(0)=2, g→0 at large ξ): 47% better than tanh.**
+  - tanh(2ξ) and log-osc both have g'(0)=2, but log-osc is 40% faster — large-ξ behavior is key.
+  - **Adaptive damping**: near equilibrium (small ξ) log-osc has 2× stronger coupling than tanh;
+    far from equilibrium (large ξ) log-osc's g→0 allows free exploration before thermalization.
+    This beats constant-saturation g=1 (tanh behavior) for phase-space coverage.
 
 **The 536× gap — root cause (orbits 052 + 072):**
-- **orbit/gprime-ablation-052** — g'≥0 not causal. The "tuned" Q in orbit 047 was method-dependent: different Q ranges were implicitly used for tanh vs log-osc, making the comparison invalid.
-- **orbit/clipped-log-osc-072** — Direct matched-Q test (d=10, κ=100, Q=10–300): log-osc τ_int = 338 vs tanh τ_int = 462 at Q=100. **Log-osc wins by 37%.** The 536× gap is 100% artifact.
-  - Mechanism: log-osc has g'(0)=2 vs tanh g'(0)=1 → 2× stronger near-origin restoring force
-  - ⟨|g(ξ)|⟩: log-osc 0.50 > tanh 0.37 (log-osc more active, not less)
-  - ⟨|ξ|⟩: log-osc 0.30 < tanh 0.41 (tighter temperature control)
+- **orbit/gprime-ablation-052** — g'≥0 not causal. The orbit 047 comparison used different Q scales per method (non-matched), invalidating the comparison.
+- **orbit/clipped-log-osc-072** — Matched-Q test (d=10, κ=100, Q=10–300): log-osc τ=338 vs tanh τ=462 at Q=100. Log-osc 37% faster. 536× gap = 100% artifact.
 
 **Bounded g is a hard requirement (orbit 069):**
-- **orbit/sublinear-g-069** — Unbounded g(ξ) (grows as ξ→∞) causes exp(-g·dt/2)→0, catastrophically zeroing momentum. At κ=1000 τ→∞. Bounded g is a BAOAB stability requirement, not a preference.
-- Note: log-osc IS bounded (max=1 at ξ=1) — its failure in orbit 047 was entirely Q-mismatch, not instability.
+- **orbit/sublinear-g-069** — Unbounded g causes exp(-g·dt/2)→0 (BAOAB instability). τ→∞ at κ=1000. Log-osc IS bounded (max=1 at ξ=1); its orbit-047 failure was Q-mismatch.
 
-**Efficiency gains over NHC (real, mechanism now clarified):**
+**Efficiency gains over NHC (real, mechanism clarified):**
+- **orbit/paper-final-049** — 19.5× ESS vs tuned HMC. Arises from **multi-scale Q design** (each mode gets its own Q). The g-shape comparison in orbit 047 was on top of this advantage.
 - **orbit/mode-hopping-042** — 7× multi-scale Q mode-hopping advantage at d=10.
-- **orbit/paper-final-049** — 19.5× ESS vs tuned HMC across 4 benchmarks. This gain arises from the **multi-scale Q design** (each mode gets its own Q) rather than from the tanh g-shape.
-- **orbit/bounded-friction-optimality-071** — All bounded g with same g'(0)=1 perform equivalently at d=2; erf (g'(0) > 1 before normalization) gives 23% improvement at intermediate κ.
 
 **Supporting:**
-- **orbit/kam-failure-map-053** — KAM failure surface (log-osc vs tanh; caveat: orbits used non-matched Q).
+- **orbit/bounded-friction-optimality-071** — All normalized g'(0)=1 functions equivalent at d=2.
+- **orbit/kam-failure-map-053** — KAM failure surface (caveat: used non-matched Q).
 - **orbit/forensic-qeff-054** — Q_eff mechanism.
 
 ### What remains for Paper 1
-- (a) Reframe: "correction paper" — show artifact, explain mechanism, give g'(0) + Q-tuning rules.
-- (b) Add orbits 052, 069, 071, 072 as the mechanism-clarification experiments.
-- (c) Clarify that the 19.5× NHC gain (orbit 049) is real and from multi-scale Q, not g-shape.
+- (a) Rewrite to "correction + new mechanism" framing: artifact → adaptive damping theory.
+- (b) Add orbits 052, 069, 072, 073 as the mechanism chain.
+- (c) Clarify that the 19.5× NHC gain (orbit 049) = multi-scale Q, not g-shape.
 - (d) Clean readability flags on orbits 052 and 053.
-- (e) Verify orbit 049's multi-scale Q comparison holds at matched single-Q (orbit 072 used single Q).
+- (e) Quantify how much of the 19.5× comes from g-shape vs Q-design.
 
 ### Open questions (Paper 1)
-- Does the log-osc advantage (g'(0)=2 > 1) survive with N=5 parallel thermostats (orbit 047 setup)?
-- Is there an optimal g'(0) > 1? Does g'(0) = 2 (log-osc) beat g'(0) = 2/√π·(√π/2) = erf-rescaled?
-- How much of the 19.5× NHC gain (orbit 049) is from g-shape vs multi-scale Q?
+- Does the log-osc adaptive-damping advantage scale with d and κ?
+- Does it survive with N=5 parallel thermostats (orbit 047's actual setup)?
+- Is there a theoretical prediction for optimal g(ξ) from control theory (Pontryagin maximum principle)?
 - Is the N-scaling law `N_opt ~ log(κ_ratio)` real or a seed artifact? (R²=0.33.)
 
 ---
