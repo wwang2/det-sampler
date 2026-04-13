@@ -4,31 +4,41 @@ The campaign has **bifurcated into two papers**, both building on the same body 
 
 ---
 
-## Paper 1 — "A frequency-ceiling design criterion for deterministic thermostats"
+## Paper 1 — "Bounded friction is necessary and sufficient for efficient Nosé-Hoover sampling"
 
-**Thesis (one sentence):** Requiring `g'(ξ) ≥ 0` in a Nosé-Hoover-type friction yields an explicit upper bound on the thermostat frequency, empirically explains the 536× τ_int gap between log-osc and tanh variants, and gives 7-19× efficiency gains over NHC(M=3) and tuned HMC on anisotropic and multimodal targets in 10 dimensions.
+**Thesis (one sentence, revised 2026-04-13):** The decisive design criterion for Nosé-Hoover friction g(ξ) is **boundedness** — any odd function with |g(ξ)| ≤ 1 and g'(0)=1 performs comparably to tanh, while unbounded friction (log-oscillator) causes catastrophic BAOAB numerical instability at large ξ, fully explaining the 536× τ_int gap; additionally, tanh-NH achieves 7–19× efficiency gains over NHC(M=3) and tuned HMC on anisotropic and multimodal targets in 10 dimensions.
 
-**Status:** publication-ready. Target venue: JCTC.
+**Status:** thesis revised; needs paper rewrite before submission. Target venue: JCTC.
 
-### Key evidence (unchanged from 2026-04-09 narrative)
+### Evidence chain
 
-- **orbit/q-exponent-theory-041** — exact ω_max = 0.732 for log-osc (resonance calculation).
-- **orbit/friction-survey-045** — ω_max = 1.0 for tanh via the g'≥0 mechanism; two distinct criteria identified (raise g'(0) vs eliminate sign changes).
-- **orbit/paper-experiments-047** — τ_int = 2.4 (tanh) vs 1287 (log-osc) at d=10 → 536× gap.
-- **orbit/mode-hopping-042** — 7× multi-scale Q mode-hopping advantage specifically at d=10.
-- **orbit/paper-final-049** — 19.5× ESS vs tuned HMC across 4 benchmarks (force-evaluation efficiency, no rejection waste).
-- **orbit/gprime-ablation-052** — causal g'≥0 ablation (pending 1-2% readability fixes noted at orbit 052 cleanup_iterations=2).
-- **orbit/kam-failure-map-053** — full N=1 KAM failure surface; per-seed/majority-vote shows log-osc > tanh by 11-24 cells (with seed-averaging caveat explicitly flagged in orbit notes).
+**The 536× gap mechanism (orbits 052 → 069 → 071):**
+- **orbit/gprime-ablation-052** — g'≥0 is NOT causally responsible: clipped-log-osc (g'≥0) performs identically to log-osc at large Q; at small Q it is 1.25–1.52× WORSE. The 536× gap in orbit 047 was a methodology artifact (non-matched Q ranges). g'(0) magnitude and saturation behavior are the real discriminants.
+- **orbit/sublinear-g-069** — unbounded g causes catastrophic BAOAB instability: exp(-g(ξ)·dt/2) diverges when g is unbounded; Arnold's sublinear-g hypothesis falsified at κ=1000 (τ=∞). **Tanh's bounded range is a stability feature.**
+- **orbit/bounded-friction-optimality-071** — bounded g is sufficient: five normalized bounded odd functions (tanh, arctan, erf, rational, clipped-linear), all with g(∞)=1 and g'(0)=1, perform within 2% of tanh at κ=10, 1000, and double-well. erf is 23–31% faster at κ=100.
+
+**Efficiency gains (orbits 041, 042, 047, 049):**
+- **orbit/q-exponent-theory-041** — ω_max = 0.732 for log-osc (resonance calculation).
+- **orbit/paper-experiments-047** — τ_int = 2.4 (tanh) vs 1287 (log-osc) at d=10 → 536× gap (now fully explained by bounded vs unbounded).
+- **orbit/mode-hopping-042** — 7× multi-scale Q mode-hopping advantage at d=10.
+- **orbit/paper-final-049** — 19.5× ESS vs tuned HMC across 4 benchmarks.
+
+**Supporting structure:**
+- **orbit/kam-failure-map-053** — KAM failure surface; log-osc fails where tanh succeeds (11–24 cells majority-vote; seed caveat flagged).
 - **orbit/forensic-qeff-054** — Q_eff mechanism confirmation.
+- **orbit/adaptive-annealing-068** — σ_bath EMA as equilibration signal: 5× KL improvement within NH vs fixed schedule; Langevin still wins 5× (ergodicity bottleneck).
 
 ### What remains for Paper 1
-- (a) Clean the readability flags on orbits 052 and 053 (BAOAB mislabel, hardcoded abs paths, missing restricted-window analysis).
-- (b) Cite Ceriotti 2010 for the g'≥0 idea's prior art (from `project_paper_narrative.md` memory).
-- (c) Consider one real molecular benchmark (LJ-7) — optional, answers a reviewer question before they ask.
+- (a) Rewrite intro and mechanism section: replace g'≥0 framing with bounded-g framing.
+- (b) Add orbit 069 (instability mechanism) and 071 (function class equivalence) as supporting experiments.
+- (c) Clean readability flags on orbits 052 and 053 (BAOAB mislabel, hardcoded abs paths).
+- (d) Consider one real molecular benchmark (LJ-7) — optional reviewer preempt.
+- (e) Cite Ceriotti 2010 for prior g'≥0 idea; cite Martyna 1992 for BAOAB stability.
 
 ### Open questions (Paper 1)
-- Does the tanh advantage survive on real molecular systems (LJ-7 or similar) or is it a synthetic-benchmark artifact?
-- Is the N-scaling law `N_opt ~ log(κ_ratio)` real or a seed artifact? (R² = 0.33, suggestive but not significant.)
+- Does bounded-g advantage survive on real molecular systems (LJ-7)?
+- Is erf's 23–31% improvement at κ=100 robust across d>2 and different potentials?
+- Is the N-scaling law `N_opt ~ log(κ_ratio)` real or a seed artifact? (R²=0.33, suggestive.)
 
 ---
 
